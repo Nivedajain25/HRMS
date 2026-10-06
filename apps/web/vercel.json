@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --filter @stencil/web... --config.store-dir=/tmp/pnpm-store --config.virtual-store-dir=node_modules/.pnpm",
+  "buildCommand": "cd ../.. && pnpm --filter @stencil/web build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/((?!api/|assets/).*)", "destination": "/index.html" }]
+}

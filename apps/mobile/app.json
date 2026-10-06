@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "apiUrl": "",
+      "router": {},
+      "eas": {
+        "projectId": "995388c8-50cf-4fa1-ba76-1ced0dadd83d"
+      }
+    },
+    "owner": "niveda_stencil"
+  }
+}

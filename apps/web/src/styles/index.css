@@ -1,0 +1,265 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Theme fade (store/theme.ts): the browser's default animation is off; the new theme fades in over the old one. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/*
+ * Stencil design tokens. Components use semantic tokens (bg-surface,
+ * text-muted, border-line...) so light/dark themes switch by variables only.
+ */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-ring: var(--ring);
+
+  --radius-xl: 0.875rem;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.18), 0 4px 8px -4px rgb(16 24 40 / 0.08);
+
+  --animate-fade-in: fade-in 0.15s ease-out;
+  --animate-slide-in-right: slide-in-right 0.2s ease-out;
+  --animate-scale-in: scale-in 0.15s ease-out;
+  /* Dashboard "day journey" card. */
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-soft-ping: soft-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-pop-in: pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  @keyframes pop-in {
+    0% { opacity: 0; transform: scale(0.6) translateY(8px); }
+    60% { opacity: 1; transform: scale(1.06) translateY(0); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes soft-ping {
+    0% { transform: scale(1); opacity: 0.55; }
+    80%, 100% { transform: scale(1.35); opacity: 0; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+:root {
+  --canvas: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --fg: #0f172a;
+  --fg-2: #334155;
+  --muted: #64748b;
+  --subtle: #94a3b8;
+  --ring: #6366f1;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #0b0d12;
+  --surface: #12151c;
+  --surface-2: #171b23;
+  --surface-3: #1f2430;
+  --line: #262c38;
+  --line-strong: #343b4a;
+  --fg: #e6e9ef;
+  --fg-2: #c3c9d4;
+  --muted: #8b93a3;
+  --subtle: #5d6575;
+  --ring: #818cf8;
+  color-scheme: dark;
+}
+
+/*
+ * App chrome (sidebar + top bar) per role, following the chosen theme. All roles share the same clean look —
+ * white with black text in light mode, the dashboard's own dark surfaces in dark mode — and differ only by a
+ * subtle accent (hover tint + current-page pill): Super Admin violet, HR mint/teal, Employee blue.
+ */
+.chrome-indigo,
+.chrome-mint,
+.chrome-wine {
+  --surface: #ffffff;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --fg: #000000;
+  --fg-2: #111111;
+  --muted: #374151;
+  --subtle: #6b7280;
+  /* The Tailwind colour tokens resolve at :root, so point them at this palette here too. */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-ring: var(--ring);
+  color: var(--fg);
+  color-scheme: light;
+}
+/* Role accents (light): hover tints and focus ring. */
+.chrome-indigo {
+  --surface-2: #f5f3ff;
+  --surface-3: #ede9fe;
+  --ring: #7c3aed;
+}
+.chrome-mint {
+  --surface-2: #f0fdfa;
+  --surface-3: #ccfbf1;
+  --ring: #0d9488;
+}
+.chrome-wine {
+  --surface-2: #eff6ff;
+  --surface-3: #dbeafe;
+  --ring: #2563eb;
+}
+/* Dark mode: the dashboard's own dark surfaces (same as its cards), light text. */
+.dark .chrome-indigo,
+.dark .chrome-mint,
+.dark .chrome-wine {
+  --surface: #12151c;
+  --surface-2: #171b23;
+  --surface-3: #1f2430;
+  --line: #262c38;
+  --line-strong: #343b4a;
+  --fg: #ffffff;
+  --fg-2: #e6e9ef;
+  --muted: #c3c9d4;
+  --subtle: #8b93a3;
+  color-scheme: dark;
+}
+/* Current page in the menu: a pill in the role's accent (both themes); its module-coloured icon turns white. */
+.chrome-indigo nav a[aria-current='page'],
+.chrome-mint nav a[aria-current='page'],
+.chrome-wine nav a[aria-current='page'] {
+  color: #ffffff;
+}
+.chrome-indigo nav a[aria-current='page'] {
+  background: #7c3aed;
+  box-shadow: 0 4px 12px -4px rgb(124 58 237 / 0.55);
+}
+.chrome-mint nav a[aria-current='page'] {
+  background: #0d9488;
+  box-shadow: 0 4px 12px -4px rgb(13 148 136 / 0.55);
+}
+.chrome-wine nav a[aria-current='page'] {
+  background: #1e3a8a;
+  box-shadow: 0 4px 12px -4px rgb(30 58 138 / 0.55);
+}
+.chrome-indigo nav a[aria-current='page'] .nav-icon,
+.chrome-mint nav a[aria-current='page'] .nav-icon,
+.chrome-wine nav a[aria-current='page'] .nav-icon {
+  color: #ffffff;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-canvas text-fg antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-brand-500) 25%, transparent);
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface shadow-card;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  .prose-content :where(p) { margin: 0 0 0.75rem; }
+  .prose-content :where(h2) { font-size: 1.125rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+  .prose-content :where(h3, h4) { font-weight: 600; margin: 0.75rem 0 0.5rem; }
+  .prose-content :where(ul) { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  .prose-content :where(ol) { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  .prose-content :where(a) { color: var(--color-brand-600); text-decoration: underline; }
+  .prose-content :where(blockquote) { border-left: 3px solid var(--line-strong); padding-left: 0.75rem; color: var(--muted); }
+  .prose-content :where(code) { background: var(--surface-3); padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+}
+
+/* Dashboard greeting: a friendly one-off wave for the emoji, and a slow drift for the banner decoration. */
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(6deg); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+/* Attendance dashboard banner: the gradient slowly drifts (use with bg-[length:200%_200%]). */
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+/* A soft glint sweeping across a tile. */
+@keyframes shine {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(320%) skewX(-20deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

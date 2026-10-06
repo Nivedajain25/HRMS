@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+apps/api/uploads/
+apps/web/test-results/
+apps/web/playwright-report/
+.expo/
+.claude/settings.local.json
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json

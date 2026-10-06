@@ -1,0 +1,37 @@
+{
+  "name": "stencil-hrms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stencil HRMS — multi-tenant human resource management platform",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"corepack pnpm --filter @stencil/api dev\" \"corepack pnpm --filter @stencil/web dev\"",
+    "dev:memory": "concurrently -n api,web -c blue,magenta \"corepack pnpm --filter @stencil/api dev:memory\" \"corepack pnpm --filter @stencil/web dev\"",
+    "build": "pnpm --filter @stencil/api build && pnpm --filter @stencil/web build",
+    "start": "pnpm --filter @stencil/api start",
+    "test": "pnpm --filter @stencil/api test",
+    "test:e2e": "pnpm --filter @stencil/web test:e2e",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "typecheck": "pnpm --filter @stencil/shared typecheck && pnpm --filter @stencil/api typecheck && pnpm --filter @stencil/web typecheck && pnpm --filter @stencil/mobile typecheck",
+    "seed": "corepack pnpm --filter @stencil/api seed",
+    "seed:stencil": "corepack pnpm --filter @stencil/api seed:stencil"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.18.2"
+  }
+}

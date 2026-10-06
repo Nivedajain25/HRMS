@@ -1,0 +1,35 @@
+# Files excluded from EAS Build uploads (apps/mobile). When this file exists
+# EAS ignores .gitignore, so the relevant .gitignore entries are repeated here.
+
+# Workstation-specific pnpm config (store/virtual store on C:) — EAS must use
+# pnpm's defaults, so never upload it.
+.npmrc
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+.claude/
+
+# Other apps' local artifacts
+apps/api/uploads/
+apps/web/test-results/
+apps/web/playwright-report/
+
+# Mobile local/generated files
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/web-build/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision

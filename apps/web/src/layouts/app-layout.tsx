@@ -68,8 +68,8 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               title={collapsed ? g.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors',
-                  isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg-2 hover:bg-surface-3 hover:text-fg',
+                  'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold transition-colors',
+                  isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg hover:bg-surface-3',
                   collapsed && 'justify-center',
                 )
               }
@@ -88,8 +88,8 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               aria-expanded={isOpen}
               title={collapsed ? g.label : undefined}
               className={cn(
-                'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors',
-                activeGroup(g) ? 'text-fg' : 'text-fg-2 hover:bg-surface-3 hover:text-fg',
+                'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-fg transition-colors',
+                !activeGroup(g) && 'hover:bg-surface-3',
                 collapsed && 'justify-center',
               )}
             >
@@ -111,8 +111,8 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2.5 rounded-md px-2.5 py-1 text-[13px] transition-colors',
-                        isActive ? 'bg-brand-50 font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-muted hover:bg-surface-3 hover:text-fg',
+                        'flex items-center gap-2.5 rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors',
+                        isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg hover:bg-surface-3',
                       )
                     }
                   >

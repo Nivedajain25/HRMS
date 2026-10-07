@@ -11,6 +11,7 @@ import {
   Home,
   KeyRound,
   Camera,
+  Check,
   LogOut,
   Menu,
   Moon,
@@ -39,7 +40,8 @@ import { TaskPopup } from '@/features/tasks/components/task-popup';
 import { dashboardKind } from '@/features/dashboard/lib';
 import { TeamMenu } from './team-menu';
 import { usePermissions } from '@/store/auth';
-import { useThemeStore, type ThemePreference } from '@/store/theme';
+import { THEMES, resolveTheme, themeMode, useThemeStore, type ThemePreference } from '@/store/theme';
+import { ThemeDot } from '@/components/common/theme-preview';
 
 const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) => {
   const { user, isManager, hasEmployee } = usePermissions();
@@ -223,30 +225,66 @@ const NotificationBell = () => {
   );
 };
 
-const ThemeToggle = () => {
+const ThemeMenu = () => {
   const { theme, setTheme } = useThemeStore();
+  const [open, setOpen] = useState(false);
   const qc = useQueryClient();
   const persist = (t: ThemePreference) => {
     setTheme(t);
+    setOpen(false);
     // Also save the preference on the user profile (best effort).
     void api_savePref(t).then(() => qc.invalidateQueries({ queryKey: ['me'] }));
   };
   // Older "system" preferences show whichever theme is actually in use.
-  const dark = theme === 'dark' || (theme === 'system' && document.documentElement.classList.contains('dark'));
-  // Sun / moon flip: both icons are stacked; switching spins one out and the other in while the page fades.
+  const current = resolveTheme(theme);
+  const dark = themeMode(theme) === 'dark';
+  // Sun / moon flip: both icons are stacked; switching between light and dark themes spins one out and the other in.
   const flip = 'absolute h-5 w-5 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none';
-  // One click toggles light ⇄ dark.
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [open]);
+
   return (
-    <button
-      type="button"
-      onClick={() => persist(dark ? 'light' : 'dark')}
-      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg text-fg-2 hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-brand-500"
-    >
-      <Sun className={cn(flip, 'text-amber-500', dark ? '-rotate-180 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100')} aria-hidden />
-      <Moon className={cn(flip, 'text-indigo-300', dark ? 'rotate-0 scale-100 opacity-100' : 'rotate-180 scale-0 opacity-0')} aria-hidden />
-    </button>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Change theme"
+        title="Change theme"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg text-fg-2 hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-brand-500"
+      >
+        <Sun className={cn(flip, 'text-amber-500', dark ? '-rotate-180 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100')} aria-hidden />
+        <Moon className={cn(flip, 'text-indigo-300', dark ? 'rotate-0 scale-100 opacity-100' : 'rotate-180 scale-0 opacity-0')} aria-hidden />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} aria-hidden />
+          <div role="menu" aria-label="Theme" className="animate-scale-in absolute right-0 z-40 mt-2 w-48 rounded-xl border border-line bg-surface p-1 shadow-pop">
+            <p className="px-2.5 pt-1.5 pb-1 text-xs font-medium text-muted">Theme</p>
+            {THEMES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                role="menuitemradio"
+                aria-checked={current === t.value}
+                onClick={() => persist(t.value)}
+                className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm text-fg-2 hover:bg-surface-3 hover:text-fg"
+              >
+                <ThemeDot swatch={t.swatch} />
+                <span className="flex-1">{t.label}</span>
+                {current === t.value && <Check className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 const api_savePref = (theme: ThemePreference) => patch('/users/me/preferences', { theme }).catch(() => undefined);
@@ -330,8 +368,8 @@ export const AppLayout = () => {
             <Logo collapsed={collapsed} size="sm" />
           </Link>
           {/*
-            Expand / minimise (every role): a round Stencil-blue button sitting on the sidebar's right edge, halfway
-            down — ‹ minimise, › expand.
+            Expand / minimise (every role): a round Stencil-blue button sitting on the sidebar's right edge, near the
+            bottom below the menu — ‹ minimise, › expand.
           */}
           <button
             type="button"
@@ -339,7 +377,7 @@ export const AppLayout = () => {
             aria-label={collapsed ? 'Expand sidebar' : 'Minimise sidebar'}
             title={collapsed ? 'Expand sidebar' : 'Minimise sidebar'}
             aria-expanded={!collapsed}
-            className="absolute top-1/2 -right-4 z-30 flex -translate-y-1/2 h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-canvas bg-[#24478f] text-white shadow-sm ring-1 ring-[#24478f]/20 transition-colors hover:bg-[#12326e] dark:bg-[#2a4fa0] dark:hover:bg-[#3560b8]"
+            className="absolute bottom-6 -right-4 z-30 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-canvas bg-[#24478f] text-white shadow-sm ring-1 ring-[#24478f]/20 transition-colors hover:bg-[#12326e] dark:bg-[#2a4fa0] dark:hover:bg-[#3560b8]"
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
@@ -382,7 +420,7 @@ export const AppLayout = () => {
           </button>
           <div className="ml-auto flex items-center gap-1">
             <EmergencyButton />
-            <ThemeToggle />
+            <ThemeMenu />
             <TeamMenu />
             <NotificationBell />
             <div className="relative">

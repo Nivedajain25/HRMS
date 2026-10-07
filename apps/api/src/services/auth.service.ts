@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { Types } from 'mongoose';
 import type { AuthSession, AuthUser } from '@stencil/types';
-import type { LoginInput, RegisterInput } from '@stencil/shared';
+import type { LoginInput, RegisterInput, ThemePreference } from '@stencil/shared';
 import { registerSchema } from '@stencil/shared';
 import { logger } from '../config/logger';
 import { invalidateAuthCache } from '../middleware/auth';
@@ -127,7 +127,7 @@ export const buildAuthUser = async (userId: Types.ObjectId | string): Promise<Au
     permissions,
     isManager: reports > 0,
     preferences: {
-      theme: (user.preferences?.theme as 'light' | 'dark' | 'system') ?? 'system',
+      theme: (user.preferences?.theme as ThemePreference) ?? 'system',
       language: user.preferences?.language ?? 'en',
     },
     organization: {

@@ -77,7 +77,7 @@ export const MyAccountPage = () => {
               title="Complaints"
               sub={canAny('employee:update') ? 'Review and resolve employee complaints, or raise your own' : 'Raise a complaint with HR and track it'}
             />
-            <Row to="/settings/appearance" icon={<Palette className="h-5 w-5" />} tone="bg-pink-100 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300" title="Appearance" sub="Light or dark theme, and language" />
+            <Row to="/settings/appearance" icon={<Palette className="h-5 w-5" />} tone="bg-pink-100 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300" title="Appearance" sub="Colour theme and language" />
           </ul>
         </Card>
 

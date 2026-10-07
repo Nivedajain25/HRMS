@@ -23,7 +23,7 @@ export const CHART_COLORS = {
  * Categorical palette for multi-series / multi-slice charts, in fixed order
  * (assign by entity, never cycle past the end — fold extras into "Other").
  * Validated for lightness band, CVD separation of adjacent slots and >= 3:1
- * contrast on both the light (#fff) and dark (#12151c) chart surfaces.
+ * contrast on both the light (#fff) and dark (#1e2430) chart surfaces.
  */
 export const CHART_PALETTE = ['var(--color-brand-500)', '#059669', '#d97706', '#0284c7', '#e11d48', '#0d9488', '#8b5cf6', '#ea580c'] as const;
 

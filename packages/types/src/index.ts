@@ -57,7 +57,8 @@ export interface AuthUser {
   roles: { _id: string; name: string; key?: string }[];
   permissions: string[];
   isManager: boolean;
-  preferences: { theme: 'light' | 'dark' | 'system'; language: string };
+  /** theme: one of THEME_PREFERENCES in @stencil/shared. */
+  preferences: { theme: 'system' | 'light' | 'sand' | 'lavender' | 'dark' | 'midnight' | 'navy' | 'plum' | 'graphite'; language: string };
   organization: {
     _id: string;
     name: string;

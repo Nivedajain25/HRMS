@@ -14,9 +14,12 @@
       // Apply the saved theme before first paint to avoid a flash.
       (function () {
         try {
+          // Keep in sync with THEMES in src/store/theme.ts.
           var t = localStorage.getItem('stencil-theme') || 'system';
-          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          var dark = ['dark', 'midnight', 'navy', 'plum', 'graphite'].indexOf(t) !== -1;
           if (dark) document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', t);
         } catch (e) {}
       })();
     </script>

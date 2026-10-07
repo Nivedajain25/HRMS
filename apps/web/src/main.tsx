@@ -7,7 +7,7 @@ import { ConfirmProvider } from '@/components/ui/overlay';
 import { useBootstrapSession } from '@/features/auth/use-auth';
 import { ApiError } from '@/lib/api';
 import { router } from '@/routes/router';
-import { useThemeStore, watchSystemTheme } from '@/store/theme';
+import { themeMode, useThemeStore, watchSystemTheme } from '@/store/theme';
 import '@/styles/index.css';
 
 const queryClient = new QueryClient({
@@ -47,7 +47,7 @@ const App = () => {
       <ConfirmProvider>
         <RouterProvider router={router} />
       </ConfirmProvider>
-      <Toaster position="top-right" richColors closeButton theme={theme} />
+      <Toaster position="top-right" richColors closeButton theme={theme === 'system' ? 'system' : themeMode(theme)} />
     </QueryClientProvider>
   );
 };

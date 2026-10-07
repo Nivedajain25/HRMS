@@ -84,7 +84,7 @@ const TOPICS: Topic[] = [
     tone: 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300',
     faqs: [
       { q: 'How do I change my password?', a: 'Go to Settings and change your password there. If you forgot it, use Forgot password on the sign-in page.' },
-      { q: 'How do I switch between light and dark mode?', a: 'Use the theme button in the top bar, or choose a theme in Settings.' },
+      { q: 'How do I change the colours or switch to dark mode?', a: 'Use the sun / moon button in the top bar to pick a theme (Light, Sand, Lavender, Dark, Midnight, Navy, Plum or Graphite), or choose one with a preview in Settings → Appearance.' },
       { q: 'Can I use Stencil on my phone?', a: 'Yes. The mobile app lets you clock in with a selfie, apply for leave, claim expenses, raise emergencies and see notifications. Sign in with the same email and password.' },
     ],
   },

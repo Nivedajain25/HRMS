@@ -95,39 +95,135 @@
   --muted: #64748b;
   --subtle: #94a3b8;
   --ring: #6366f1;
+  /* Sidebar + top bar text: a step stronger than page text. */
+  --chrome-fg: #000000;
+  --chrome-fg-2: #111111;
+  --chrome-muted: #374151;
+  --chrome-subtle: #6b7280;
   color-scheme: light;
 }
 
 .dark {
+  --canvas: #161b24;
+  --surface: #1e2430;
+  --surface-2: #252c39;
+  --surface-3: #2e3646;
+  --line: #364051;
+  --line-strong: #465165;
+  --fg: #e6e9ef;
+  --fg-2: #c3c9d4;
+  --muted: #8b93a3;
+  --subtle: #5d6575;
+  --ring: #818cf8;
+  --chrome-fg: #ffffff;
+  --chrome-fg-2: #e6e9ef;
+  --chrome-muted: #c3c9d4;
+  --chrome-subtle: #8b93a3;
+  color-scheme: dark;
+}
+
+/*
+ * Extra colour themes (store/theme.ts sets data-theme on <html>). Each sits on top of light or dark — dark ones
+ * also get .dark — so every dark: variant keeps working. Swatches in store/theme.ts mirror these values.
+ */
+:root[data-theme='sand'] {
+  --canvas: #f4eee4;
+  --surface: #fffcf7;
+  --surface-2: #faf5ec;
+  --surface-3: #f3ecdf;
+  --line: #e7ddcc;
+  --line-strong: #d8cab3;
+  --fg: #2a2118;
+  --fg-2: #4b3f32;
+  --muted: #776959;
+  --subtle: #a6978a;
+  --chrome-fg: #1c150e;
+  --chrome-fg-2: #2a2118;
+  --chrome-muted: #4b3f32;
+  --chrome-subtle: #776959;
+}
+:root[data-theme='lavender'] {
+  --canvas: #f3f1fb;
+  --surface: #ffffff;
+  --surface-2: #f9f8fe;
+  --surface-3: #f0edfa;
+  --line: #e4e0f3;
+  --line-strong: #d0c9ea;
+  --fg: #1e1b3a;
+  --fg-2: #3b3660;
+  --muted: #6a6490;
+  --subtle: #9d97bd;
+  --chrome-fg: #13112a;
+  --chrome-fg-2: #1e1b3a;
+  --chrome-muted: #3b3660;
+  --chrome-subtle: #6a6490;
+}
+:root[data-theme='midnight'] {
   --canvas: #0b0d12;
   --surface: #12151c;
   --surface-2: #171b23;
   --surface-3: #1f2430;
   --line: #262c38;
   --line-strong: #343b4a;
-  --fg: #e6e9ef;
-  --fg-2: #c3c9d4;
-  --muted: #8b93a3;
-  --subtle: #5d6575;
-  --ring: #818cf8;
-  color-scheme: dark;
+}
+:root[data-theme='navy'] {
+  --canvas: #0d1a2e;
+  --surface: #13223b;
+  --surface-2: #192a47;
+  --surface-3: #203354;
+  --line: #293e63;
+  --line-strong: #354d78;
+  --fg: #e6edf8;
+  --fg-2: #c3cfe3;
+  --muted: #8e9dba;
+  --subtle: #5f6f8f;
+  --chrome-fg-2: #e6edf8;
+  --chrome-muted: #c3cfe3;
+  --chrome-subtle: #8e9dba;
+}
+:root[data-theme='plum'] {
+  --canvas: #181120;
+  --surface: #21182c;
+  --surface-2: #291f37;
+  --surface-3: #332842;
+  --line: #3d304f;
+  --line-strong: #4d3e63;
+  --fg: #eee7f6;
+  --fg-2: #d1c6df;
+  --muted: #9d90b2;
+  --subtle: #6c5f82;
+  --chrome-fg-2: #eee7f6;
+  --chrome-muted: #d1c6df;
+  --chrome-subtle: #9d90b2;
+}
+:root[data-theme='graphite'] {
+  --canvas: #161618;
+  --surface: #1f1f22;
+  --surface-2: #27272b;
+  --surface-3: #303035;
+  --line: #3a3a40;
+  --line-strong: #4a4a52;
+  --fg: #e8e8eb;
+  --fg-2: #c8c8cd;
+  --muted: #95959d;
+  --subtle: #65656d;
+  --chrome-fg-2: #e8e8eb;
+  --chrome-muted: #c8c8cd;
+  --chrome-subtle: #95959d;
 }
 
 /*
- * App chrome (sidebar + top bar) per role, following the chosen theme. All roles share the same clean look —
- * white with black text in light mode, the dashboard's own dark surfaces in dark mode — and differ only by a
- * subtle accent (hover tint + current-page pill): Super Admin violet, HR mint/teal, Employee blue.
+ * App chrome (sidebar + top bar) per role, following the chosen theme: the theme's own card surface with
+ * slightly stronger text. Roles differ only by a subtle accent (hover tint + current-page pill): Super Admin
+ * violet, HR mint/teal, Employee blue.
  */
 .chrome-indigo,
 .chrome-mint,
 .chrome-wine {
-  --surface: #ffffff;
-  --line: #e5e7eb;
-  --line-strong: #d1d5db;
-  --fg: #000000;
-  --fg-2: #111111;
-  --muted: #374151;
-  --subtle: #6b7280;
+  --fg: var(--chrome-fg);
+  --fg-2: var(--chrome-fg-2);
+  --muted: var(--chrome-muted);
+  --subtle: var(--chrome-subtle);
   /* The Tailwind colour tokens resolve at :root, so point them at this palette here too. */
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -140,38 +236,28 @@
   --color-subtle: var(--subtle);
   --color-ring: var(--ring);
   color: var(--fg);
-  color-scheme: light;
 }
-/* Role accents (light): hover tints and focus ring. */
+/* Role accents: focus ring (all themes) and, on light themes, tinted hovers. Dark themes keep their own surfaces. */
 .chrome-indigo {
-  --surface-2: #f5f3ff;
-  --surface-3: #ede9fe;
   --ring: #7c3aed;
 }
 .chrome-mint {
-  --surface-2: #f0fdfa;
-  --surface-3: #ccfbf1;
   --ring: #0d9488;
 }
 .chrome-wine {
-  --surface-2: #eff6ff;
-  --surface-3: #dbeafe;
   --ring: #2563eb;
 }
-/* Dark mode: the dashboard's own dark surfaces (same as its cards), light text. */
-.dark .chrome-indigo,
-.dark .chrome-mint,
-.dark .chrome-wine {
-  --surface: #12151c;
-  --surface-2: #171b23;
-  --surface-3: #1f2430;
-  --line: #262c38;
-  --line-strong: #343b4a;
-  --fg: #ffffff;
-  --fg-2: #e6e9ef;
-  --muted: #c3c9d4;
-  --subtle: #8b93a3;
-  color-scheme: dark;
+:root:not(.dark) .chrome-indigo {
+  --surface-2: #f5f3ff;
+  --surface-3: #ede9fe;
+}
+:root:not(.dark) .chrome-mint {
+  --surface-2: #f0fdfa;
+  --surface-3: #ccfbf1;
+}
+:root:not(.dark) .chrome-wine {
+  --surface-2: #eff6ff;
+  --surface-3: #dbeafe;
 }
 /* Current page in the menu: a pill in the role's accent (both themes); its module-coloured icon turns white. */
 .chrome-indigo nav a[aria-current='page'],

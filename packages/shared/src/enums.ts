@@ -4,6 +4,10 @@ export const ORGANIZATION_STATUS = values('ACTIVE', 'SUSPENDED');
 export const USER_STATUS = values('ACTIVE', 'INACTIVE', 'SUSPENDED');
 export type UserStatus = (typeof USER_STATUS)[number];
 
+/** Colour themes a user can pick (web). "system" follows the OS light / dark setting. */
+export const THEME_PREFERENCES = values('system', 'light', 'sand', 'lavender', 'dark', 'midnight', 'navy', 'plum', 'graphite');
+export type ThemePreference = (typeof THEME_PREFERENCES)[number];
+
 export const WEEKDAYS = values('SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT');
 export type Weekday = (typeof WEEKDAYS)[number];
 

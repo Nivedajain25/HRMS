@@ -1,5 +1,5 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from 'mongoose';
-import { USER_STATUS } from '@stencil/shared';
+import { THEME_PREFERENCES, USER_STATUS } from '@stencil/shared';
 import { baseSchemaOptions, ref, tenantField } from './plugins';
 
 const userSchema = new Schema(
@@ -21,7 +21,7 @@ const userSchema = new Schema(
     /** Incremented to invalidate every issued access token (logout-all / deactivation). */
     tokenVersion: { type: Number, default: 0 },
     preferences: {
-      theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+      theme: { type: String, enum: THEME_PREFERENCES, default: 'system' },
       language: { type: String, default: 'en' },
     },
   },

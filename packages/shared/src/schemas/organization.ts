@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { APPROVER_TYPES, USER_STATUS, WEEKDAYS } from '../enums';
+import { APPROVER_TYPES, THEME_PREFERENCES, USER_STATUS, WEEKDAYS } from '../enums';
 import { ALL_PERMISSIONS } from '../permissions';
 import {
   email,
@@ -136,6 +136,6 @@ export type UserCreateInput = z.input<typeof userCreateSchema>;
 export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 
 export const preferencesSchema = z.object({
-  theme: z.enum(['light', 'dark', 'system']).optional(),
+  theme: z.enum(THEME_PREFERENCES).optional(),
   language: z.enum(['en']).optional(),
 });

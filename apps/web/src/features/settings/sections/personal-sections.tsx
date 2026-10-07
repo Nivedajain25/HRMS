@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { LogOut, Moon, Smartphone, Sun } from 'lucide-react';
+import { Check, LogOut, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader, ErrorState, Skeleton } from '@/components/ui/display';
 import { Select, Switch } from '@/components/ui/input';
@@ -10,7 +10,8 @@ import { api, del, get, patch, put } from '@/lib/api';
 import { label } from '@/lib/i18n';
 import { cn, formatDateTime, timeAgo } from '@/lib/utils';
 import { useAuthStore, usePermissions } from '@/store/auth';
-import { useThemeStore, type ThemePreference } from '@/store/theme';
+import { THEMES, resolveTheme, useThemeStore, type ThemePreference } from '@/store/theme';
+import { ThemePreview } from '@/components/common/theme-preview';
 import { SecurityPolicySection } from './policy-sections';
 
 interface Preference {
@@ -145,27 +146,31 @@ export const AppearanceSection = () => {
     setTheme(t);
     save.mutate(t);
   };
-  const options: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-  ];
+  // Older "system" preferences highlight whichever theme is actually in use.
+  const current = resolveTheme(theme);
   return (
     <Card>
       <CardBody className="space-y-6">
         <fieldset>
           <legend className="mb-3 text-sm font-medium text-fg">Theme</legend>
-          <div className="grid max-w-sm grid-cols-2 gap-3" role="radiogroup">
-            {options.map(({ value, label: text, icon: Icon }) => (
+          <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup">
+            {THEMES.map(({ value, label: text, swatch }) => (
               <button
                 key={value}
                 type="button"
                 role="radio"
-                aria-checked={theme === value}
+                aria-checked={current === value}
                 onClick={() => choose(value)}
-                className={cn('flex flex-col items-center gap-2 rounded-xl border p-4 text-sm font-medium', theme === value ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300' : 'border-line text-fg-2 hover:bg-surface-2')}
+                className={cn(
+                  'flex flex-col gap-2 rounded-xl border p-2 text-left text-sm font-medium',
+                  current === value ? 'border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600 dark:bg-brand-500/10 dark:text-brand-300' : 'border-line text-fg-2 hover:bg-surface-2',
+                )}
               >
-                <Icon className="h-5 w-5" />
-                {text}
+                <ThemePreview swatch={swatch} className="h-16 w-full" />
+                <span className="flex items-center justify-between gap-2 px-1">
+                  {text}
+                  {current === value && <Check className="h-4 w-4 shrink-0" aria-hidden />}
+                </span>
               </button>
             ))}
           </div>

@@ -89,11 +89,12 @@ export const DashboardPage = () => {
   // Announcements row, with Todo stretching to the bottom of that row (no gap); then Sales | Tasks | Recent activity.
   if (isAdmin && active === 'overview') {
     return (
-      // Rows size to the main column's content (Schedules | Announcements keep their natural height). The right-hand
-      // column doesn't set the row heights (h-0 + min-h-full): it fills the same height and scrolls if it's longer.
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      // The right-hand column keeps its natural height (no scrollbar of its own — the page is the only scroll). When it's
+      // taller than the main content, only the Schedules | Announcements row (the 1fr row) grows to meet it, so the
+      // main column never gets a gap.
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:grid-rows-[auto_1fr_auto]">
         <div className="min-w-0 xl:col-start-1 xl:row-start-1">{main}</div>
-        <div className="scrollbar-thin flex flex-col gap-4 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:h-0 xl:min-h-full xl:overflow-y-auto [&>*]:shrink-0">
+        <div className="flex flex-col gap-4 xl:col-start-2 xl:row-span-2 xl:row-start-1 [&>*]:shrink-0">
           {/* Cards keep their own height (no squashing); Todo still grows into any spare space. */}
           {/* Todo now sits under "Awaiting your approval" in the main column. */}
           <AdminRail withRows />

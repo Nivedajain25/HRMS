@@ -409,7 +409,7 @@ export const AppLayout = () => {
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="flex h-9 w-full max-w-md items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 text-sm text-muted hover:border-line-strong"
+            className="flex h-9 w-full max-w-md items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 text-[15px] text-fg hover:border-line-strong"
           >
             <Search className="h-4 w-4 shrink-0" />
             <span className="flex-1 truncate text-left">
@@ -431,8 +431,8 @@ export const AppLayout = () => {
                 <span className="flex items-center gap-2 rounded-lg py-1 pr-1 pl-1 hover:bg-surface-3 sm:pr-2">
                   <Avatar name={name || 'User'} src={user?.avatar} size="sm" />
                   <span className="hidden text-left sm:block">
-                    <span className="block text-sm leading-tight font-medium text-fg">{name}</span>
-                    <span className="block text-xs leading-tight text-muted">{user?.roles[0]?.name}</span>
+                    <span className="block text-base/5 font-semibold text-fg">{name}</span>
+                    <span className="block text-[15px]/5 font-medium text-fg">{user?.roles[0]?.name}</span>
                   </span>
                 </span>
               }
@@ -444,7 +444,7 @@ export const AppLayout = () => {
               ]}
             />
             {/* Camera badge on the avatar's corner (outside the menu button, so it's its own control). */}
-            <AvatarCameraBadge onClick={photo.open} busy={photo.busy} className="absolute top-[24px] left-[20px] h-4 w-4 [&_svg]:h-2.5 [&_svg]:w-2.5" />
+            <AvatarCameraBadge onClick={photo.open} busy={photo.busy} className="absolute top-[calc(50%+4px)] left-[20px] h-4 w-4 [&_svg]:h-2.5 [&_svg]:w-2.5" />
             </div>
           </div>
         </header>

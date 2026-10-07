@@ -184,25 +184,25 @@ export const AnnouncementBar = () => {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
       className={cn(
-        'flex shrink-0 items-center gap-2 border-b px-4 py-2 text-sm sm:px-6',
+        'flex shrink-0 items-center gap-2 border-b px-4 py-2 text-[15px] sm:px-6',
         urgent
           ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'
-          : 'border-brand-100 bg-brand-50 text-brand-900 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-100',
+          : 'border-brand-100 bg-brand-50 text-black dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-white',
       )}
     >
       <Icon className={cn('h-4 w-4 shrink-0', urgent ? 'text-red-600 dark:text-red-300' : 'text-brand-600 dark:text-brand-300')} aria-label={current.pinned ? 'Pinned' : 'Announcement'} />
       <Link to={`/announcements/${current._id}`} className="group flex min-w-0 flex-1 items-center gap-2" title={current.title}>
         {!current.read && <span className="h-2 w-2 shrink-0 rounded-full bg-current" aria-label="Unread" />}
-        <span className="shrink-0 font-semibold group-hover:underline">{current.title}</span>
-        <span className="hidden min-w-0 truncate opacity-75 sm:inline">— {current.excerpt}</span>
+        <span className="shrink-0 text-base font-semibold group-hover:underline">{current.title}</span>
+        <span className="hidden min-w-0 truncate sm:inline">— {current.excerpt}</span>
       </Link>
-      <span className="hidden shrink-0 text-xs opacity-70 md:inline">{timeAgo(current.publishAt)}</span>
+      <span className="hidden shrink-0 md:inline">{timeAgo(current.publishAt)}</span>
       {count > 1 && (
         <span className="flex shrink-0 items-center">
           <button type="button" onClick={() => go(-1)} className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Previous announcement">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="w-8 text-center text-xs tabular-nums">
+          <span className="w-10 text-center tabular-nums">
             {Math.min(index, count - 1) + 1}/{count}
           </span>
           <button type="button" onClick={() => go(1)} className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10" aria-label="Next announcement">

@@ -368,8 +368,8 @@ export const AppLayout = () => {
             <Logo collapsed={collapsed} size="sm" />
           </Link>
           {/*
-            Expand / minimise (every role): a round Stencil-blue button sitting on the sidebar's right edge, near the
-            bottom below the menu — ‹ minimise, › expand.
+            Expand / minimise (every role): a round Stencil-blue button sitting on the sidebar's right edge, at the
+            top where the logo row's bottom border meets it — ‹ minimise, › expand.
           */}
           <button
             type="button"
@@ -377,7 +377,7 @@ export const AppLayout = () => {
             aria-label={collapsed ? 'Expand sidebar' : 'Minimise sidebar'}
             title={collapsed ? 'Expand sidebar' : 'Minimise sidebar'}
             aria-expanded={!collapsed}
-            className="absolute bottom-6 -right-4 z-30 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-canvas bg-[#24478f] text-white shadow-sm ring-1 ring-[#24478f]/20 transition-colors hover:bg-[#12326e] dark:bg-[#2a4fa0] dark:hover:bg-[#3560b8]"
+            className="absolute top-16 -right-4 z-30 flex h-8 w-8 shrink-0 -translate-y-1/2 items-center justify-center rounded-full border-2 border-canvas bg-[#24478f] text-white shadow-sm ring-1 ring-[#24478f]/20 transition-colors hover:bg-[#12326e] dark:bg-[#2a4fa0] dark:hover:bg-[#3560b8]"
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>

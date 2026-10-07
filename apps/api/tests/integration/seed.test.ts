@@ -19,6 +19,7 @@ import {
   SalaryStructureModel,
   UserModel,
 } from '../../src/models';
+import { SYSTEM_ROLE_KEYS } from '@stencil/shared';
 import { DEMO_PASSWORD, DEMO_SLUG } from '../../src/seed/data';
 import { seedDemo } from '../../src/seed/demo';
 import { as, getApp } from '../helpers';
@@ -38,7 +39,7 @@ describe('Demo seed', () => {
 
     expect(await EmployeeModel.countDocuments({ organizationId: org })).toBe(30);
     expect(await UserModel.countDocuments({ organizationId: org })).toBe(8);
-    expect(await RoleModel.countDocuments({ organizationId: org })).toBe(8);
+    expect(await RoleModel.countDocuments({ organizationId: org })).toBe(SYSTEM_ROLE_KEYS.length);
     expect(await DepartmentModel.countDocuments({ organizationId: org, headId: { $ne: null } })).toBe(7);
     expect(await HolidayModel.countDocuments({ organizationId: org })).toBe(7);
     expect(await SalaryStructureModel.countDocuments({ organizationId: org })).toBe(30);

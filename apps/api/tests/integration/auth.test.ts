@@ -16,7 +16,7 @@ describe('Authentication', () => {
 
     const roles = await RoleModel.find({ organizationId: user.organization._id }).lean();
     expect(roles.map((r) => r.key).sort()).toEqual(
-      ['employee', 'finance', 'hr_admin', 'hr_manager', 'manager', 'payroll_admin', 'recruiter', 'super_admin'].sort(),
+      ['admin', 'employee', 'finance', 'hr_admin', 'hr_manager', 'manager', 'payroll_admin', 'recruiter', 'super_admin'].sort(),
     );
     const org = await OrganizationModel.findById(user.organization._id).lean();
     expect(org?.settings?.payroll?.countryRules).toBe('IN');

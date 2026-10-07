@@ -478,7 +478,9 @@ export const AppLayout = () => {
         <MyEmergencyStatus />
         <AnnouncementBar />
         <main id="main" tabIndex={-1} className="relative flex-1 overflow-y-auto px-4 pt-6 pb-24 focus:outline-none sm:px-6 lg:px-8 lg:pb-10">
-          <div className="mx-auto max-w-[1400px]">
+          {/* Full width: pages fill whatever space there is (sidebar minimised, wide screens, zoomed out) instead of
+              sitting in a fixed-width column with growing empty margins. Narrow pages set their own max width. */}
+          <div className="w-full">
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>

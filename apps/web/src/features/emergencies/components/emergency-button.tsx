@@ -9,6 +9,20 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { CATEGORY_META, useRaiseEmergency, type Emergency } from '../api';
 
+/** Flat emergency siren: red dome with a shine and filament on a dark base, with orange light rays. */
+const SirenIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} aria-hidden>
+    <g stroke="#f6a723" strokeWidth="5.5" strokeLinecap="round">
+      <path d="M50 18.5v7.5M26.5 25.8l4.5 5M73.5 25.8l-4.5 5M15.8 42.4l7.2 2M84.2 42.4l-7.2 2M16 65.4l6.8-2M84 65.4l-6.8-2" />
+    </g>
+    <path d="M28.6 74V53c0-12 9.6-21.4 21.4-21.4S71.4 41 71.4 53v21Z" fill="#ef3339" />
+    <path d="M42.6 55.2c0-1.6 1.2-2.7 2.7-2.7h9.4c1.5 0 2.7 1.1 2.7 2.7s-1.2 2.7-2.7 2.7h-2.4V74h-4.8V57.9h-2.2c-1.5 0-2.7-1.2-2.7-2.7Z" fill="#d42f36" />
+    <path d="M33.5 52c0-7.5 5.5-13.4 12.8-14.5" fill="none" stroke="#fbdde0" strokeWidth="5" strokeLinecap="round" />
+    <path d="M33.5 60v2.6" stroke="#fbdde0" strokeWidth="5" strokeLinecap="round" />
+    <rect x="23.6" y="73" width="52.8" height="8.8" rx="2.2" className="fill-[#37474f] dark:fill-[#64748b]" />
+  </svg>
+);
+
 /**
  * Header "Emergency" button for employees with a sudden personal emergency (e.g. they must rush home): pick what
  * happened, add a line, and HR plus their manager are notified immediately (in-app, email and phone push).
@@ -44,20 +58,16 @@ export const EmergencyButton = () => {
 
   return (
     <>
-      {/* Soft rounded square: red gradient tile, a white "!" badge with EMERGENCY under it (the badge alone on small screens). */}
+      {/* Flashing-siren icon with EMERGENCY under it (the siren alone on small screens). */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Emergency: inform HR"
         title="Personal emergency? Inform HR immediately"
-        className="flex h-10 w-10 shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-gradient-to-b from-red-500 to-red-700 text-white shadow-md shadow-red-600/30 transition-[filter] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:outline-none sm:h-14 sm:w-14 sm:rounded-2xl"
+        className="group flex h-10 w-10 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none sm:h-14 sm:w-14 dark:hover:bg-red-500/10"
       >
-        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden>
-          <circle cx="12" cy="12" r="12" fill="#fff" />
-          <rect x="10.75" y="5.5" width="2.5" height="8.5" rx="1.25" className="fill-red-600" />
-          <circle cx="12" cy="17.6" r="1.5" className="fill-red-600" />
-        </svg>
-        <span className="hidden text-[7px] leading-none font-bold tracking-wide uppercase sm:block">Emergency</span>
+        <SirenIcon className="h-8 w-8 shrink-0 transition-transform group-hover:scale-110 sm:h-9 sm:w-9" />
+        <span className="hidden text-[8px] leading-none font-extrabold tracking-wide text-red-600 uppercase sm:block dark:text-red-400">Emergency</span>
       </button>
 
       <Modal

@@ -24,11 +24,10 @@ const safeParts = (timeZone: string, opts: Intl.DateTimeFormatOptions, now: Date
 export const greetingFor = (timeZone: string, now = new Date()) => {
   const hour = Number(safeParts(timeZone, { hour: 'numeric', hourCycle: 'h23' }, now).find((p) => p.type === 'hour')?.value ?? 12) % 24;
   // `scene`: the banner's big faded picture for the part of the day (morning sun, afternoon sun + cloud,
-  // evening sunset, night moon).
+  // evening moon — as on the mobile app; the sunset-city emoji looked poor on Windows).
   if (hour < 5) return { text: 'Good Evening', emoji: '🌙', scene: '🌙' };
   if (hour < 12) return { text: 'Good Morning', emoji: '☀️', scene: '☀️' };
   if (hour < 17) return { text: 'Good Afternoon', emoji: '🌤️', scene: '🌤️' };
-  if (hour < 20) return { text: 'Good Evening', emoji: '🌇', scene: '🌇' };
   return { text: 'Good Evening', emoji: '🌙', scene: '🌙' };
 };
 

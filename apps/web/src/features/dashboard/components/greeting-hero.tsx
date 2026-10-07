@@ -144,7 +144,7 @@ export const GreetingHero = () => {
   const decoration = (
     <>
       <div className={cn('pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full blur-3xl', theme.glow)} aria-hidden />
-      {/* Big faded picture for the part of the day: morning sun, afternoon sun + cloud, evening sunset, night moon. */}
+      {/* Big faded picture for the part of the day: morning sun, afternoon sun + cloud, evening moon. */}
       <span
         className="pointer-events-none absolute -right-2 -bottom-7 text-[7rem] leading-none opacity-15 select-none motion-safe:animate-[float_6s_ease-in-out_infinite] sm:right-6"
         aria-hidden

@@ -693,10 +693,8 @@ describe('Breaks setting (Super Admin only)', () => {
     const settings = (body: Record<string, unknown>, token = admin.token) => as(token).patch('/api/v1/organization/settings', { attendance: body });
     expect((await settings({ requireSelfie: false, requireLocation: false })).status).toBe(200);
     const emp = await createEmployeeUser(admin.token, { firstName: 'Bea' });
-    // A custom "Admin" role that can manage settings, but isn't the Super Admin.
-    const role = await as(admin.token).post('/api/v1/roles', { name: 'Admin', permissions: ['settings:manage'] });
-    expect(role.status).toBe(201);
-    const orgAdmin = await createEmployeeUser(admin.token, { firstName: 'Ollie', roleIds: [role.body.data._id] });
+    // The Admin role can manage settings, but isn't the Super Admin.
+    const orgAdmin = await createEmployeeUser(admin.token, { firstName: 'Ollie', roles: ['admin'] });
 
     // Off by default: no break option, and the API refuses one.
     expect((await as(admin.token).get('/api/v1/organization/settings')).body.data.attendance.allowBreaks).toBe(false);

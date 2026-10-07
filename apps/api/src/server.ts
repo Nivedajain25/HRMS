@@ -5,11 +5,12 @@ import { createApp } from './app';
 import { closeQueue, initQueue } from './jobs/queue';
 import { startScheduler, stopScheduler } from './jobs';
 import { registerAllJobs } from './jobs/all';
-import { syncPermissionCatalog } from './services/organization-setup.service';
+import { ensureSystemRoles, syncPermissionCatalog } from './services/organization-setup.service';
 
 const start = async () => {
   await connectDatabaseWithRetry();
   await syncPermissionCatalog();
+  await ensureSystemRoles();
   registerAllJobs();
   // The API process also runs the worker unless a dedicated worker is deployed.
   await initQueue({ startWorker: process.env.RUN_WORKER !== 'false' });

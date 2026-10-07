@@ -13,7 +13,7 @@ const STATUS_LABEL: Record<ComplaintStatus, string> = { OPEN: 'Open', IN_REVIEW:
 
 /** Everyone who handles complaints: active users with an HR or super admin role. */
 const handlerUserIds = async (organizationId: Types.ObjectId) => {
-  const roles = await RoleModel.find({ organizationId, key: { $in: ['super_admin', 'hr_admin', 'hr_manager'] } }).select('_id').lean();
+  const roles = await RoleModel.find({ organizationId, key: { $in: ['super_admin', 'admin', 'hr_admin', 'hr_manager'] } }).select('_id').lean();
   if (!roles.length) return [];
   const users = await UserModel.find({ organizationId, status: 'ACTIVE', roles: { $in: roles.map((r) => r._id) } }).select('_id').lean();
   return users.map((u) => u._id);

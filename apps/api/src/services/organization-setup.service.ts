@@ -10,6 +10,7 @@ import {
 import {
   LeaveTypeModel,
   OnboardingTemplateModel,
+  OrganizationModel,
   PermissionModel,
   RoleModel,
   SalaryComponentModel,
@@ -55,6 +56,29 @@ export const syncPermissionCatalog = async () => {
   );
   await PermissionModel.bulkWrite(ops);
   await PermissionModel.deleteMany({ key: { $nin: ALL_PERMISSIONS } });
+};
+
+/**
+ * Adds any system role an existing organization is missing (e.g. a role introduced after it signed up).
+ * Insert-only: roles that already exist are left exactly as they are.
+ */
+export const ensureSystemRoles = async () => {
+  const orgIds = await OrganizationModel.distinct('_id');
+  for (const organizationId of orgIds) {
+    const have = new Set((await RoleModel.find({ organizationId, key: { $in: [...SYSTEM_ROLE_KEYS] } }).select('key').lean()).map((r) => r.key));
+    const missing = SYSTEM_ROLE_KEYS.filter((key) => !have.has(key));
+    if (!missing.length) continue;
+    await RoleModel.insertMany(
+      missing.map((key) => ({
+        organizationId,
+        key,
+        name: SYSTEM_ROLES[key].name,
+        description: SYSTEM_ROLES[key].description,
+        permissions: SYSTEM_ROLES[key].permissions,
+        isSystem: true,
+      })),
+    );
+  }
 };
 
 /** Creates system roles for an organization and returns them keyed by role key. */

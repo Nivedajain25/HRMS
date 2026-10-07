@@ -313,6 +313,9 @@ export const createEmployee = async (ctx: RequestContext, raw: EmployeeCreateInp
   if (grants.some((p) => !ctx.permissions.has(p as never)) || (extraRoles.length && !can(ctx, 'user:manage'))) {
     throw forbidden('You cannot assign roles with permissions you do not have');
   }
+  if (extraRoles.some((r) => r.key === 'super_admin') && !ctx.roleKeys.includes('super_admin')) {
+    throw forbidden('Only a Super Admin can give someone the Super Admin role', 'SUPER_ADMIN_ONLY');
+  }
 
   const org = await OrganizationModel.findById(ctx.organizationId).select('timezone name').lean();
   const { employee, userId } = await withTransaction(async (session) => {

@@ -77,8 +77,8 @@ export const HomeScreen = () => {
 
   const name = user ? fullName(user) : '';
   const greeting = greetingFor(timeZone, now);
-  // Super admin: the web admin dashboard's look (lavender banner, stat cards, Quick Actions, New Joiners, Alerts).
-  const isAdmin = (user?.roles ?? []).some((r) => r.key === 'super_admin');
+  // Super admin / Admin: the web admin dashboard's look (lavender banner, stat cards, Quick Actions, New Joiners, Alerts).
+  const isAdmin = (user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
   const banner: [string, string, string] = isAdmin
     ? scheme === 'dark'
       ? ['#2a1d4f', '#24194a', '#1e1a3d']

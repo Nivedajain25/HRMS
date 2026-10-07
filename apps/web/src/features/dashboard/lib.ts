@@ -50,7 +50,8 @@ export type DashboardKind = 'head' | 'hr' | 'employee';
 
 export const dashboardKind = (roles: { key?: string }[] | undefined): DashboardKind => {
   const keys = (roles ?? []).map((r) => r.key);
-  if (keys.includes('super_admin')) return 'head';
+  // Admin gets the Super Admin's dashboard.
+  if (keys.some((k) => k === 'super_admin' || k === 'admin')) return 'head';
   if (keys.some((k) => k === 'hr_admin' || k === 'hr_manager')) return 'hr';
   return 'employee';
 };

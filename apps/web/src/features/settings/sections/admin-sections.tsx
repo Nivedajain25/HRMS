@@ -463,7 +463,7 @@ export const RolesSection = () => {
                 </p>
                 <p className="mt-0.5 text-sm text-muted">{r.description || 'Custom role'}</p>
               </div>
-              {r.key !== 'super_admin' && (
+              {r.key !== 'super_admin' && r.key !== 'admin' && (
                 <Dropdown
                   label={`Actions for ${r.name}`}
                   trigger={<span className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface-3"><MoreHorizontal className="h-4 w-4" /></span>}
@@ -485,7 +485,7 @@ export const RolesSection = () => {
                   ]}
                 />
               )}
-              {r.key === 'super_admin' && <Lock className="h-4 w-4 text-muted" aria-label="Locked" />}
+              {(r.key === 'super_admin' || r.key === 'admin') && <Lock className="h-4 w-4 text-muted" aria-label="Locked" />}
             </div>
             <div className="mt-auto flex items-center justify-between border-t border-line px-4 py-2.5 text-xs text-muted">
               <span>{r.permissions.length} permissions</span>

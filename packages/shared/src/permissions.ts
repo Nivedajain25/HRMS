@@ -154,6 +154,7 @@ export const isPermission = (value: string): value is Permission =>
 
 export const SYSTEM_ROLE_KEYS = [
   'super_admin',
+  'admin',
   'hr_admin',
   'hr_manager',
   'manager',
@@ -203,6 +204,11 @@ export const SYSTEM_ROLES: Record<
   super_admin: {
     name: 'Super Admin',
     description: 'Full access to everything in the organization',
+    permissions: [...ALL_PERMISSIONS],
+  },
+  admin: {
+    name: 'Admin',
+    description: 'Full access, except Super-Admin-only controls (breaks on/off, granting the Super Admin role)',
     permissions: [...ALL_PERMISSIONS],
   },
   hr_admin: {

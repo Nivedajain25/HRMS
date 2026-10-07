@@ -60,6 +60,7 @@ export const updateRole = async (ctx: RequestContext, id: string, input: RoleInp
   const role = await RoleModel.findOne({ _id: id, organizationId: ctx.organizationId });
   if (!role) throw notFound('Role');
   if (role.key === 'super_admin') throw forbidden('The Super Admin role cannot be modified');
+  if (role.key === 'admin') throw forbidden('The Admin role cannot be modified');
   assertCanGrant(ctx, input.permissions);
   // Removing permissions from a role you hold could lock you out; guard the obvious case.
   const ownRoleIds = (await UserModel.findById(ctx.userId).select('roles').lean())?.roles.map(String) ?? [];
@@ -94,6 +95,10 @@ const loadRoles = async (ctx: RequestContext, roleIds: string[]) => {
   if (roles.length !== new Set(roleIds).size) throw badRequest('One or more roles are invalid', 'INVALID_ROLE');
   // Assigning a role grants its permissions, so the same escalation rule applies.
   assertCanGrant(ctx, roles.flatMap((r) => r.permissions));
+  // The Admin role has every permission too, so the Super Admin role itself is guarded separately.
+  if (roles.some((r) => r.key === 'super_admin') && !ctx.roleKeys.includes('super_admin')) {
+    throw forbidden('Only a Super Admin can give someone the Super Admin role', 'SUPER_ADMIN_ONLY');
+  }
   return roles;
 };
 
@@ -184,6 +189,13 @@ export const updateUser = async (ctx: RequestContext, id: string, input: UserUpd
   if (!user) throw notFound('User');
   const isSelf = user._id.equals(ctx.userId);
   const before = { firstName: user.firstName, lastName: user.lastName, status: user.status, roles: user.roles.map(String) };
+  // A Super Admin's roles and status are managed by Super Admins only.
+  if ((input.roleIds || (input.status && input.status !== user.status)) && !ctx.roleKeys.includes('super_admin')) {
+    const superRole = await RoleModel.findOne({ organizationId: ctx.organizationId, key: 'super_admin' }).select('_id').lean();
+    if (superRole && user.roles.some((r) => r.equals(superRole._id))) {
+      throw forbidden("Only a Super Admin can change a Super Admin's roles or status", 'SUPER_ADMIN_ONLY');
+    }
+  }
 
   if (input.roleIds) {
     if (isSelf) throw forbidden('You cannot change your own roles');

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckCircle2, Hourglass, X, XCircle } from 'lucide-react-native';
+import { Hourglass } from 'lucide-react-native';
 import { BottomSheet, Button, Text } from '@/components';
 import { useAuth } from '@/lib/auth';
 import { fullName } from '@/lib/format';
@@ -22,7 +22,7 @@ const decisionMessage = (e: Emergency) => {
 
 /**
  * The employee's side of an emergency, over every screen: a bar at the top while HR has it, then — the moment HR
- * approves or declines — a pop-up and a result bar (until dismissed). The push notification is sent as well.
+ * approves or declines — a one-time pop-up. The decision itself lives in Notifications (with the push), not in a bar.
  */
 export const MyEmergencyStatus = () => {
   const { c } = useTheme();
@@ -30,7 +30,6 @@ export const MyEmergencyStatus = () => {
   const { hasEmployee } = useAuth();
   const q = useMyLatestEmergency(hasEmployee);
   const [seen, setSeen] = useState<string[] | null>(null);
-  const [barClosed, setBarClosed] = useState<string | null>(null);
 
   useEffect(() => {
     void storage.get(StorageKeys.emergencyDecisionsSeen).then((v) => {
@@ -56,34 +55,25 @@ export const MyEmergencyStatus = () => {
     setSeen(next);
     void storage.set(StorageKeys.emergencyDecisionsSeen, JSON.stringify(next));
   };
-  const showBar = waiting || barClosed !== e._id;
-
   return (
     <>
-      {showBar ? (
+      {waiting ? (
         <View pointerEvents="box-none" style={[styles.barWrap, { top: insets.top + space(1) }]}>
           <Pressable
             onPress={() => router.push('/more/notifications')}
             accessibilityRole="button"
-            accessibilityLabel={waiting ? 'Your emergency alert is with HR' : approved ? 'Approved, you can leave' : 'Your request to leave was declined'}
+            accessibilityLabel="Your emergency alert is with HR"
             style={[styles.bar, { backgroundColor: tone.solid }]}
           >
-            {waiting ? <Hourglass size={18} color="#ffffff" /> : approved ? <CheckCircle2 size={18} color="#ffffff" /> : <XCircle size={18} color="#ffffff" />}
+            <Hourglass size={18} color="#ffffff" />
             <View style={styles.flex}>
               <Text size="sm" weight="bold" style={styles.white} numberOfLines={1}>
-                {waiting ? 'Your emergency alert is with HR' : approved ? 'Approved — you can leave' : 'Request to leave declined'}
+                Your emergency alert is with HR
               </Text>
               <Text size="xs" style={styles.dim} numberOfLines={1}>
-                {waiting
-                  ? `${e.status === 'ACKNOWLEDGED' ? `Seen by ${who(e.acknowledgedBy)}` : 'Waiting for a response'} · raised ${timeAgo(e.createdAt)}`
-                  : `By ${who(e.decidedBy)} ${timeAgo(e.decidedAt!)}${message ? ` · “${message}”` : ''}`}
+                {`${e.status === 'ACKNOWLEDGED' ? `Seen by ${who(e.acknowledgedBy)}` : 'Waiting for a response'} · raised ${timeAgo(e.createdAt)}`}
               </Text>
             </View>
-            {!waiting ? (
-              <Pressable onPress={() => setBarClosed(e._id)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Dismiss">
-                <X size={18} color="#ffffff" />
-              </Pressable>
-            ) : null}
           </Pressable>
         </View>
       ) : null}

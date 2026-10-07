@@ -218,9 +218,10 @@ export const decideEmergency = async (ctx: RequestContext, id: string, input: { 
     userIds: [owner?.userId],
     type: 'EMERGENCY',
     title: input.decision === 'APPROVED' ? '✅ Approved — you can leave' : '❌ Your request to leave was declined',
-    message:
-      input.note ||
-      (input.decision === 'APPROVED'
+    // Always says who decided (the notification replaced the on-screen result bar that showed it).
+    message: input.note
+      ? `${ctx.userName}: “${input.note}”`
+      : (input.decision === 'APPROVED'
         ? `${ctx.userName} approved your emergency. You can go now — take care.`
         : `${ctx.userName} declined your request to leave. Please speak to HR or your manager.`),
     link: `/emergencies/${e._id}`,

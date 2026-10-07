@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Hourglass, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Hourglass, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/overlay';
 import { cn, timeAgo } from '@/lib/utils';
@@ -34,13 +34,12 @@ const decisionMessage = (e: Emergency) => {
 
 /**
  * The employee's side of an emergency: a bar at the top while HR has it, then — the moment HR approves or
- * declines — a pop-up and a result bar (until dismissed). The push notification is sent as well.
+ * declines — a one-time pop-up. The decision itself lives in Notifications (with the push), not in a bar.
  */
 export const MyEmergencyStatus = () => {
   const { hasEmployee } = usePermissions();
   const q = useMyLatestEmergency(hasEmployee);
   const [seen, setSeen] = useState<string[]>(readSeen);
-  const [barClosed, setBarClosed] = useState<string | null>(null);
   const e = q.data;
   if (!e) return null;
 
@@ -57,7 +56,7 @@ export const MyEmergencyStatus = () => {
     writeSeen(next);
   };
 
-  // Top bar: waiting for HR, or the result (until closed).
+  // Top bar only while waiting for HR; the decision goes to Notifications.
   const bar = waiting ? (
     <div role="status" className="flex items-center gap-3 bg-amber-500 px-4 py-2 text-sm text-white sm:px-6">
       <Hourglass className="h-4 w-4 shrink-0" aria-hidden />
@@ -68,17 +67,6 @@ export const MyEmergencyStatus = () => {
       <Link to={`/emergencies/${e._id}`} className="shrink-0 rounded-md bg-white/20 px-2.5 py-1 text-xs font-semibold hover:bg-white/30">
         View
       </Link>
-    </div>
-  ) : barClosed !== e._id ? (
-    <div role="status" className={cn('flex items-center gap-3 px-4 py-2 text-sm text-white sm:px-6', approved ? 'bg-emerald-600' : 'bg-red-600')}>
-      {approved ? <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden /> : <XCircle className="h-4 w-4 shrink-0" aria-hidden />}
-      <p className="min-w-0 flex-1 truncate">
-        <strong>{approved ? 'Approved — you can leave' : 'Your request to leave was declined'}</strong>
-        <span className="opacity-90">{` · by ${who(e.decidedBy)} ${timeAgo(e.decidedAt!)}${message ? ` · “${message}”` : ''}`}</span>
-      </p>
-      <button type="button" onClick={() => setBarClosed(e._id)} aria-label="Dismiss" className="shrink-0 rounded-md p-1 hover:bg-white/20">
-        <X className="h-4 w-4" />
-      </button>
     </div>
   ) : null;
 

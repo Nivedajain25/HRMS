@@ -68,7 +68,7 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               title={collapsed ? g.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[15px]/5 font-semibold transition-colors',
+                  'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-base/5 font-semibold transition-colors',
                   isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg hover:bg-surface-3',
                   collapsed && 'justify-center',
                 )
@@ -88,7 +88,7 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               aria-expanded={isOpen}
               title={collapsed ? g.label : undefined}
               className={cn(
-                'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[15px]/5 font-semibold text-fg transition-colors',
+                'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-base/5 font-semibold text-fg transition-colors',
                 !activeGroup(g) && 'hover:bg-surface-3',
                 collapsed && 'justify-center',
               )}
@@ -111,7 +111,7 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2.5 rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors',
+                        'flex items-center gap-2.5 rounded-md px-2.5 py-1 text-[15px]/5 font-medium transition-colors',
                         isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg hover:bg-surface-3',
                       )
                     }
@@ -362,7 +362,7 @@ export const AppLayout = () => {
         Skip to content
       </a>
       {/* Desktop sidebar */}
-      <aside className={cn('relative z-30 hidden shrink-0 flex-col border-r border-line bg-surface transition-[width] lg:flex', collapsed ? 'w-[68px]' : 'w-56', chrome)}>
+      <aside className={cn('relative z-30 hidden shrink-0 flex-col border-r border-line bg-surface transition-[width] lg:flex', collapsed ? 'w-[68px]' : 'w-64', chrome)}>
         <div className={cn('flex h-16 items-center border-b border-line', collapsed ? 'justify-center' : 'px-4')}>
           <Link to="/" aria-label="Stencil HRMS home" className="min-w-0">
             <Logo collapsed={collapsed} size="sm" />

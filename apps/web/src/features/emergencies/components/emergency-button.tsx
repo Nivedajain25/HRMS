@@ -44,15 +44,20 @@ export const EmergencyButton = () => {
 
   return (
     <>
+      {/* Bordered circle, transparent fill: a red "!" badge with EMERGENCY under it (the badge alone on small screens). */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Emergency: inform HR"
         title="Personal emergency? Inform HR immediately"
-        className="inline-flex h-9 items-center gap-1.5 rounded-full bg-red-600 px-2.5 text-xs sm:px-3.5 font-bold tracking-wide text-white shadow-sm hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="flex h-10 w-10 shrink-0 flex-col items-center justify-center gap-[3px] rounded-full border-[1.5px] border-red-500 text-red-600 transition-colors hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:outline-none sm:h-14 sm:w-14 dark:text-red-400 dark:hover:bg-red-500/10"
       >
-        <Siren className="h-4 w-4" aria-hidden />
-        <span className="hidden sm:inline">Emergency</span>
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden>
+          <circle cx="12" cy="12" r="12" className="fill-red-600" />
+          <rect x="10.75" y="5.5" width="2.5" height="8.5" rx="1.25" fill="#fff" />
+          <circle cx="12" cy="17.6" r="1.5" fill="#fff" />
+        </svg>
+        <span className="hidden text-[7px] leading-none font-extrabold uppercase sm:block">Emergency</span>
       </button>
 
       <Modal

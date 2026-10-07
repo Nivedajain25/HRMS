@@ -34,12 +34,13 @@ import {
   Text,
   toast,
   useConfirm,
+  type ButtonColors,
   type IconComponent,
 } from '@/components';
 import { toApiError } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { dashboardKind, useAuth, type DashboardKind } from '@/lib/auth';
 import { formatClock, formatClockTimeIn, formatKey, formatTimeIn, minutesToHours, useNow } from '@/lib/time';
-import { radius, space, toneColors, useTheme, type Tone } from '@/theme';
+import { radius, space, toneColors, useTheme, withAlpha, type Tone } from '@/theme';
 import { useClockAction, useToday, type LiveState, type TodayState, type WorkMode } from '../api';
 import { useClockFlow } from '../use-clock-flow';
 
@@ -56,6 +57,41 @@ const CARD_TINTS: Record<LiveState, Record<'light' | 'dark', [string, string]>> 
   CHECKED_IN: { light: ['#ffffff', '#e7f8f0'], dark: ['#131f1b', '#0f2a22'] },
   ON_BREAK: { light: ['#ffffff', '#fdf3dc'], dark: ['#1f1b12', '#2e2410'] },
   CHECKED_OUT: { light: ['#ffffff', '#e8f1fd'], dark: ['#131a24', '#10233a'] },
+};
+
+/**
+ * Clock in / out button colours, the same as the website's Today card for each dashboard:
+ * Employee light grey / dark navy, HR lilac / deep purple, Super Admin and Admin green / red.
+ * The `Done` sets are the soft look once that step is recorded ("In · 09:30").
+ */
+const clockColors = (kind: DashboardKind, dark: boolean): Record<'in' | 'inDone' | 'out' | 'outDone', ButtonColors> => {
+  // [light bg, light border, light text], then the hue tinted in dark mode with its light text.
+  const done = ([bg, border, fg]: [string, string, string], hue: string, darkFg: string): ButtonColors =>
+    dark ? { bg: withAlpha(hue, 0.15), border: withAlpha(hue, 0.3), fg: darkFg, solid: true } : { bg, border, fg, solid: true };
+  if (kind === 'employee') {
+    return {
+      in: dark
+        ? { bg: withAlpha('#64748b', 0.25), border: withAlpha('#64748b', 0.4), fg: '#f1f5f9', pressed: withAlpha('#64748b', 0.4) }
+        : { bg: '#e2e8f0', border: '#cbd5e1', fg: '#0f172a', pressed: '#cbd5e1' },
+      inDone: done(['#f1f5f9', '#e2e8f0', '#1e293b'], '#64748b', '#e2e8f0'),
+      out: { bg: '#1e3a8a', border: '#1e3a8a', fg: '#ffffff', pressed: '#172f70', solid: true },
+      outDone: done(['#eff6ff', '#bfdbfe', '#1e3a8a'], '#3b82f6', '#bfdbfe'),
+    };
+  }
+  if (kind === 'hr') {
+    return {
+      in: { bg: '#ddd6fe', border: '#c4b5fd', fg: '#000000', pressed: '#c4b5fd' },
+      inDone: done(['#f5f3ff', '#ddd6fe', '#4c1d95'], '#8b5cf6', '#ddd6fe'),
+      out: { bg: '#7e22ce', border: '#7e22ce', fg: '#ffffff', pressed: '#6b21a8', solid: true },
+      outDone: done(['#faf5ff', '#e9d5ff', '#581c87'], '#a855f7', '#e9d5ff'),
+    };
+  }
+  return {
+    in: { bg: '#059669', border: '#059669', fg: '#ffffff', pressed: '#047857' },
+    inDone: done(['#ecfdf5', '#a7f3d0', '#065f46'], '#10b981', '#a7f3d0'),
+    out: { bg: '#e11d48', border: '#e11d48', fg: '#ffffff', pressed: '#be123c' },
+    outDone: done(['#fff1f2', '#fecdd3', '#9f1239'], '#f43f5e', '#fecdd3'),
+  };
 };
 
 /** The coloured part of the day bar: grows in on open, then a light sheen sweeps across it. */
@@ -135,7 +171,8 @@ const ClockSkeleton = () => (
  */
 export const ClockCard = ({ compact }: { compact?: boolean }) => {
   const { c, scheme } = useTheme();
-  const { timeZone } = useAuth();
+  const { timeZone, user } = useAuth();
+  const tones = clockColors(dashboardKind(user?.roles), c.scheme === 'dark');
   const today = useToday();
   const breakAction = useClockAction();
   const confirm = useConfirm();
@@ -386,7 +423,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
 
           <View style={styles.boxes}>
             <Button
-              variant={t.state === 'NOT_CHECKED_IN' ? 'success' : 'outline'}
+              colors={r?.checkIn ? tones.inDone : tones.in}
               icon={r?.checkIn ? CheckCircle2 : LogIn}
               loading={flow.active === 'check-in'}
               disabled={busy || t.state !== 'NOT_CHECKED_IN'}
@@ -396,7 +433,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
               {r?.checkIn ? `In · ${formatTimeIn(r.checkIn, timeZone)}` : 'Clock in'}
             </Button>
             <Button
-              variant={working ? 'danger' : 'outline'}
+              colors={r?.checkOut ? tones.outDone : tones.out}
               icon={r?.checkOut ? CheckCircle2 : LogOut}
               loading={flow.active === 'check-out'}
               disabled={busy || !working}
@@ -577,7 +614,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
               />
             </View>
           ) : null}
-          <Button size="lg" icon={LogIn} loading={flow.active === 'check-in'} disabled={busy} onPress={onClockIn} fullWidth>
+          <Button colors={tones.in} size="lg" icon={LogIn} loading={flow.active === 'check-in'} disabled={busy} onPress={onClockIn} fullWidth>
             Clock in
           </Button>
           <View style={styles.hint}>
@@ -617,7 +654,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
             </Button>
           ) : null}
           <Button
-            variant="danger"
+            colors={tones.out}
             size="lg"
             icon={LogOut}
             loading={flow.active === 'check-out'}

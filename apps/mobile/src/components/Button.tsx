@@ -12,10 +12,21 @@ export interface IconProps {
 }
 export type IconComponent = ComponentType<IconProps>;
 
+/** Custom colours in place of a `variant`. `solid`: keeps full colour while disabled (no fading). */
+export interface ButtonColors {
+  bg: string;
+  fg: string;
+  border?: string;
+  pressed?: string;
+  solid?: boolean;
+}
+
 export interface ButtonProps {
   children: ReactNode;
   onPress?: () => void;
   variant?: ButtonVariant;
+  /** Overrides the variant's colours. */
+  colors?: ButtonColors;
   /** `sm`: compact (36 pt, smaller text) with the tap area extended to the 44 pt minimum. */
   size?: 'sm' | 'md' | 'lg';
   icon?: IconComponent;
@@ -47,6 +58,7 @@ export const Button = ({
   children,
   onPress,
   variant = 'primary',
+  colors,
   size = 'md',
   icon: Icon,
   loading = false,
@@ -60,6 +72,10 @@ export const Button = ({
   const { c } = useTheme();
   const inactive = disabled || loading;
   const height = size === 'lg' ? 56 : size === 'sm' ? 36 : TOUCH_TARGET + 4;
+  const paint = (pressed: boolean) =>
+    colors
+      ? { bg: pressed && colors.pressed ? colors.pressed : colors.bg, fg: colors.fg, border: colors.border ?? 'transparent' }
+      : variantColors(c, variant, pressed);
   return (
     <Pressable
       testID={testID}
@@ -71,18 +87,18 @@ export const Button = ({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy: loading }}
       style={({ pressed }) => {
-        const v = variantColors(c, variant, pressed);
+        const v = paint(pressed);
         return [
           styles.base,
           size === 'sm' && styles.small,
-          { minHeight: height, backgroundColor: v.bg, borderColor: v.border, opacity: disabled && !loading ? 0.5 : 1 },
+          { minHeight: height, backgroundColor: v.bg, borderColor: v.border, opacity: disabled && !loading && !colors?.solid ? 0.5 : 1 },
           fullWidth && styles.full,
           style,
         ];
       }}
     >
       {({ pressed }) => {
-        const v = variantColors(c, variant, pressed);
+        const v = paint(pressed);
         return (
           <View style={styles.content}>
             {loading ? (

@@ -104,6 +104,16 @@ export const getLastEmail = () => storage.get(StorageKeys.lastEmail);
 
 export const APPROVER_PERMISSIONS: Permission[] = ['leave:approve', 'attendance:approve', 'expense:approve', 'expense:pay'];
 
+export type DashboardKind = 'head' | 'hr' | 'employee';
+
+/** Which dashboard look a user gets, as on the website: Super Admin / Admin ('head'), HR, or everyone else. */
+export const dashboardKind = (roles: { key?: string }[] | undefined): DashboardKind => {
+  const keys = (roles ?? []).map((r) => r.key);
+  if (keys.some((k) => k === 'super_admin' || k === 'admin')) return 'head';
+  if (keys.some((k) => k === 'hr_admin' || k === 'hr_manager')) return 'hr';
+  return 'employee';
+};
+
 export const useAuth = () => {
   const user = useAuthStore((s) => s.user);
   const status = useAuthStore((s) => s.status);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_PERMISSIONS } from '@stencil/shared';
-import { RoleModel } from '../../src/models';
+import { AuditLogModel, EmployeeModel, NotificationModel, RoleModel, UserModel } from '../../src/models';
 import { ensureSystemRoles } from '../../src/services/organization-setup.service';
 import { as, createEmployeeUser, registerOrg, roleIds, uniqueEmail } from '../helpers';
 
@@ -55,5 +55,41 @@ describe('Admin role (everything but Super-Admin-only controls)', () => {
     // The Super Admin can make the Admin a Super Admin (and back).
     expect((await as(owner.token).patch(`/api/v1/users/${idOf(nitin.email)}`, { roleIds: [employeeId, superId] })).status).toBe(200);
     expect((await as(owner.token).patch(`/api/v1/users/${idOf(nitin.email)}`, { roleIds: [adminId] })).status).toBe(200);
+  });
+
+  it('lets only the Super Admin delete a login, keeping the employee record and history', async () => {
+    const owner = await registerOrg();
+    const nitin = await createEmployeeUser(owner.token, { firstName: 'Nitin', roles: ['admin'] });
+    const suchi = await createEmployeeUser(owner.token, { firstName: 'Suchi' });
+    const users = (await as(owner.token).get('/api/v1/users?limit=100')).body.data as { _id: string; email: string }[];
+    const idOf = (email: string) => users.find((u) => u.email === email)!._id;
+    const suchiUserId = idOf(suchi.email);
+    await NotificationModel.create({ organizationId: owner.user.organization._id, userId: suchiUserId, type: 'GENERAL', title: 'Hi', message: 'Hello' });
+    expect((await as(suchi.token).get('/api/v1/auth/me')).status).toBe(200);
+
+    // The Admin (and anyone else) can't; nobody can delete themselves.
+    const byAdmin = await as(nitin.token).delete(`/api/v1/users/${suchiUserId}`);
+    expect(byAdmin.status).toBe(403);
+    expect(byAdmin.body.code).toBe('SUPER_ADMIN_ONLY');
+    expect((await as(owner.token).delete(`/api/v1/users/${idOf(owner.user.email)}`)).status).toBe(403);
+
+    const res = await as(owner.token).delete(`/api/v1/users/${suchiUserId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ deleted: true, employeeKept: suchi.employee.employeeId });
+
+    // Gone and signed out; the employee record stays (unlinked) and their notifications are removed.
+    expect(await UserModel.exists({ _id: suchiUserId })).toBeNull();
+    expect((await as(suchi.token).get('/api/v1/auth/me')).status).toBe(401);
+    const emp = await EmployeeModel.findById(suchi.employee._id).lean();
+    expect(emp).toBeTruthy();
+    expect(emp!.userId).toBeNull();
+    expect(await NotificationModel.countDocuments({ userId: suchiUserId })).toBe(0);
+    expect((await AuditLogModel.findOne({ action: 'USER_DELETED', recordId: suchiUserId }).lean())?.recordLabel).toBe(suchi.email);
+
+    // The email is free again, and the record can be linked to a new login.
+    const [employeeRole] = await roleIds(owner.token, ['employee']);
+    const again = await as(owner.token).post('/api/v1/users', { email: suchi.email, firstName: 'Suchi', lastName: 'Again', roleIds: [employeeRole], employeeId: suchi.employee._id, sendInvite: false });
+    expect(again.status).toBe(201);
+    expect((await as(owner.token).delete(`/api/v1/users/${suchiUserId}`)).status).toBe(404);
   });
 });

@@ -219,6 +219,27 @@ export const UsersSection = () => {
     onError: (e) => toast.error(toApiError(e).message),
   });
 
+  // Deleting a login is the Super Admin's call (the API enforces it too).
+  const isSuperAdmin = !!me?.roles.some((r) => r.key === 'super_admin');
+  const removeUser = useMutation({
+    mutationFn: (id: string) => del(`/users/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onError: (e) => toast.error(toApiError(e).message),
+  });
+  const deleteUser = async (u: UserRow) => {
+    const name = `${u.firstName} ${u.lastName}`.trim();
+    const { confirmed } = await confirm({
+      title: `Delete ${name}'s login?`,
+      message: `${name} (${u.email}) will be signed out everywhere and can no longer sign in. ${
+        u.employeeId ? `Their employee record (${u.employeeId.employeeId}) and HR history are kept. ` : ''
+      }You can invite them again later. This can't be undone.`,
+      confirmLabel: 'Delete user',
+    });
+    if (!confirmed) return;
+    await removeUser.mutateAsync(u._id);
+    toast.success(`${name}'s login was deleted`);
+  };
+
   const setStatus = async (u: UserRow, status: string) => {
     if (status !== 'ACTIVE') {
       const { confirmed } = await confirm({ title: `${status === 'SUSPENDED' ? 'Suspend' : 'Deactivate'} ${u.firstName}?`, message: 'They will be signed out immediately and cannot sign in until reactivated.', confirmLabel: 'Confirm' });
@@ -286,6 +307,7 @@ export const UsersSection = () => {
                   { label: 'Activate', onSelect: () => void setStatus(row.original, 'ACTIVE'), hidden: row.original.status === 'ACTIVE' },
                   { label: 'Deactivate', danger: true, onSelect: () => void setStatus(row.original, 'INACTIVE'), hidden: row.original.status !== 'ACTIVE' },
                   { label: 'Suspend', danger: true, onSelect: () => void setStatus(row.original, 'SUSPENDED'), hidden: row.original.status === 'SUSPENDED' },
+                  { label: 'Delete user', icon: <Trash2 className="h-4 w-4" />, danger: true, onSelect: () => void deleteUser(row.original), hidden: !isSuperAdmin },
                 ]}
               />
             </div>
@@ -293,7 +315,7 @@ export const UsersSection = () => {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [me?._id],
+    [me?._id, isSuperAdmin],
   );
 
   return (

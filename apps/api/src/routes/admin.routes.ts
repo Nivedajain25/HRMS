@@ -58,4 +58,8 @@ userModule.route(
   users.update,
 );
 userModule.route({ method: 'post', path: '/:id/invite', summary: 'Resend invitation', permissions: ['user:manage'], params: idParam }, users.invite);
+userModule.route(
+  { method: 'delete', path: '/:id', summary: 'Delete a login (Super Admin only); the linked employee record and history are kept', permissions: ['user:manage'], params: idParam },
+  users.remove,
+);
 userModule.route({ method: 'post', path: '/:id/invite-link', summary: 'Activation link to hand over directly (not-yet-activated users only)', permissions: ['user:manage'], params: idParam }, users.inviteLink);

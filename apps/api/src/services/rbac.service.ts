@@ -1,7 +1,19 @@
 import { Types } from 'mongoose';
 import { PERMISSION_GROUPS, type RoleInput, type UserCreateInput, type UserUpdateInput } from '@stencil/shared';
 import { invalidateAuthCache } from '../middleware/auth';
-import { EmployeeModel, OrganizationModel, PermissionModel, RoleModel, UserModel } from '../models';
+import {
+  ActionTokenModel,
+  EmployeeModel,
+  NotificationModel,
+  NotificationPreferenceModel,
+  OrganizationModel,
+  PermissionModel,
+  ReminderModel,
+  RoleModel,
+  SessionModel,
+  TodoModel,
+  UserModel,
+} from '../models';
 import { can, type RequestContext } from '../types/context';
 import { badRequest, conflict, forbidden, notFound, unprocessable } from '../utils/errors';
 import { buildSort, paginate, searchFilter } from '../utils/pagination';
@@ -237,6 +249,45 @@ export const updateUser = async (ctx: RequestContext, id: string, input: UserUpd
     newValues: after,
   });
   return user.toJSON();
+};
+
+/**
+ * Super Admin only: permanently deletes a login. Signs them out everywhere and removes what belongs only to the
+ * account (sessions, devices, invite/reset tokens, notifications, personal to-dos and reminders). Their employee
+ * record and all HR history stay (the record is just unlinked), and the email is free to be invited again.
+ */
+export const deleteUser = async (ctx: RequestContext, id: string) => {
+  if (!ctx.roleKeys.includes('super_admin')) throw forbidden('Only the Super Admin can delete users', 'SUPER_ADMIN_ONLY');
+  const user = await UserModel.findOne({ _id: id, organizationId: ctx.organizationId });
+  if (!user) throw notFound('User');
+  if (user._id.equals(ctx.userId)) throw forbidden('You cannot delete your own account');
+  const superRole = await RoleModel.findOne({ organizationId: ctx.organizationId, key: 'super_admin' }).select('_id').lean();
+  if (superRole && user.status === 'ACTIVE' && user.roles.some((r) => r.equals(superRole._id)) && (await countActiveSuperAdmins(ctx.organizationId)) <= 1) {
+    throw unprocessable('At least one active Super Admin is required', 'LAST_SUPER_ADMIN');
+  }
+
+  const userId = user._id;
+  const linked = user.employeeId ? await EmployeeModel.findOne({ _id: user.employeeId }).select('employeeId firstName lastName').lean() : null;
+  await revokeAllSessions(userId);
+  await Promise.all([
+    SessionModel.deleteMany({ userId }),
+    ActionTokenModel.deleteMany({ userId }),
+    NotificationModel.deleteMany({ userId }),
+    NotificationPreferenceModel.deleteMany({ userId }),
+    TodoModel.deleteMany({ userId }),
+    ReminderModel.deleteMany({ userId }),
+    EmployeeModel.updateMany({ organizationId: ctx.organizationId, userId }, { $set: { userId: null } }),
+  ]);
+  await UserModel.deleteOne({ _id: userId });
+  invalidateAuthCache(String(userId));
+  await audit(ctx, {
+    action: 'USER_DELETED',
+    module: 'users',
+    recordId: userId,
+    recordLabel: user.email,
+    oldValues: { name: `${user.firstName} ${user.lastName}`.trim(), email: user.email, roles: user.roles.map(String), employee: linked?.employeeId ?? null },
+  });
+  return { deleted: true, employeeKept: linked?.employeeId ?? null };
 };
 
 export const updatePreferences = async (ctx: RequestContext, prefs: { theme?: string; language?: string }) => {

@@ -139,13 +139,11 @@ export const HrBottomRows = () => (
   </div>
 );
 
-/** Recent activity sized by its row (Sales / Tasks), scrolling inside. */
+/** Recent activity at its natural height (no inner scrollbar); Sales overview | Tasks beside it stretch to match. */
 export const ActivityCell = () => (
   <WidgetBoundary title="Recent activity">
-    <div className="relative flex h-full min-h-72 flex-col [&>*]:flex-1">
-      <div className="xl:absolute xl:inset-0">
-        <ActivityFeed scope="all" limit={8} className="scrollbar-thin xl:h-full xl:overflow-y-auto" />
-      </div>
+    <div className="flex h-full min-h-72 flex-col [&>*]:flex-1">
+      <ActivityFeed scope="all" limit={8} />
     </div>
   </WidgetBoundary>
 );

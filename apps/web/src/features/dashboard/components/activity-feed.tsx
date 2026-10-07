@@ -78,7 +78,8 @@ export const ActivityFeed = ({
         />
       }
     >
-      <ol className="scrollbar-thin max-h-[420px] overflow-y-auto px-5 pb-4">
+      {/* No scroll of its own: the list is capped by `limit`, so it shows in full and the page is the only scrollbar. */}
+      <ol className="px-5 pb-4">
         {items.map((a, i) => {
           const m = META[a.type];
           // Decisions read as possessive: "Priya’s Casual Leave was approved" / "Your Casual Leave was approved".

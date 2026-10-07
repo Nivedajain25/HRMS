@@ -18,6 +18,25 @@ export const attachmentOf = (l: LeaveRequest): LeaveAttachment | null =>
 
 export const typeColor = (t: { color?: string } | null | undefined) => (t?.color && /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : DEFAULT_TYPE_COLOR);
 
+/** An emoji for a leave type: by its code first, then by words in its name; 📅 otherwise. */
+export const typeEmoji = (t: { code?: string; name?: string; isWorkFromHome?: boolean; paid?: boolean } | null | undefined) => {
+  if (!t) return '📅';
+  const byCode: Record<string, string> = { CL: '🌴', SL: '🤒', EL: '⭐', PL: '💼', LOP: '💸', ML: '🤱', PTL: '👶', CO: '🔁', WFH: '🏠' };
+  const code = (t.code ?? '').toUpperCase();
+  if (byCode[code]) return byCode[code];
+  const name = (t.name ?? '').toLowerCase();
+  if (t.isWorkFromHome || /work\s*from\s*home|wfh|remote/.test(name)) return '🏠';
+  if (/sick|medical/.test(name)) return '🤒';
+  if (/casual/.test(name)) return '🌴';
+  if (/earned|privilege|annual/.test(name)) return '⭐';
+  if (/matern/.test(name)) return '🤱';
+  if (/patern/.test(name)) return '👶';
+  if (/comp/.test(name)) return '🔁';
+  if (t.paid === false || /unpaid|loss of pay|lop/.test(name)) return '💸';
+  if (/paid/.test(name)) return '💼';
+  return '📅';
+};
+
 /** `1.5` / `2` (no trailing zeros). */
 export const formatNum = (n: number) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
 

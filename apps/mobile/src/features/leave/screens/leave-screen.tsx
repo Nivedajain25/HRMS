@@ -73,8 +73,8 @@ export const LeaveScreen = () => {
             <Text size="lg" weight="semibold" accessibilityRole="header" style={styles.flex}>
               {`Leave balance ${year}`}
             </Text>
-            <Button icon={CalendarPlus} onPress={() => openApply()}>
-              Apply
+            <Button size="sm" icon={CalendarPlus} onPress={() => openApply()}>
+              Apply leave
             </Button>
           </View>
           <BalanceStrip query={balances} year={year} onApply={openApply} />

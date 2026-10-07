@@ -4,7 +4,7 @@ import { Wallet } from 'lucide-react-native';
 import { Card, EmptyState, ErrorState, Skeleton, Text } from '@/components';
 import { radius, space, useTheme, withAlpha } from '@/theme';
 import type { LeaveBalance } from '../api';
-import { formatNum, typeColor } from '../lib';
+import { formatNum, typeColor, typeEmoji } from '../lib';
 
 const BalanceChip = ({ b, onPress }: { b: LeaveBalance; onPress?: (typeId: string) => void }) => {
   const { c } = useTheme();
@@ -13,7 +13,8 @@ const BalanceChip = ({ b, onPress }: { b: LeaveBalance; onPress?: (typeId: strin
   const entitlement = Math.max(0, b.opening + b.allocated + b.carryForward + b.adjusted - b.encashed);
   const usedPct = entitlement > 0 ? Math.min(100, (b.used / entitlement) * 100) : 0;
   const pendingPct = entitlement > 0 ? Math.min(100 - usedPct, (b.pending / entitlement) * 100) : 0;
-  const low = !unpaid && (b.remaining < 0 || (b.remaining === 0 && entitlement > 0));
+  // All text black (the theme's main text colour in dark mode, where black wouldn't show).
+  const ink = { color: c.scheme === 'dark' ? c.fg : '#000000' };
   const a11y = unpaid
     ? `${b.leaveType.name}: unpaid, ${formatNum(b.used)} days taken${b.pending ? `, ${formatNum(b.pending)} pending` : ''}`
     : `${b.leaveType.name}: ${formatNum(b.remaining)} days remaining of ${formatNum(entitlement)}, ${formatNum(b.used)} used, ${formatNum(b.pending)} pending`;
@@ -33,16 +34,18 @@ const BalanceChip = ({ b, onPress }: { b: LeaveBalance; onPress?: (typeId: strin
       ]}
     >
       <View style={styles.head}>
-        <View style={[styles.dot, { backgroundColor: color }]} />
-        <Text size="xs" weight="semibold" color="fg2" numberOfLines={1} style={styles.shrink}>
+        <Text size="sm" accessibilityElementsHidden importantForAccessibility="no">
+          {typeEmoji(b.leaveType)}
+        </Text>
+        <Text size="xs" weight="semibold" numberOfLines={1} style={[styles.shrink, ink]}>
           {b.leaveType.name}
         </Text>
       </View>
       <View style={styles.big}>
-        <Text size="2xl" weight="bold" tabular style={low ? { color: c.danger } : undefined}>
+        <Text size="xl" weight="bold" tabular style={ink}>
           {formatNum(unpaid ? b.used : b.remaining)}
         </Text>
-        <Text size="xs" color="muted">
+        <Text size="xs" style={ink}>
           {unpaid ? 'taken' : `of ${formatNum(entitlement)} left`}
         </Text>
       </View>
@@ -52,7 +55,7 @@ const BalanceChip = ({ b, onPress }: { b: LeaveBalance; onPress?: (typeId: strin
           <View style={{ width: `${pendingPct}%`, backgroundColor: withAlpha(color, 0.4) }} />
         </View>
       ) : null}
-      <Text size="xs" color="muted" numberOfLines={1}>
+      <Text size="xs" numberOfLines={1} style={ink}>
         {unpaid ? (b.pending ? `${formatNum(b.pending)} pending` : 'Unpaid') : `${formatNum(b.used)} used · ${formatNum(b.pending)} pending`}
       </Text>
     </Pressable>
@@ -72,8 +75,8 @@ export const BalanceStrip = ({
   if (query.isLoading) {
     return (
       <View style={styles.loading} accessible accessibilityLabel="Loading balances">
-        <Skeleton width={156} height={128} />
-        <Skeleton width={156} height={128} />
+        <Skeleton width={156} height={100} />
+        <Skeleton width={156} height={100} />
       </View>
     );
   }
@@ -106,11 +109,10 @@ export const BalanceStrip = ({
 const styles = StyleSheet.create({
   shrink: { flexShrink: 1 },
   loading: { flexDirection: 'row', gap: space(3), overflow: 'hidden' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2.5) },
-  // Two per row (the gap is subtracted via flexBasis just under 50%).
-  chip: { flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: radius.md, padding: space(3), gap: space(1.5) },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
+  // Two per row (the gap is subtracted via flexBasis just under 50%). Compact: tighter padding and spacing.
+  chip: { flexBasis: '47%', flexGrow: 1, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space(2.5), paddingVertical: space(2), gap: space(1) },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space(1) },
   big: { flexDirection: 'row', alignItems: 'baseline', gap: space(1) },
-  track: { height: 6, borderRadius: 3, overflow: 'hidden', flexDirection: 'row' },
+  track: { height: 4, borderRadius: 2, overflow: 'hidden', flexDirection: 'row' },
 });

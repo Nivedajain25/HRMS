@@ -16,7 +16,8 @@ export interface ButtonProps {
   children: ReactNode;
   onPress?: () => void;
   variant?: ButtonVariant;
-  size?: 'md' | 'lg';
+  /** `sm`: compact (36 pt, smaller text) with the tap area extended to the 44 pt minimum. */
+  size?: 'sm' | 'md' | 'lg';
   icon?: IconComponent;
   loading?: boolean;
   disabled?: boolean;
@@ -58,12 +59,13 @@ export const Button = ({
 }: ButtonProps) => {
   const { c } = useTheme();
   const inactive = disabled || loading;
-  const height = size === 'lg' ? 56 : TOUCH_TARGET + 4;
+  const height = size === 'lg' ? 56 : size === 'sm' ? 36 : TOUCH_TARGET + 4;
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
       disabled={inactive}
+      hitSlop={size === 'sm' ? (TOUCH_TARGET - height) / 2 : undefined}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? (typeof children === 'string' ? children : undefined)}
       accessibilityHint={accessibilityHint}
@@ -72,6 +74,7 @@ export const Button = ({
         const v = variantColors(c, variant, pressed);
         return [
           styles.base,
+          size === 'sm' && styles.small,
           { minHeight: height, backgroundColor: v.bg, borderColor: v.border, opacity: disabled && !loading ? 0.5 : 1 },
           fullWidth && styles.full,
           style,
@@ -85,9 +88,9 @@ export const Button = ({
             {loading ? (
               <ActivityIndicator size="small" color={v.fg} />
             ) : Icon ? (
-              <Icon size={size === 'lg' ? 22 : 18} color={v.fg} strokeWidth={2.2} />
+              <Icon size={size === 'lg' ? 22 : size === 'sm' ? 15 : 18} color={v.fg} strokeWidth={2.2} />
             ) : null}
-            <Text weight="semibold" size={size === 'lg' ? 'lg' : 'md'} style={{ color: v.fg }} numberOfLines={1}>
+            <Text weight="semibold" size={size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'} style={{ color: v.fg }} numberOfLines={1}>
               {children}
             </Text>
           </View>
@@ -140,6 +143,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  small: { paddingHorizontal: space(3), borderRadius: radius.sm },
   full: { alignSelf: 'stretch' },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(2) },
   icon: { borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },

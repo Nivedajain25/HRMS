@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { G, Path, Rect } from 'react-native-svg';
 import { CheckCircle2, Siren } from 'lucide-react-native';
 import { BottomSheet, Button, Checkbox, PressScale, PulseRing, Text, TextField, toast } from '@/components';
 import { toApiError } from '@/lib/api';
@@ -7,12 +8,26 @@ import { useAuth } from '@/lib/auth';
 import { radius, space, useTheme } from '@/theme';
 import { CATEGORY_META, useRaiseEmergency, type Emergency, type EmergencyCategory } from './api';
 
+/** Flat emergency siren (same drawing as the web button): red dome with a shine on a dark base, orange rays. */
+const SirenIcon = ({ size, dark }: { size: number; dark: boolean }) => (
+  <Svg width={size} height={size} viewBox="0 0 100 100">
+    <G stroke="#f6a723" strokeWidth={5.5} strokeLinecap="round">
+      <Path d="M50 18.5v7.5M26.5 25.8l4.5 5M73.5 25.8l-4.5 5M15.8 42.4l7.2 2M84.2 42.4l-7.2 2M16 65.4l6.8-2M84 65.4l-6.8-2" />
+    </G>
+    <Path d="M28.6 74V53c0-12 9.6-21.4 21.4-21.4S71.4 41 71.4 53v21Z" fill="#ef3339" />
+    <Path d="M42.6 55.2c0-1.6 1.2-2.7 2.7-2.7h9.4c1.5 0 2.7 1.1 2.7 2.7s-1.2 2.7-2.7 2.7h-2.4V74h-4.8V57.9h-2.2c-1.5 0-2.7-1.2-2.7-2.7Z" fill="#d42f36" />
+    <Path d="M33.5 52c0-7.5 5.5-13.4 12.8-14.5" fill="none" stroke="#fbdde0" strokeWidth={5} strokeLinecap="round" />
+    <Path d="M33.5 60v2.6" stroke="#fbdde0" strokeWidth={5} strokeLinecap="round" />
+    <Rect x={23.6} y={73} width={52.8} height={8.8} rx={2.2} fill={dark ? '#64748b' : '#37474f'} />
+  </Svg>
+);
+
 /**
- * Red siren button (home header): a personal emergency, e.g. having to rush home. HR and the reporting manager
- * are notified immediately. Same flow as the web "Emergency" button.
+ * Siren button (home header): a personal emergency, e.g. having to rush home. HR and the reporting manager
+ * are notified immediately. Same flow and icon as the web "Emergency" button.
  */
 export const EmergencyButton = () => {
-  const { c } = useTheme();
+  const { c, scheme } = useTheme();
   const { hasEmployee } = useAuth();
   const raise = useRaiseEmergency();
   const [open, setOpen] = useState(false);
@@ -45,7 +60,7 @@ export const EmergencyButton = () => {
         {/* Soft pulse so the siren is easy to find, without being alarming. */}
         <PulseRing size={40} color="#ef4444" />
         <PressScale onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="Emergency: inform HR" hitSlop={6} scaleTo={0.9} style={styles.button}>
-          <Siren size={20} color="#ffffff" />
+          <SirenIcon size={34} dark={scheme === 'dark'} />
         </PressScale>
       </View>
 
@@ -112,7 +127,7 @@ export const EmergencyButton = () => {
 
 const styles = StyleSheet.create({
   buttonWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  button: { width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: '#dc2626' },
+  button: { width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
   chip: { width: '31%', flexGrow: 1, alignItems: 'center', gap: space(1), paddingVertical: space(2.5), borderRadius: radius.md, borderWidth: 1 },
   done: { alignItems: 'center', gap: space(3), paddingVertical: space(2) },

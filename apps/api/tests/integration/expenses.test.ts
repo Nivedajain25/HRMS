@@ -61,6 +61,8 @@ describe('Expenses', () => {
     expect(m.status).toBe(200);
     expect(m.body.data.status).toBe('PENDING_APPROVAL');
     expect(m.body.data.currentApproverType).toBe('FINANCE');
+    // The employee is told about the manager's approval straight away.
+    expect(await NotificationModel.exists({ type: 'EXPENSE_APPROVAL', entityId: exp._id, message: /approved by .* now waiting for approval from Finance$/ })).toBeTruthy();
     // Manager cannot approve the finance step.
     expect((await as(manager.token).post(`/api/v1/expenses/${exp._id}/approve`, {})).status).toBe(403);
     // Not payable before final approval.

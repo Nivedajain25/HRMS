@@ -22,6 +22,7 @@ import {
   canActOnStep,
   closeApproval,
   initApproval,
+  nextApproverLabel,
   type Approvable,
   type ApprovalPolicy,
 } from './approval.service';
@@ -131,7 +132,7 @@ const informHr = (
     excludeUserId: ctx.userId,
   });
 
-const notifyEmployee = async (ctx: RequestContext, doc: ExpenseDoc, title: string, message: string) => {
+const notifyEmployee = async (ctx: RequestContext, doc: ExpenseDoc, title: string, message: string, skipEmail?: boolean) => {
   await notify({
     organizationId: ctx.organizationId,
     userIds: await userIdsForEmployees(ctx.organizationId, [doc.employeeId]),
@@ -142,6 +143,7 @@ const notifyEmployee = async (ctx: RequestContext, doc: ExpenseDoc, title: strin
     entityType: 'Expense',
     entityId: doc._id,
     excludeUserId: ctx.userId,
+    skipEmail,
   });
 };
 
@@ -374,7 +376,7 @@ export const approveExpense = async (ctx: RequestContext, id: string, comment?: 
     newValues: { status: to, step: doc.approvalSteps.filter((s) => s.status === 'APPROVED').length, comment },
   });
   if (to === 'APPROVED') {
-    await notifyEmployee(ctx, doc, 'Expense approved', `${label(doc)} has been approved and is awaiting payment`);
+    await notifyEmployee(ctx, doc, 'Expense approved', `${label(doc)} has been approved by ${ctx.userName} and is awaiting payment`);
     await notify({
       organizationId: ctx.organizationId,
       userIds: (await userIdsWithPermission(ctx.organizationId, 'expense:pay')).filter((u) => !employee.userId?.equals(u)),
@@ -388,6 +390,14 @@ export const approveExpense = async (ctx: RequestContext, id: string, comment?: 
     });
   } else {
     await notifyApprovers(ctx, doc, employee);
+    // The employee hears about each approval, not only the last one (in-app; the email waits for the final decision).
+    await notifyEmployee(
+      ctx,
+      doc,
+      `Expense approved by ${ctx.userName}`,
+      `${label(doc)} was approved by ${ctx.userName} and is now waiting for approval from ${nextApproverLabel(doc.currentApproverType)}`,
+      true,
+    );
   }
   return getExpense(ctx, id);
 };
@@ -403,7 +413,7 @@ export const rejectExpense = async (ctx: RequestContext, id: string, reason: str
   doc.rejectionReason = reason;
   await doc.save();
   await audit(ctx, { action: 'EXPENSE_REJECTED', module: 'expenses', recordId: doc._id, recordLabel: label(doc), oldValues: { status: from }, newValues: { status: 'REJECTED', reason } });
-  await notifyEmployee(ctx, doc, 'Expense rejected', `${label(doc)} was rejected: ${reason}`);
+  await notifyEmployee(ctx, doc, 'Expense rejected', `${label(doc)} was rejected by ${ctx.userName}: ${reason}`);
   return getExpense(ctx, id);
 };
 

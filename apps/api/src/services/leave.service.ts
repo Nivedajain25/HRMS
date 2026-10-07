@@ -32,7 +32,7 @@ import { dateOnly, toDateKey, todayKey } from '../utils/dates';
 import { AppError, badRequest, conflict, forbidden, invalidTransition, notFound, unprocessable } from '../utils/errors';
 import { buildPagination, buildSort, paginate } from '../utils/pagination';
 import { withTransaction } from '../utils/transaction';
-import { applyDecision, approvalQueueFilter, closeApproval, initApproval, type Approvable, type ApprovalPolicy } from './approval.service';
+import { applyDecision, approvalQueueFilter, closeApproval, initApproval, nextApproverLabel, type Approvable, type ApprovalPolicy } from './approval.service';
 import { audit } from './audit.service';
 import { buildWorkCalendar, holidaysInRange } from './calendar.service';
 import { countLeaveDays, daysBetween, leaveRangesOverlap, spansMultipleYears } from './leave-calc';
@@ -412,6 +412,7 @@ const notifyEmployee = async (
   type: 'LEAVE_APPROVED' | 'LEAVE_REJECTED' | 'GENERAL',
   title: string,
   message: string,
+  skipEmail?: boolean,
 ) => {
   await notify({
     organizationId: ctx.organizationId,
@@ -423,6 +424,7 @@ const notifyEmployee = async (
     entityType: 'LeaveRequest',
     entityId: leave._id,
     excludeUserId: ctx.userId,
+    skipEmail,
   });
 };
 
@@ -678,6 +680,16 @@ export const approveLeave = async (ctx: RequestContext, id: string, comment?: st
       comment,
     });
     await notifyApprovers(ctx, leave, employee, typeName);
+    // The employee hears about each approval, not only the last one (in-app; the email waits for the final decision).
+    await notifyEmployee(
+      ctx,
+      leave,
+      employee,
+      'LEAVE_APPROVED',
+      `Leave approved by ${ctx.userName}`,
+      `Your ${describe({ name: typeName }, leave)} was approved by ${ctx.userName} and is now waiting for approval from ${nextApproverLabel(leave.currentApproverType)}`,
+      true,
+    );
     return getLeave(ctx, id);
   }
 
@@ -706,7 +718,7 @@ export const rejectLeave = async (ctx: RequestContext, id: string, reason: strin
     await ledger(ctx, leave, 'RELEASE', session);
   });
   await auditLeave(ctx, 'LEAVE_REJECTED', leave, employee, typeName, { status: from }, { status: 'REJECTED', reason });
-  await notifyEmployee(ctx, leave, employee, 'LEAVE_REJECTED', 'Leave rejected', `Your ${describe({ name: typeName }, leave)} was rejected: ${reason}`);
+  await notifyEmployee(ctx, leave, employee, 'LEAVE_REJECTED', 'Leave rejected', `Your ${describe({ name: typeName }, leave)} was rejected by ${ctx.userName}: ${reason}`);
   return getLeave(ctx, id);
 };
 

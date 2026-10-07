@@ -131,6 +131,10 @@ export const applyDecision = async <T extends Approvable>(
   return 'PENDING';
 };
 
+/** Who acts next, for the requester's notifications ("now waiting for approval from HR"). */
+export const nextApproverLabel = (type: string | null | undefined) =>
+  ({ MANAGER: 'your reporting manager', HR: 'HR', FINANCE: 'Finance', PAYROLL: 'Payroll' })[type ?? ''] ?? 'the next approver';
+
 /** Marks remaining steps as skipped (used on cancellation). */
 export const closeApproval = <T extends Approvable>(doc: T) => {
   for (const s of doc.approvalSteps) if (s.status === 'PENDING') s.status = 'SKIPPED';

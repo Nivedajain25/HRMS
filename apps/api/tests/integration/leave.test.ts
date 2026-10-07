@@ -464,6 +464,9 @@ describe('Leave management: multi-step approval chain', () => {
     expect(first.status).toBe(200);
     expect(first.body.data).toMatchObject({ status: 'PENDING_APPROVAL', currentApproverType: 'HR' });
     expect((await balanceOf(emp.token, 'CL')).pending).toBe(2);
+    // The employee is told about the manager's approval straight away.
+    const step = await NotificationModel.findOne({ userId: (await userIdOf(emp.employee._id)).userId, type: 'LEAVE_APPROVED', entityId: id }).lean();
+    expect(step?.message).toMatch(/approved by Chain .* now waiting for approval from HR$/);
 
     // The HR step: the manager (no leave:read) cannot act; HR (admin) is notified.
     expect((await as(mgr.token).post(`/api/v1/leaves/${id}/approve`, {})).status).toBe(403);

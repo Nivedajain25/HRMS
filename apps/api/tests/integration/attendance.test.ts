@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { AttendanceModel, AuditLogModel, DocumentModel, EmployeeModel } from '../../src/models';
+import { AttendanceModel, AuditLogModel, DocumentModel, EmployeeModel, NotificationModel } from '../../src/models';
 import { autoCloseOpenRecords, autoMarkPreviousDay } from '../../src/services/attendance.service';
 import { as, createEmployeeUser, registerOrg } from '../helpers';
 
@@ -310,6 +310,9 @@ describe('Attendance, shifts, holidays & regularization', () => {
       expect(m.status).toBe(200);
       expect(m.body.data.status).toBe('PENDING_APPROVAL');
       expect(m.body.data.currentApproverType).toBe('HR');
+      // The employee is told about the manager's approval straight away.
+      const reportUserId = (await EmployeeModel.findById(report.employee._id).select('userId').lean())?.userId;
+      expect(await NotificationModel.exists({ userId: reportUserId, type: 'ATTENDANCE_CORRECTION', entityId: id, message: /now waiting for approval from HR\.$/ })).toBeTruthy();
       // Manager cannot act on the HR step.
       expect((await as(manager.token).post(`/api/v1/attendance/regularizations/${id}/approve`, {})).status).toBe(403);
 

@@ -7,7 +7,16 @@ import { addDaysKey, dateOnly, todayKey, toDateKey, zonedInstant } from '../util
 import { badRequest, conflict, forbidden, invalidTransition, notFound } from '../utils/errors';
 import { buildPagination, buildSort, paginate } from '../utils/pagination';
 import { withTransaction } from '../utils/transaction';
-import { applyDecision, approvalQueueFilter, canActOnStep, closeApproval, initApproval, type Approvable, type ApprovalPolicy } from './approval.service';
+import {
+  applyDecision,
+  approvalQueueFilter,
+  canActOnStep,
+  closeApproval,
+  initApproval,
+  nextApproverLabel,
+  type Approvable,
+  type ApprovalPolicy,
+} from './approval.service';
 import { applyMetrics } from './attendance.service';
 import { audit } from './audit.service';
 import { managerUserId, notify, notifyHr, userIdsWithPermission } from './notification.service';
@@ -193,6 +202,18 @@ export const approveRegularization = async (ctx: RequestContext, id: string, inp
     }
     await doc.save();
     await notifyApprovers(ctx, doc, employee);
+    // The employee hears about each approval, not only the last one.
+    await notify({
+      organizationId: ctx.organizationId,
+      userIds: [employee.userId],
+      type: 'ATTENDANCE_CORRECTION',
+      title: `Attendance correction approved by ${ctx.userName}`,
+      message: `Your attendance correction for ${toDateKey(doc.date)} was approved by ${ctx.userName} and is now waiting for approval from ${nextApproverLabel(doc.currentApproverType)}.`,
+      link: `${LINK}/${id}`,
+      entityType: 'AttendanceCorrection',
+      entityId: doc._id,
+      excludeUserId: ctx.userId,
+    });
     return getRegularization(ctx, id);
   }
 
@@ -242,7 +263,7 @@ export const approveRegularization = async (ctx: RequestContext, id: string, inp
     userIds: [employee.userId],
     type: 'ATTENDANCE_CORRECTION',
     title: 'Attendance correction approved',
-    message: `Your attendance correction for ${dateKey} was approved.`,
+    message: `Your attendance correction for ${dateKey} was approved by ${ctx.userName}.`,
     link: `${LINK}/${id}`,
     entityType: 'AttendanceCorrection',
     entityId: doc._id,
@@ -263,7 +284,7 @@ export const rejectRegularization = async (ctx: RequestContext, id: string, inpu
     userIds: [employee.userId],
     type: 'ATTENDANCE_CORRECTION',
     title: 'Attendance correction rejected',
-    message: `Your attendance correction for ${toDateKey(doc.date)} was rejected: ${input.reason}`,
+    message: `Your attendance correction for ${toDateKey(doc.date)} was rejected by ${ctx.userName}: ${input.reason}`,
     link: `${LINK}/${id}`,
     entityType: 'AttendanceCorrection',
     entityId: doc._id,

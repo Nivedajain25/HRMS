@@ -65,7 +65,8 @@ export const SelfieCapture = ({ open, title, onCancel, onCapture }: SelfieCaptur
       const pic = await camera.current.takePictureAsync({ quality: 0.6, shutterSound: false });
       if (!pic?.uri) throw new Error('No photo');
       setPhoto(await compress(pic.uri, pic.width, true));
-    } catch {
+    } catch (err) {
+      console.warn('[selfie] capture failed', err);
       toast.error('Could not take the photo.', 'Please try again.');
     } finally {
       setBusy(false);
@@ -125,6 +126,11 @@ export const SelfieCapture = ({ open, title, onCancel, onCapture }: SelfieCaptur
                   facing="front"
                   animateShutter={false}
                   onCameraReady={() => setReady(true)}
+                  onMountError={(e) => {
+                    // Otherwise a camera that fails to start just leaves a dark frame and a dead shutter.
+                    console.warn('[selfie] camera failed to start', e.message);
+                    toast.error('The camera could not start.', e.message || 'Close other apps using the camera and try again.');
+                  }}
                 />
               </View>
               <View pointerEvents="none" style={styles.guide} />

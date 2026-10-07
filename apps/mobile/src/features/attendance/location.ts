@@ -14,22 +14,38 @@ const toResult = (pos: Location.LocationObject): GeoResult => ({
     : {}),
 });
 
+/** Never rejects: a fix, or null on error / timeout. */
+const tryFix = (accuracy: Location.Accuracy, ms: number) =>
+  withTimeout(
+    Location.getCurrentPositionAsync({ accuracy }).catch((err: unknown) => {
+      console.warn('[location] fix failed', accuracy, err);
+      return null;
+    }),
+    ms,
+  );
+
 /**
- * Best-effort device location with high accuracy (never rejects).
+ * Best-effort device location (never rejects). Tries GPS first; indoors GPS often can't get a fix in time, so it
+ * then takes the Wi-Fi / mobile-network position (fast indoors), and finally a recent last-known fix. The
+ * accuracy is always reported, so a rough position is recorded as rough.
  * `blocked` = permission denied and the OS will not ask again (settings needed).
  */
-export const getDeviceLocation = async (timeoutMs = 15_000): Promise<GeoResult> => {
+export const getDeviceLocation = async (): Promise<GeoResult> => {
   try {
     let perm = await Location.getForegroundPermissionsAsync();
     if (!perm.granted && perm.canAskAgain) perm = await Location.requestForegroundPermissionsAsync();
     if (!perm.granted) return { error: perm.canAskAgain ? 'denied' : 'blocked' };
     if (!(await Location.hasServicesEnabledAsync())) return { error: 'disabled' };
-    // Highest accuracy (GPS) for the exact spot; only if that times out, a very recent (≤ 1 min, ≤ 100 m) last fix.
-    const fresh = await withTimeout(Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest }), timeoutMs);
-    if (fresh) return toResult(fresh);
-    const last = await Location.getLastKnownPositionAsync({ maxAge: 60_000, requiredAccuracy: 100 });
-    return last ? toResult(last) : { error: 'unavailable' };
-  } catch {
+    const gps = await tryFix(Location.Accuracy.Highest, 10_000);
+    if (gps) return toResult(gps);
+    const network = await tryFix(Location.Accuracy.Balanced, 8_000);
+    if (network) return toResult(network);
+    const last = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60_000, requiredAccuracy: 1_000 }).catch(() => null);
+    if (last) return toResult(last);
+    console.warn('[location] no fix from GPS, network or last known position');
+    return { error: 'unavailable' };
+  } catch (err) {
+    console.warn('[location] failed', err);
     return { error: 'unavailable' };
   }
 };

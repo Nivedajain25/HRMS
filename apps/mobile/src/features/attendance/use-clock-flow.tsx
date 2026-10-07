@@ -7,6 +7,12 @@ import { getDeviceLocation, locationHelp, needsSettings } from './location';
 import { SelfieCapture } from './selfie-capture';
 
 export type ClockStep = 'locating' | 'selfie' | 'uploading' | 'saving';
+
+/** Development-only progress log (shows in the Expo dev server's output when testing on a phone; silent in builds). */
+const trace = (...args: unknown[]) => {
+  // eslint-disable-next-line no-console
+  if (__DEV__) console.log('[clock]', ...args);
+};
 type FlowAction = 'check-in' | 'check-out';
 
 const STEP_LABEL: Record<ClockStep, (a: FlowAction) => string> = {
@@ -96,6 +102,7 @@ export const useClockFlow = () => {
 
       setStep('locating');
       const loc = await getDeviceLocation();
+      trace(action, 'location:', 'error' in loc ? `failed (${loc.error})` : `ok ±${loc.accuracy ?? '?'} m`);
       if ('error' in loc) {
         // Mandatory at clock-in only; clock-out without a location is still recorded.
         if (today.requireLocation && action === 'check-in') {
@@ -121,6 +128,7 @@ export const useClockFlow = () => {
       if (today.requireSelfie && action === 'check-in') {
         setStep('selfie');
         const uri = await requestSelfie('Selfie to clock in');
+        trace('selfie:', uri ? 'taken' : 'cancelled');
         if (!uri) {
           toast.info(`A selfie is required to ${verb}.`);
           return false;
@@ -128,7 +136,9 @@ export const useClockFlow = () => {
         setStep('uploading');
         try {
           body.photoId = await uploadSelfie(uri);
+          trace('selfie uploaded');
         } catch (err) {
+          console.warn('[clock] selfie upload failed', toApiError(err).status, toApiError(err).message);
           setNotice({ tone: 'danger', title: 'Could not upload your photo.', message: toApiError(err).message });
           return false;
         }
@@ -141,6 +151,7 @@ export const useClockFlow = () => {
       return true;
     } catch (err) {
       const e = toApiError(err);
+      console.warn('[clock]', action, 'failed', e.status, e.code, e.message);
       if (e.status === 401) return false;
       // Settings or state may have changed since they were loaded.
       void qc.invalidateQueries({ queryKey: attendanceKeys.today });

@@ -15,6 +15,7 @@ import {
   Receipt,
   Settings2,
   Siren,
+  Star,
   Target,
   Trash2,
   UserMinus,
@@ -29,7 +30,8 @@ import { EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui/di
 import { Tabs, useConfirm } from '@/components/ui/overlay';
 import { useListParams } from '@/hooks/use-list-params';
 import { cn, formatDateTime, timeAgo } from '@/lib/utils';
-import { useDeleteNotification, useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, type NotificationItem } from './api';
+import { keepLabel, READ_NOTIFICATION_TTL_HOURS, useDeleteNotification, useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, type NotificationItem } from './api';
+import { StarButton } from './star-button';
 
 const TYPE_META: Record<NotificationType, { icon: LucideIcon; tone: string }> = {
   LEAVE_SUBMITTED: { icon: CalendarDays, tone: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300' },
@@ -76,10 +78,16 @@ const NotificationRow = ({ n }: { n: NotificationItem }) => {
           {unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-600" aria-hidden />}
         </span>
         <span className="mt-0.5 block text-sm leading-relaxed text-muted">{n.message}</span>
-        <time dateTime={n.createdAt} title={formatDateTime(n.createdAt)} className="mt-1 block text-xs text-subtle">
-          {timeAgo(n.createdAt)}
-        </time>
+        <span className="mt-1 block text-xs text-subtle">
+          <time dateTime={n.createdAt} title={formatDateTime(n.createdAt)}>
+            {timeAgo(n.createdAt)}
+          </time>
+          {/* Read notifications are deleted 12 hours after they're read, unless starred. */}
+          {keepLabel(n) ? ` · ${keepLabel(n)}` : ''}
+        </span>
       </button>
+      {/* The star stays visible (filled when starred); the other actions appear on hover. */}
+      <StarButton n={n} className="shrink-0" />
       <div className="flex shrink-0 items-start gap-1 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
         {unread && (
           <Button variant="ghost" size="icon-sm" aria-label={`Mark "${n.title}" as read`} title="Mark as read" onClick={() => markRead.mutate(n._id)} disabled={markRead.isPending}>
@@ -107,8 +115,12 @@ const NotificationRow = ({ n }: { n: NotificationItem }) => {
 
 export const NotificationsPage = () => {
   const { params, set } = useListParams({ limit: 20 });
-  const filter = params.filter === 'unread' ? 'unread' : 'all';
-  const list = useNotifications({ page: params.page, limit: params.limit, ...(filter === 'unread' ? { unread: true } : {}) });
+  const filter = params.filter === 'unread' ? 'unread' : params.filter === 'starred' ? 'starred' : 'all';
+  const list = useNotifications({
+    page: params.page,
+    limit: params.limit,
+    ...(filter === 'unread' ? { unread: true } : filter === 'starred' ? { starred: true } : {}),
+  });
   const unreadCount = useNotifications({ page: 1, limit: 1, unread: true });
   const markAll = useMarkAllNotificationsRead();
   const navigate = useNavigate();
@@ -119,7 +131,7 @@ export const NotificationsPage = () => {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Notifications"
-        description={unread ? `You have ${unread} unread notification${unread === 1 ? '' : 's'}` : 'You are all caught up'}
+        description={`${unread ? `You have ${unread} unread notification${unread === 1 ? '' : 's'}` : 'You are all caught up'} · read notifications are deleted after ${READ_NOTIFICATION_TTL_HOURS} hours unless you star them`}
         actions={
           <>
             <Button variant="outline" icon={<Settings2 className="h-4 w-4" />} onClick={() => navigate('/settings/notifications')}>
@@ -142,9 +154,10 @@ export const NotificationsPage = () => {
           tabs={[
             { key: 'all', label: 'All' },
             { key: 'unread', label: 'Unread', count: unread || undefined },
+            { key: 'starred', label: 'Starred' },
           ]}
           active={filter}
-          onChange={(key) => set({ filter: key === 'unread' ? 'unread' : undefined })}
+          onChange={(key) => set({ filter: key === 'unread' || key === 'starred' ? key : undefined })}
         />
         <div role="tabpanel" aria-labelledby={`tab-${filter}`}>
           {list.isLoading ? (
@@ -163,11 +176,17 @@ export const NotificationsPage = () => {
             <ErrorState message={list.error.message} onRetry={() => list.refetch()} />
           ) : rows.length === 0 ? (
             <EmptyState
-              icon={filter === 'unread' ? <CheckCheck className="h-6 w-6" /> : <BellOff className="h-6 w-6" />}
-              title={filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
-              description={filter === 'unread' ? "You've read everything. Nice work." : 'Approvals, reminders and updates will appear here.'}
+              icon={filter === 'unread' ? <CheckCheck className="h-6 w-6" /> : filter === 'starred' ? <Star className="h-6 w-6" /> : <BellOff className="h-6 w-6" />}
+              title={filter === 'unread' ? 'No unread notifications' : filter === 'starred' ? 'No starred notifications' : 'No notifications yet'}
+              description={
+                filter === 'unread'
+                  ? "You've read everything. Nice work."
+                  : filter === 'starred'
+                    ? `Star an important notification to keep it; others are deleted ${READ_NOTIFICATION_TTL_HOURS} hours after you read them.`
+                    : 'Approvals, reminders and updates will appear here.'
+              }
               action={
-                filter === 'unread' ? (
+                filter !== 'all' ? (
                   <Button variant="outline" onClick={() => set({ filter: undefined })}>
                     View all
                   </Button>

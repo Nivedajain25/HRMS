@@ -5,6 +5,7 @@ import {
   idParam,
   notificationListQuery,
   notificationPreferencesSchema,
+  notificationStarSchema,
 } from '@stencil/shared';
 import { announcementController as ann, notificationController as notif } from '../controllers/communication.controller';
 import { createModule } from './registry';
@@ -68,4 +69,8 @@ notificationModule.route(
 );
 notificationModule.route({ method: 'post', path: '/read-all', summary: 'Mark all my notifications as read' }, notif.readAll);
 notificationModule.route({ method: 'post', path: '/:id/read', summary: 'Mark a notification as read', params: idParam }, notif.read);
+notificationModule.route(
+  { method: 'post', path: '/:id/star', summary: 'Star (keep) or unstar one of my notifications; starred ones are not auto-deleted', params: idParam, body: notificationStarSchema },
+  notif.star,
+);
 notificationModule.route({ method: 'delete', path: '/:id', summary: 'Delete one of my notifications', params: idParam }, notif.remove);

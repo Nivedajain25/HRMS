@@ -13,12 +13,19 @@ const notificationSchema = new Schema(
     entityType: String,
     entityId: { type: Schema.Types.ObjectId, default: null },
     readAt: { type: Date, default: null },
+    /** Starred by its owner: kept instead of being deleted after it's read. */
+    starred: { type: Boolean, default: false },
+    /** When MongoDB deletes it: 12 h after it's read (or unstarred); null while unread or starred. */
+    expiresAt: { type: Date, default: null },
   },
   { timestamps: true, versionKey: false },
 );
 notificationSchema.index({ organizationId: 1, userId: 1, readAt: 1, createdAt: -1 });
 // Keep notifications for one year.
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 365 });
+/** Read, unstarred notifications are deleted this many hours after they're marked read. */
+export const NOTIFICATION_READ_TTL_HOURS = 12;
+notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export type NotificationRecord = InferSchemaType<typeof notificationSchema>;
 export const NotificationModel = model('Notification', notificationSchema);
 

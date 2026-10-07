@@ -32,6 +32,8 @@ import { get, patch, post } from '@/lib/api';
 import { cn, timeAgo } from '@/lib/utils';
 import { TONE_TEXT } from '@/lib/module-colors';
 import { useLogout } from '@/features/auth/use-auth';
+import { keepLabel, READ_NOTIFICATION_TTL_HOURS } from '@/features/notifications/api';
+import { StarButton } from '@/features/notifications/star-button';
 import { AnnouncementBar, AnnouncementPopup } from '@/features/announcements/components/announcement-highlights';
 import { EmergencyAlerts } from '@/features/emergencies/components/emergency-alerts';
 import { EmergencyButton } from '@/features/emergencies/components/emergency-button';
@@ -135,6 +137,8 @@ interface NotificationItem {
   message: string;
   link?: string;
   readAt?: string | null;
+  starred?: boolean;
+  expiresAt?: string | null;
   createdAt: string;
 }
 
@@ -152,13 +156,15 @@ const NotificationBell = () => {
     queryFn: () => get<NotificationItem[]>('/notifications', { limit: 8 }),
     enabled: open,
   });
+  // The dashboard's "N unread" counters come from the dashboard payload, so refresh it too.
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['notifications'] }), qc.invalidateQueries({ queryKey: ['dashboard', 'employee'] })]);
   const markAll = useMutation({
     mutationFn: () => post('/notifications/read-all'),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: refresh,
   });
   const markOne = useMutation({
     mutationFn: (id: string) => post(`/notifications/${id}/read`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: refresh,
   });
   const unread = count.data?.count ?? 0;
 
@@ -195,10 +201,10 @@ const NotificationBell = () => {
               {list.isLoading && <li className="px-4 py-6 text-center text-sm text-muted">Loading…</li>}
               {list.data?.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted">You're all caught up.</li>}
               {list.data?.map((n) => (
-                <li key={n._id}>
+                <li key={n._id} className={cn('flex items-start', !n.readAt && 'bg-brand-50/50 dark:bg-brand-500/5')}>
                   <button
                     type="button"
-                    className={cn('flex w-full gap-3 px-4 py-3 text-left hover:bg-surface-2', !n.readAt && 'bg-brand-50/50 dark:bg-brand-500/5')}
+                    className="flex min-w-0 flex-1 gap-3 py-3 pl-4 text-left hover:bg-surface-2"
                     onClick={() => {
                       if (!n.readAt) markOne.mutate(n._id);
                       setOpen(false);
@@ -209,12 +215,32 @@ const NotificationBell = () => {
                     <span className="min-w-0">
                       <span className="block text-sm font-medium text-fg">{n.title}</span>
                       <span className="line-clamp-2 block text-xs text-muted">{n.message}</span>
-                      <span className="mt-1 block text-[11px] text-subtle">{timeAgo(n.createdAt)}</span>
+                      <span className="mt-1 block text-[11px] text-subtle">
+                        {timeAgo(n.createdAt)}
+                        {keepLabel(n) ? ` · ${keepLabel(n)}` : ''}
+                      </span>
                     </span>
                   </button>
+                  {/* Star to keep it; mark as read without opening it (read ones are deleted 12 hours later unless starred). */}
+                  <span className="mt-2.5 mr-2 flex shrink-0 items-center">
+                    <StarButton n={n} />
+                    {!n.readAt && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Mark "${n.title}" as read`}
+                        title={n.starred ? 'Mark as read (starred: kept)' : `Mark as read (deleted after ${READ_NOTIFICATION_TTL_HOURS} hours)`}
+                        disabled={markOne.isPending}
+                        onClick={() => markOne.mutate(n._id)}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>
+            <p className="border-t border-line px-4 py-2 text-[11px] text-subtle">Read notifications are deleted after {READ_NOTIFICATION_TTL_HOURS} hours. Star one to keep it.</p>
             <Link to="/notifications" onClick={() => setOpen(false)} className="block border-t border-line px-4 py-2.5 text-center text-sm font-medium text-brand-600 hover:bg-surface-2 dark:text-brand-400">
               View all
             </Link>

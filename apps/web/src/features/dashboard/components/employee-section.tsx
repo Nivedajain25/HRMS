@@ -1,10 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, PartyPopper, Target } from 'lucide-react';
+import { Bell, Check, CheckCircle2, PartyPopper, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { ErrorState, ProgressBar, Skeleton } from '@/components/ui/display';
 import { label } from '@/lib/i18n';
 import { cn, timeAgo } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
-import { useMarkNotificationRead, useNotifications } from '@/features/notifications/api';
+import { READ_NOTIFICATION_TTL_HOURS, useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/features/notifications/api';
+import { StarButton } from '@/features/notifications/star-button';
 import { MyTasksWidget } from '@/features/tasks/components/my-tasks-widget';
 import { useEmployeeDashboard, type EmployeeDashboard } from '../api';
 import { dashboardKind, formatKey, inDaysLabel } from '../lib';
@@ -96,6 +98,7 @@ const Goals = ({ data, box }: { data: EmployeeDashboard; box?: string }) => (
 const NotificationsWidget = ({ unread, boxed = false, box }: { unread?: number; boxed?: boolean; box?: string }) => {
   const list = useNotifications({ page: 1, limit: 4, unread: true });
   const markRead = useMarkNotificationRead();
+  const markAll = useMarkAllNotificationsRead();
   const navigate = useNavigate();
   const count = unread ?? list.data?.pagination.total ?? 0;
   return (
@@ -106,7 +109,16 @@ const NotificationsWidget = ({ unread, boxed = false, box }: { unread?: number; 
       description={count ? `${count} unread` : 'All caught up'}
       icon={box ? undefined : <Bell className="h-4 w-4" />}
       accent={boxed ? 'warm' : 'red'}
-      action={<ViewAllLink to="/notifications" />}
+      action={
+        <span className="flex items-center gap-3">
+          {count > 1 && (
+            <button type="button" onClick={() => markAll.mutate()} disabled={markAll.isPending} className="text-xs font-medium text-brand-600 hover:underline disabled:opacity-50 dark:text-brand-400">
+              Mark all read
+            </button>
+          )}
+          <ViewAllLink to="/notifications" />
+        </span>
+      }
       loading={list.isLoading}
       error={list.error}
       onRetry={() => list.refetch()}
@@ -122,10 +134,10 @@ const NotificationsWidget = ({ unread, boxed = false, box }: { unread?: number; 
     >
       <ul className="divide-y divide-line px-2 pb-2">
         {list.data?.data.map((n) => (
-          <li key={n._id}>
+          <li key={n._id} className="flex items-start gap-1">
             <button
               type="button"
-              className="flex w-full gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-surface-2"
+              className="flex min-w-0 flex-1 gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-surface-2"
               onClick={() => {
                 markRead.mutate(n._id);
                 if (n.link) navigate(n.link);
@@ -138,9 +150,24 @@ const NotificationsWidget = ({ unread, boxed = false, box }: { unread?: number; 
                 <span className="mt-0.5 block text-[11px] text-subtle">{timeAgo(n.createdAt)}</span>
               </span>
             </button>
+            {/* Star to keep it; mark as read without opening it (read ones are deleted 12 hours later unless starred). */}
+            <span className="mt-2 flex shrink-0 items-center">
+              <StarButton n={n} />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Mark "${n.title}" as read`}
+                title={n.starred ? 'Mark as read (starred: kept)' : `Mark as read (deleted after ${READ_NOTIFICATION_TTL_HOURS} hours)`}
+                disabled={markRead.isPending}
+                onClick={() => markRead.mutate(n._id)}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            </span>
           </li>
         ))}
       </ul>
+      <p className="px-5 pb-3 text-[11px] text-subtle">Read notifications are deleted after {READ_NOTIFICATION_TTL_HOURS} hours. Star one to keep it.</p>
     </Widget>
   );
 };

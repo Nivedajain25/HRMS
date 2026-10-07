@@ -6,11 +6,13 @@ import { closeQueue, initQueue } from './jobs/queue';
 import { startScheduler, stopScheduler } from './jobs';
 import { registerAllJobs } from './jobs/all';
 import { ensureSystemRoles, syncPermissionCatalog } from './services/organization-setup.service';
+import { migrateNotificationExpiry } from './services/notification-center.service';
 
 const start = async () => {
   await connectDatabaseWithRetry();
   await syncPermissionCatalog();
   await ensureSystemRoles();
+  await migrateNotificationExpiry();
   registerAllJobs();
   // The API process also runs the worker unless a dedicated worker is deployed.
   await initQueue({ startWorker: process.env.RUN_WORKER !== 'false' });

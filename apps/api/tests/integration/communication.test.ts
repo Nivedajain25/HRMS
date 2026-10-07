@@ -2,6 +2,8 @@ import { Types } from 'mongoose';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { runBirthdayReminders } from '../../src/jobs/reminders';
 import { AnnouncementModel, EmployeeModel, JobRunModel, NotificationModel } from '../../src/models';
+import { NOTIFICATION_READ_TTL_HOURS } from '../../src/models/system.model';
+import { migrateNotificationExpiry } from '../../src/services/notification-center.service';
 import { publishDueAnnouncements } from '../../src/services/announcement.service';
 import { sentEmails } from '../../src/services/email.service';
 import { notify } from '../../src/services/notification.service';
@@ -213,6 +215,55 @@ describe('Announcements & notifications', () => {
 
     expect((await as(sales.token).delete(`/api/v1/notifications/${first}`)).status).toBe(200);
     expect((await as(sales.token).get('/api/v1/notifications')).body.pagination.total).toBe(2);
+  });
+
+  it('deletes notifications 12 hours after they are read, unless the user starred them', async () => {
+    expect(NOTIFICATION_READ_TTL_HOURS).toBe(12);
+    const orgId = new Types.ObjectId(admin.user.organization._id);
+    await NotificationModel.deleteMany({ userId: userIdOf(sales) });
+    // Older databases had a TTL index on readAt (it can't spare starred ones): the startup migration replaces it.
+    await NotificationModel.init();
+    await NotificationModel.collection.createIndex({ readAt: 1 }, { expireAfterSeconds: 43_200 });
+    const legacy = await NotificationModel.create({ organizationId: orgId, userId: userIdOf(sales), type: 'GENERAL', title: 'Legacy', message: 'Read before expiresAt existed', readAt: new Date(Date.now() - 3_600_000) });
+    await migrateNotificationExpiry();
+    await migrateNotificationExpiry(); // idempotent
+    const ttls = (await NotificationModel.collection.indexes()).filter((ix) => ix.expireAfterSeconds !== undefined).map((ix) => JSON.stringify(ix.key));
+    expect(ttls).not.toContain(JSON.stringify({ readAt: 1 }));
+    expect(ttls).toContain(JSON.stringify({ expiresAt: 1 }));
+    const migrated = await NotificationModel.findById(legacy._id).lean();
+    expect(migrated!.expiresAt!.getTime() - migrated!.readAt!.getTime()).toBe(12 * 3_600_000);
+
+    const mk = (title: string) => notify({ organizationId: orgId, userIds: [userIdOf(sales)], type: 'GENERAL', title, message: title });
+    await mk('Keep me');
+    await mk('Let me go');
+    const mine = (await as(sales.token).get('/api/v1/notifications?unread=true')).body.data as { _id: string; title: string; expiresAt: string | null; starred: boolean }[];
+    const keep = mine.find((n) => n.title === 'Keep me')!;
+    const go = mine.find((n) => n.title === 'Let me go')!;
+    expect(keep).toMatchObject({ starred: false, expiresAt: null }); // unread: never expires
+
+    // Only the owner can star; anyone else gets "not found".
+    expect((await as(eng.token).post(`/api/v1/notifications/${keep._id}/star`, { starred: true })).status).toBe(404);
+    const starred = await as(sales.token).post(`/api/v1/notifications/${keep._id}/star`, { starred: true });
+    expect(starred.status).toBe(200);
+    expect(starred.body.data).toMatchObject({ starred: true, expiresAt: null });
+
+    // Reading: the unstarred one gets an expiry 12 h out, the starred one is kept.
+    const t0 = Date.now();
+    expect((await as(sales.token).post('/api/v1/notifications/read-all')).status).toBe(200);
+    const kept = await NotificationModel.findById(keep._id).lean();
+    const going = await NotificationModel.findById(go._id).lean();
+    expect(kept!.readAt).toBeTruthy();
+    expect(kept!.expiresAt).toBeNull();
+    expect(going!.expiresAt!.getTime() - t0).toBeGreaterThan(12 * 3_600_000 - 60_000);
+    expect(going!.expiresAt!.getTime() - t0).toBeLessThanOrEqual(12 * 3_600_000 + 60_000);
+
+    const starredList = (await as(sales.token).get('/api/v1/notifications?starred=true')).body.data as { title: string }[];
+    expect(starredList.map((n) => n.title)).toEqual(['Keep me']);
+
+    // Unstarring a read notification gives it a fresh 12 hours.
+    const unstarred = await as(sales.token).post(`/api/v1/notifications/${keep._id}/star`, { starred: false });
+    expect(unstarred.body.data.starred).toBe(false);
+    expect(new Date(unstarred.body.data.expiresAt).getTime() - Date.now()).toBeGreaterThan(12 * 3_600_000 - 60_000);
   });
 
   it('merges notification preferences with defaults and applies them', async () => {

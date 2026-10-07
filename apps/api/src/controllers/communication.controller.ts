@@ -24,6 +24,7 @@ export const notificationController = {
   unreadCount: handle((ctx) => notifications.unreadCount(ctx)),
   read: handle((ctx, req) => notifications.markNotificationRead(ctx, idOf(req))),
   readAll: handle((ctx) => notifications.markAllRead(ctx), 'All notifications marked as read'),
+  star: handle((ctx, req) => notifications.starNotification(ctx, idOf(req), body<{ starred: boolean }>(req).starred)),
   remove: handle((ctx, req) => notifications.deleteNotification(ctx, idOf(req)), 'Notification deleted'),
   preferences: handle((ctx) => notifications.getPreferences(ctx)),
   updatePreferences: handle((ctx, req) => notifications.updatePreferences(ctx, body<PrefsBody>(req)), 'Preferences saved'),

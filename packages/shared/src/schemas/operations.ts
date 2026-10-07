@@ -188,8 +188,13 @@ export const notificationListQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   unread: z.preprocess((v) => v === true || v === 'true' || v === '1', z.boolean()).optional(),
+  /** Only the ones the user starred (kept). */
+  starred: z.preprocess((v) => v === true || v === 'true' || v === '1', z.boolean()).optional(),
 });
 export type NotificationListQuery = z.output<typeof notificationListQuery>;
+
+/** Star (keep) or unstar one of your own notifications. */
+export const notificationStarSchema = z.object({ starred: z.boolean() });
 
 export const notificationPreferencesSchema = z.object({
   preferences: z

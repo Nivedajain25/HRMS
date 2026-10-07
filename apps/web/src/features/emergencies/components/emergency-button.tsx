@@ -49,7 +49,7 @@ export const EmergencyButton = () => {
         onClick={() => setOpen(true)}
         aria-label="Emergency: inform HR"
         title="Personal emergency? Inform HR immediately"
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-2.5 text-xs font-bold tracking-wide text-white shadow-sm hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="inline-flex h-9 items-center gap-1.5 rounded-full bg-red-600 px-2.5 text-xs sm:px-3.5 font-bold tracking-wide text-white shadow-sm hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         <Siren className="h-4 w-4" aria-hidden />
         <span className="hidden sm:inline">Emergency</span>

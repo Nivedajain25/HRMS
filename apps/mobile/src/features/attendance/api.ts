@@ -95,6 +95,8 @@ export interface TodayState {
   allowRemoteClockIn: boolean;
   requireSelfie: boolean;
   requireLocation: boolean;
+  /** Breaks are turned on (web Settings → Attendance, Super Admin only). Missing on older servers. */
+  allowBreaks?: boolean;
 }
 
 export interface SummaryRow {

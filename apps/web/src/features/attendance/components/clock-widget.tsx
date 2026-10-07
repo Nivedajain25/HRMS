@@ -155,6 +155,9 @@ export const ClockWidget = () => {
   const graceEnd = new Date(t.shiftStart).getTime() + t.shift.gracePeriodMinutes * 60_000;
   const runningLate = t.state === 'NOT_CHECKED_IN' && t.dayKind === 'WORKING' && !t.shift.flexible && now.getTime() > graceEnd && now.getTime() < new Date(t.shiftEnd).getTime();
   const busy = action.isPending || flow.busy;
+  // Breaks are a Super Admin setting; someone already on a break can always end it.
+  const canStartBreak = t.allowBreaks && t.state === 'CHECKED_IN';
+  const showBreakTime = t.allowBreaks || onBreak > 0;
 
   const runBreak = async (key: 'break/start' | 'break/end', success: string) => {
     setPending(key);
@@ -260,16 +263,18 @@ export const ClockWidget = () => {
           )}
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className={cn('grid grid-cols-2 gap-3', showBreakTime ? 'xl:grid-cols-4' : 'xl:grid-cols-3')}>
             <Metric label="Clock in" icon={<LogIn className="h-4 w-4" />} tile={accent.tile} value={r?.checkIn ? formatTimeIn(r.checkIn, timeZone) : '—'} />
             <Metric label="Clock out" icon={<LogOut className="h-4 w-4" />} tile={accent.tile} value={r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—'} />
-            <Metric
-              label="Break"
-              icon={<Coffee className="h-4 w-4" />}
-              tile={accent.tile}
-              value={formatClock(onBreak)}
-              accent={t.state === 'ON_BREAK' ? 'text-amber-600 dark:text-amber-400' : undefined}
-            />
+            {showBreakTime && (
+              <Metric
+                label="Break"
+                icon={<Coffee className="h-4 w-4" />}
+                tile={accent.tile}
+                value={formatClock(onBreak)}
+                accent={t.state === 'ON_BREAK' ? 'text-amber-600 dark:text-amber-400' : undefined}
+              />
+            )}
             <Metric
               label={worked >= shiftSeconds ? 'Overtime' : 'Time left'}
               icon={<Hourglass className="h-4 w-4" />}
@@ -325,16 +330,16 @@ export const ClockWidget = () => {
           )}
 
           {(t.state === 'CHECKED_IN' || t.state === 'ON_BREAK') && (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {t.state === 'CHECKED_IN' ? (
+            <div className={cn('grid gap-2', (canStartBreak || t.state === 'ON_BREAK') && 'sm:grid-cols-2')}>
+              {canStartBreak ? (
                 <Button variant="outline" size="lg" className={cn(bigBtn, 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200')} icon={<Coffee className="h-5 w-5" />} loading={pending === 'break/start'} disabled={busy} onClick={() => runBreak('break/start', 'Break started')}>
                   Start break
                 </Button>
-              ) : (
+              ) : t.state === 'ON_BREAK' ? (
                 <Button size="lg" className={cn(bigBtn, 'bg-amber-500 text-white hover:bg-amber-600')} icon={<Play className="h-5 w-5" />} loading={pending === 'break/end'} disabled={busy} onClick={() => runBreak('break/end', 'Welcome back!')}>
                   End break
                 </Button>
-              )}
+              ) : null}
               <Button size="lg" className={cn(bigBtn, 'bg-rose-600 text-white hover:bg-rose-700')} icon={<LogOut className="h-5 w-5" />} loading={flow.active === 'check-out'} disabled={busy} onClick={onClockOut}>
                 Clock out
               </Button>
@@ -345,7 +350,8 @@ export const ClockWidget = () => {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
               <p className="font-medium">You're done for today.</p>
               <p className="mt-0.5">
-                Worked {minutesToHours(r.workingMinutes)} · Break {minutesToHours(r.breakMinutes)}
+                Worked {minutesToHours(r.workingMinutes)}
+                {r.breakMinutes > 0 ? ` · Break ${minutesToHours(r.breakMinutes)}` : ''}
                 {r.isEarlyDeparture ? ` · Left ${minutesToHours(r.earlyDepartureMinutes)} early` : ''}
                 {r.overtimeMinutes > 0 ? ` · Overtime ${minutesToHours(r.overtimeMinutes)}` : ''}. Something wrong?{' '}
                 <Link to={`/regularization?date=${t.date}`} className="font-medium underline">

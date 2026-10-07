@@ -65,6 +65,8 @@ export const organizationSettingsSchema = z.object({
       defaultShiftEnd: timeString,
       requireSelfie: z.boolean(),
       requireLocation: z.boolean(),
+      /** Only the Super Admin may change this. */
+      allowBreaks: z.boolean(),
     })
     .partial()
     .optional(),

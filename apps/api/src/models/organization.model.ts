@@ -20,6 +20,8 @@ const settingsSchema = new Schema(
       requireSelfie: { type: Boolean, default: false },
       /** Self-service clock in/out must include GPS coordinates. */
       requireLocation: { type: Boolean, default: false },
+      /** Employees can start / end breaks while clocked in. Off until the Super Admin turns it on. */
+      allowBreaks: { type: Boolean, default: false },
     },
     approvals: {
       leave: approvalChain(['MANAGER']),

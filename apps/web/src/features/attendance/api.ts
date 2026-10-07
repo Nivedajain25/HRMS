@@ -116,6 +116,8 @@ export interface TodayState {
   allowRemoteClockIn: boolean;
   requireSelfie: boolean;
   requireLocation: boolean;
+  /** Breaks are turned on (Settings → Attendance, Super Admin only). */
+  allowBreaks: boolean;
 }
 
 export interface SummaryRow {
@@ -342,6 +344,8 @@ export interface AttendanceBoard {
   dayKind: DayKind;
   /** `peers`: a plain employee's own team (manager + teammates), with everyone else's details withheld. */
   scope: 'all' | 'team' | 'peers';
+  allowBreaks: boolean;
+  /** Without "On break" while breaks are turned off. */
   columns: { key: BoardColumnKey; label: string; count: number }[];
   cards: BoardCard[];
 }

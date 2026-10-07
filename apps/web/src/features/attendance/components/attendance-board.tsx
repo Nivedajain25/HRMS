@@ -197,6 +197,7 @@ export const AttendanceBoardView = ({ scope, onChange }: { scope?: string; onCha
   }, []);
 
   const d = board.data;
+  const columns = d?.columns ?? (['NOT_IN', 'WORKING', 'DONE', 'AWAY'] as BoardColumnKey[]).map((key) => ({ key, label: '', count: 0 }));
   const q = search.trim().toLowerCase();
   const cards = useMemo(
     () =>
@@ -236,8 +237,9 @@ export const AttendanceBoardView = ({ scope, onChange }: { scope?: string; onCha
       </div>
 
       <div className="scrollbar-thin -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-        <div className="grid min-w-[1100px] grid-cols-5 gap-3">
-          {(d?.columns ?? (['NOT_IN', 'WORKING', 'ON_BREAK', 'DONE', 'AWAY'] as BoardColumnKey[]).map((key) => ({ key, label: '', count: 0 }))).map((col) => {
+        {/* As many columns as the board sends (no "On break" while breaks are turned off). */}
+        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`, minWidth: columns.length * 220 }}>
+          {columns.map((col) => {
             const style = COLUMN_STYLE[col.key];
             const items = cards.filter((c) => c.column === col.key);
             return (

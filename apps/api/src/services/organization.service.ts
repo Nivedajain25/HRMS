@@ -3,7 +3,7 @@ import { OrganizationModel } from '../models';
 import { COUNTRY_PACKS } from '../payroll/countries';
 import type { RequestContext } from '../types/context';
 import { isValidTimeZone } from '../utils/dates';
-import { badRequest, notFound } from '../utils/errors';
+import { badRequest, forbidden, notFound } from '../utils/errors';
 import { invalidateAuthCache } from '../middleware/auth';
 import { audit, diff } from './audit.service';
 
@@ -38,6 +38,11 @@ export const updateSettings = async (ctx: RequestContext, input: OrganizationSet
   if (!org) throw notFound('Organization');
   if (input.payroll?.countryRules && !COUNTRY_PACKS[input.payroll.countryRules]) {
     throw badRequest('Unknown payroll rule pack', 'INVALID_COUNTRY_RULES');
+  }
+  // Breaks on / off is the Super Admin's call; others may still save the section with it unchanged.
+  const allowBreaks = input.attendance?.allowBreaks;
+  if (allowBreaks !== undefined && allowBreaks !== (org.settings?.attendance?.allowBreaks ?? false) && !ctx.roleKeys.includes('super_admin')) {
+    throw forbidden('Only the Super Admin can turn breaks on or off', 'SUPER_ADMIN_ONLY');
   }
   const before = JSON.parse(JSON.stringify(org.settings ?? {})) as Record<string, unknown>;
   // Section-level merge so partial updates don't wipe sibling settings.

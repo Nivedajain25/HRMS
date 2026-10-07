@@ -33,6 +33,7 @@ export interface AttendanceSettings {
   defaultShiftEnd: string;
   requireSelfie: boolean;
   requireLocation: boolean;
+  allowBreaks: boolean;
 }
 
 export interface OrgAttendanceConfig {
@@ -57,6 +58,7 @@ export const loadOrgAttendanceConfig = async (organizationId: Types.ObjectId): P
       defaultShiftEnd: a?.defaultShiftEnd ?? '18:00',
       requireSelfie: a?.requireSelfie ?? false,
       requireLocation: a?.requireLocation ?? false,
+      allowBreaks: a?.allowBreaks ?? false,
     },
     regularizationChain: ((org?.settings?.approvals?.regularization as string[] | undefined) ?? ['MANAGER', 'HR']) as OrgAttendanceConfig['regularizationChain'],
   };

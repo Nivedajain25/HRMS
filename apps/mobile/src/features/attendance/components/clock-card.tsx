@@ -167,6 +167,9 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
     now.getTime() > graceEnd &&
     now.getTime() < new Date(t.shiftEnd).getTime();
   const busy = breakAction.isPending || flow.busy;
+  // Breaks are a Super Admin setting; someone already on a break can always end it.
+  const canStartBreak = !!t.allowBreaks && t.state === 'CHECKED_IN';
+  const showBreakTime = !!t.allowBreaks || onBreak > 0;
   const captureHint = t.requireSelfie
     ? `Clocking in needs a selfie${t.requireLocation ? ' and your location' : ''}.`
     : t.requireLocation
@@ -414,16 +417,18 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
                 </Text>
               </Text>
             </View>
-            <View style={styles.tlStat}>
-              <Coffee size={14} color={c.warning} />
-              <Text size="sm" color="fg2">
-                Break{' '}
-                <Text size="sm" weight="bold" tabular>
-                  {minutesToHours(Math.floor(onBreak / 60))}
+            {showBreakTime ? (
+              <View style={styles.tlStat}>
+                <Coffee size={14} color={c.warning} />
+                <Text size="sm" color="fg2">
+                  Break{' '}
+                  <Text size="sm" weight="bold" tabular>
+                    {minutesToHours(Math.floor(onBreak / 60))}
+                  </Text>
                 </Text>
-              </Text>
-            </View>
-            {t.state === 'CHECKED_IN' ? (
+              </View>
+            ) : null}
+            {canStartBreak ? (
               <Button
                 variant="ghost"
                 icon={Coffee}
@@ -532,7 +537,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
             value={t.state === 'NOT_CHECKED_IN' ? '00:00:00' : formatClock(worked)}
             color={t.state === 'CHECKED_IN' ? c.success : undefined}
           />
-          <Metric label="Break" icon={Coffee} value={formatClock(onBreak)} color={t.state === 'ON_BREAK' ? c.warning : undefined} />
+          {showBreakTime ? <Metric label="Break" icon={Coffee} value={formatClock(onBreak)} color={t.state === 'ON_BREAK' ? c.warning : undefined} /> : null}
           <Metric label="Clock in" icon={LogIn} value={r?.checkIn ? formatTimeIn(r.checkIn, timeZone) : '—'} />
           <Metric label="Clock out" icon={LogOut} value={r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—'} />
         </View>
@@ -586,7 +591,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
 
       {!compact && (t.state === 'CHECKED_IN' || t.state === 'ON_BREAK') ? (
         <View style={styles.actions}>
-          {t.state === 'CHECKED_IN' ? (
+          {canStartBreak ? (
             <Button
               variant="outline"
               size="lg"
@@ -598,7 +603,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
             >
               Start break
             </Button>
-          ) : (
+          ) : t.state === 'ON_BREAK' ? (
             <Button
               variant="success"
               size="lg"
@@ -610,7 +615,7 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
             >
               End break
             </Button>
-          )}
+          ) : null}
           <Button
             variant="danger"
             size="lg"

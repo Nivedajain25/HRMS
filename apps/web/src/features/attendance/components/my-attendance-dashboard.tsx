@@ -296,16 +296,17 @@ const TodayCard = ({ t, worked }: { t: TodayState; worked: number }) => {
             </p>
           )}
           {(t.state === 'CHECKED_IN' || t.state === 'ON_BREAK') && (
-            <div className="grid grid-cols-2 gap-2">
-              {t.state === 'CHECKED_IN' ? (
-                <Button variant="outline" size="lg" className="h-12 w-full rounded-xl" icon={<Coffee className="h-5 w-5" />} loading={pending === 'break/start'} disabled={busy} onClick={() => runBreak('break/start', 'Break started')}>
-                  Break
-                </Button>
-              ) : (
+            // Breaks are a Super Admin setting; someone already on a break can always end it.
+            <div className={cn('grid gap-2', (t.allowBreaks || t.state === 'ON_BREAK') && 'grid-cols-2')}>
+              {t.state === 'ON_BREAK' ? (
                 <Button variant="success" size="lg" className="h-12 w-full rounded-xl" icon={<Play className="h-5 w-5" />} loading={pending === 'break/end'} disabled={busy} onClick={() => runBreak('break/end', 'Welcome back!')}>
                   End break
                 </Button>
-              )}
+              ) : t.allowBreaks ? (
+                <Button variant="outline" size="lg" className="h-12 w-full rounded-xl" icon={<Coffee className="h-5 w-5" />} loading={pending === 'break/start'} disabled={busy} onClick={() => runBreak('break/start', 'Break started')}>
+                  Break
+                </Button>
+              ) : null}
               <Button size="lg" className={cn('h-12 w-full rounded-xl', PRIMARY)} icon={<LogOut className="h-5 w-5" />} loading={flow.active === 'check-out'} disabled={busy} onClick={() => void checkOut()}>
                 Check out
               </Button>

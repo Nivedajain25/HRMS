@@ -20,6 +20,8 @@ describe('Attendance, shifts, holidays & regularization', () => {
     report = await createEmployeeUser(admin.token, { firstName: 'Ravi', managerId: manager.employee._id });
     outsider = await createEmployeeUser(admin.token, { firstName: 'Otto' });
     hr = await createEmployeeUser(admin.token, { firstName: 'Hana', roles: ['hr_manager'] });
+    // Breaks are off until the Super Admin turns them on.
+    expect((await as(admin.token).patch('/api/v1/organization/settings', { attendance: { allowBreaks: true } })).status).toBe(200);
   });
 
   afterEach(() => {
@@ -626,7 +628,7 @@ describe('Office proximity at clock in/out', () => {
 describe('Live attendance board (kanban)', () => {
   it('puts every employee in exactly one column and scopes managers to their team', async () => {
     const admin = await registerOrg();
-    expect((await as(admin.token).patch('/api/v1/organization/settings', { attendance: { requireSelfie: false, requireLocation: false } })).status).toBe(200);
+    expect((await as(admin.token).patch('/api/v1/organization/settings', { attendance: { requireSelfie: false, requireLocation: false, allowBreaks: true } })).status).toBe(200);
     const boss = await createEmployeeUser(admin.token, { firstName: 'Boss', roles: ['manager'] });
     const working = await createEmployeeUser(admin.token, { firstName: 'Wes', managerId: boss.employee._id });
     const onBreak = await createEmployeeUser(admin.token, { firstName: 'Bree' });
@@ -682,5 +684,49 @@ describe('Live attendance board (kanban)', () => {
     expect(solo.body.data.cards.map((c: Card) => c.employee.firstName)).toEqual(['Ian']);
     expect((await as(idle.token).get('/api/v1/attendance/board?scope=team')).status).toBe(403);
     expect((await as(idle.token).get('/api/v1/attendance/board?scope=all')).status).toBe(403);
+  });
+});
+
+describe('Breaks setting (Super Admin only)', () => {
+  it('keeps breaks off by default, lets only the Super Admin switch them, and never strands someone on a break', async () => {
+    const admin = await registerOrg();
+    const settings = (body: Record<string, unknown>, token = admin.token) => as(token).patch('/api/v1/organization/settings', { attendance: body });
+    expect((await settings({ requireSelfie: false, requireLocation: false })).status).toBe(200);
+    const emp = await createEmployeeUser(admin.token, { firstName: 'Bea' });
+    // A custom "Admin" role that can manage settings, but isn't the Super Admin.
+    const role = await as(admin.token).post('/api/v1/roles', { name: 'Admin', permissions: ['settings:manage'] });
+    expect(role.status).toBe(201);
+    const orgAdmin = await createEmployeeUser(admin.token, { firstName: 'Ollie', roleIds: [role.body.data._id] });
+
+    // Off by default: no break option, and the API refuses one.
+    expect((await as(admin.token).get('/api/v1/organization/settings')).body.data.attendance.allowBreaks).toBe(false);
+    expect((await as(emp.token).post('/api/v1/attendance/check-in', { workMode: 'REMOTE' })).body.data.allowBreaks).toBe(false);
+    const refused = await as(emp.token).post('/api/v1/attendance/break/start');
+    expect(refused.status).toBe(422);
+    expect(refused.body.code).toBe('BREAKS_DISABLED');
+    const board = (await as(admin.token).get('/api/v1/attendance/board')).body.data;
+    expect(board.allowBreaks).toBe(false);
+    expect(board.columns.map((c: { key: string }) => c.key)).not.toContain('ON_BREAK');
+
+    // Other settings managers can save the section, but not flip breaks.
+    const denied = await settings({ allowBreaks: true }, orgAdmin.token);
+    expect(denied.status).toBe(403);
+    expect(denied.body.code).toBe('SUPER_ADMIN_ONLY');
+    expect((await settings({ allowBreaks: false, overtimeAfterHours: 10 }, orgAdmin.token)).status).toBe(200);
+
+    // The Super Admin turns them on.
+    expect((await settings({ allowBreaks: true })).status).toBe(200);
+    const started = await as(emp.token).post('/api/v1/attendance/break/start');
+    expect(started.status).toBe(200);
+    expect(started.body.data).toMatchObject({ state: 'ON_BREAK', allowBreaks: true });
+    expect((await as(admin.token).get('/api/v1/attendance/board')).body.data.columns.map((c: { key: string }) => c.key)).toContain('ON_BREAK');
+
+    // Turned off mid-break: the "On break" column stays while someone is on one, and they can still end it.
+    expect((await settings({ allowBreaks: false })).status).toBe(200);
+    expect((await as(admin.token).get('/api/v1/attendance/board')).body.data.columns.map((c: { key: string }) => c.key)).toContain('ON_BREAK');
+    const ended = await as(emp.token).post('/api/v1/attendance/break/end');
+    expect(ended.status).toBe(200);
+    expect(ended.body.data).toMatchObject({ state: 'CHECKED_IN', allowBreaks: false });
+    expect((await as(emp.token).post('/api/v1/attendance/break/start')).status).toBe(422);
   });
 });

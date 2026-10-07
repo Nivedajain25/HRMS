@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowDown, ArrowUp, CheckCircle2, Mail, Plug, Plus, Trash2, XCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, Lock, Mail, Plug, Plus, Trash2, XCircle } from 'lucide-react';
 import { APPROVER_TYPES, type ApproverType } from '@stencil/shared';
 import { FormField, FormGrid } from '@/components/forms/form';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Badge, Card, CardBody, CardHeader, ErrorState, Skeleton } from '@/compo
 import { Input, Select, Switch } from '@/components/ui/input';
 import { get, patch, post, toApiError } from '@/lib/api';
 import { label } from '@/lib/i18n';
+import { usePermissions } from '@/store/auth';
 
 interface OrgSettings {
   attendance: {
@@ -20,6 +21,8 @@ interface OrgSettings {
     defaultShiftEnd: string;
     requireSelfie?: boolean;
     requireLocation?: boolean;
+    /** Only the Super Admin can change it. */
+    allowBreaks?: boolean;
   };
   approvals: { leave: ApproverType[]; regularization: ApproverType[]; expense: ApproverType[] };
   leave: { allowNegativeBalance: boolean; allowBackdatedDays: number };
@@ -44,8 +47,9 @@ const useSection = <K extends keyof OrgSettings>(key: K) => {
     onSuccess: async () => {
       toast.success('Settings saved');
       await qc.invalidateQueries({ queryKey: ['organization', 'settings'] });
-      // The clock widget reads the capture requirements from /attendance/today.
-      if (key === 'attendance') await qc.invalidateQueries({ queryKey: ['attendance', 'today'] });
+      // Clock widgets read the capture requirements and "Allow breaks" from /attendance/today; the board drops its
+      // "On break" column — refresh both.
+      if (key === 'attendance') await qc.invalidateQueries({ queryKey: ['attendance'] });
     },
   });
   return { settings, value, setValue, save };
@@ -66,19 +70,37 @@ const SectionShell = ({ loading, error, onRetry, children, onSave, saving }: { l
   );
 };
 
-const ToggleRow = ({ title, description, checked, onChange }: { title: string; description?: string; checked: boolean; onChange: (v: boolean) => void }) => (
+const ToggleRow = ({
+  title,
+  description,
+  checked,
+  onChange,
+  disabled,
+  note,
+}: {
+  title: string;
+  description?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  /** Shown under the description, e.g. why the switch is locked. */
+  note?: ReactNode;
+}) => (
   <div className="flex items-start justify-between gap-6">
     <div>
       <p className="text-sm font-medium text-fg">{title}</p>
       {description && <p className="text-sm text-muted">{description}</p>}
+      {note && <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">{note}</p>}
     </div>
-    <Switch checked={checked} onChange={onChange} label={title} />
+    <Switch checked={checked} onChange={onChange} label={title} disabled={disabled} />
   </div>
 );
 
 export const AttendanceSettingsSection = () => {
   const { settings, value, setValue, save } = useSection('attendance');
   const v = value;
+  const { user } = usePermissions();
+  const superAdmin = !!user?.roles.some((r) => r.key === 'super_admin');
   return (
     <SectionShell loading={!v} error={settings.error} onRetry={() => settings.refetch()} onSave={() => v && save.mutate(v)} saving={save.isPending}>
       {v && (
@@ -96,6 +118,21 @@ export const AttendanceSettingsSection = () => {
             description="Clocking in needs the device's GPS location (clock-out records it when available). Locations are visible only to the employee, their managers and HR."
             checked={v.requireLocation ?? false}
             onChange={(requireLocation) => setValue({ ...v, requireLocation })}
+          />
+          <ToggleRow
+            title="Allow breaks"
+            description="Employees can start and end a break while clocked in; break time isn't counted as work. When off, the break buttons are hidden for everyone (anyone already on a break can still end it)."
+            checked={v.allowBreaks ?? false}
+            onChange={(allowBreaks) => setValue({ ...v, allowBreaks })}
+            disabled={!superAdmin}
+            note={
+              superAdmin ? undefined : (
+                <>
+                  <Lock className="h-3.5 w-3.5" aria-hidden />
+                  Only the Super Admin can turn breaks on or off.
+                </>
+              )
+            }
           />
           <FormGrid>
             <FormField label="Overtime after (hours/day)" hint="Overtime counts beyond the larger of this and the shift's hours.">

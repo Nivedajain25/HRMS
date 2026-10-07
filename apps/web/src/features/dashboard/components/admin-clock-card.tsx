@@ -63,6 +63,8 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   const timeZone = useOrgTimezone();
   const now = useNow(1000);
   const [pending, setPending] = useState<string | null>(null);
+  // Employee dashboard titles (tiles map in the context) vs HR / admin pills. Read before the early returns below.
+  const employeeTitles = typeof useContext(TitleBoxContext) === 'object';
 
   const clockFmt = useMemo(() => {
     try {
@@ -92,6 +94,9 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   const meta = STATE_META[t.state];
   const working = t.state === 'CHECKED_IN' || t.state === 'ON_BREAK';
   const busy = action.isPending || flow.busy;
+  // Breaks are a Super Admin setting; someone already on a break can always end it.
+  const breakButton = (t.allowBreaks && t.state === 'CHECKED_IN') || t.state === 'ON_BREAK';
+  const showBreakTime = t.allowBreaks || onBreak > 0;
   const graceEnd = new Date(t.shiftStart).getTime() + t.shift.gracePeriodMinutes * 60_000;
   const runningLate = t.state === 'NOT_CHECKED_IN' && t.dayKind === 'WORKING' && !t.shift.flexible && now.getTime() > graceEnd && now.getTime() < new Date(t.shiftEnd).getTime();
   const [time, ampm] = clockFmt.format(now).toUpperCase().split(/\s+/);
@@ -127,8 +132,6 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   // Employee dashboard (tone="pink"): Clock in light grey, Clock out dark blue (matching its sidebar pill).
   // Once done, a button stays in its colour but soft, showing the time.
   const brown = tone === 'pink';
-  // Employee dashboard titles (tiles map in the context) vs HR / admin pills.
-  const employeeTitles = typeof useContext(TitleBoxContext) === 'object';
   const grey = 'border-slate-300 bg-slate-200 text-slate-900 hover:bg-slate-300 disabled:opacity-50 dark:border-slate-500/40 dark:bg-slate-500/25 dark:text-slate-100';
   const greyDone = 'border-slate-200 bg-slate-100 text-slate-800 disabled:opacity-100 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-200';
   // Same dark navy as the employee sidebar's selected item (#1e3a8a), white text; stays full colour even before
@@ -233,8 +236,8 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
           </button>
         </div>
 
-        {/* In / Out / Worked / Break */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* In / Out / Break (Break only while breaks are turned on, or if one was taken today) */}
+        <div className={cn('grid gap-2', showBreakTime ? 'grid-cols-3' : 'grid-cols-2')}>
           <Fact
             label="In"
             icon={<DoorOpen className="h-3.5 w-3.5" />}
@@ -251,15 +254,17 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
             tile="bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300"
             value={t12(r?.checkOut)}
           />
-          <Fact
-            label="Break"
-            icon={<CupSoda className="h-3.5 w-3.5" />}
-            warm={brown && !violet}
-            violet={violet}
-            tile="bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300" value={onBreak ? formatClock(onBreak) : '0h'} accent={t.state === 'ON_BREAK' ? 'text-amber-600 dark:text-amber-400' : undefined} />
+          {showBreakTime && (
+            <Fact
+              label="Break"
+              icon={<CupSoda className="h-3.5 w-3.5" />}
+              warm={brown && !violet}
+              violet={violet}
+              tile="bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300" value={onBreak ? formatClock(onBreak) : '0h'} accent={t.state === 'ON_BREAK' ? 'text-amber-600 dark:text-amber-400' : undefined} />
+          )}
         </div>
 
-        {working ? (
+        {working && breakButton ? (
           <button
             type="button"
             onClick={() => void breakToggle()}

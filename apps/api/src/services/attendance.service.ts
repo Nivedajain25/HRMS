@@ -17,7 +17,7 @@ import {
 } from '../models';
 import type { RequestContext } from '../types/context';
 import { addDaysKey, dateOnly, monthRange, round2, todayKey, toDateKey, weekdayOf, zonedInstant } from '../utils/dates';
-import { badRequest, conflict, forbidden, notFound } from '../utils/errors';
+import { badRequest, conflict, forbidden, notFound, unprocessable } from '../utils/errors';
 import { buildSort, paginate } from '../utils/pagination';
 import { closeOpenBreaks, computeMetrics, liveState, officeProximity, shiftWindow, sumBreakMinutes, type BreakPeriod } from './attendance-calc';
 import { audit, diff } from './audit.service';
@@ -166,6 +166,7 @@ export const getToday = async (ctx: RequestContext) => {
     allowRemoteClockIn: cfg.attendance.allowRemoteClockIn,
     requireSelfie: cfg.attendance.requireSelfie,
     requireLocation: cfg.attendance.requireLocation,
+    allowBreaks: cfg.attendance.allowBreaks,
   };
 };
 
@@ -298,6 +299,8 @@ export const checkOut = async (ctx: RequestContext, input: z.output<typeof clock
 export const startBreak = async (ctx: RequestContext) => {
   const emp = await requireOwnEmployee(ctx);
   const cfg = await loadOrgAttendanceConfig(ctx.organizationId);
+  // Ending a break stays possible when breaks are turned off, so nobody is stuck "on break".
+  if (!cfg.attendance.allowBreaks) throw unprocessable('Breaks are turned off for your organization', 'BREAKS_DISABLED');
   const { record } = await requireOpenRecord(ctx, emp, cfg);
   if (record.breaks.some((b) => !b.end)) throw conflict('You are already on a break', 'ALREADY_ON_BREAK');
   record.breaks.push({ start: new Date(), end: null });
@@ -681,11 +684,15 @@ export const attendanceBoard = async (ctx: RequestContext, q: { date?: string; s
           ? time(b.checkOut) - time(a.checkOut)
           : 0,
   );
+  const { allowBreaks } = (await loadOrgAttendanceConfig(ctx.organizationId)).attendance;
+  const columns = BOARD_COLUMNS.map((c) => ({ ...c, count: cards.filter((x) => x.column === c.key).length }));
   return {
     date,
     dayKind,
     scope: scope.employeeIds === null ? 'all' : peers ? 'peers' : 'team',
-    columns: BOARD_COLUMNS.map((c) => ({ ...c, count: cards.filter((x) => x.column === c.key).length })),
+    allowBreaks,
+    // No "On break" column while breaks are turned off (unless someone is still on one).
+    columns: columns.filter((c) => c.key !== 'ON_BREAK' || allowBreaks || c.count > 0),
     cards,
   };
 };

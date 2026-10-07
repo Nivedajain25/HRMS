@@ -22,6 +22,7 @@ import { dateKeyIn, formatKey, formatTimeIn, hoursLabel, minutesToHours, monthBo
 import { radius, space, toneColors, useTheme } from '@/theme';
 import { useAttendanceList, useAttendanceSummary, type AttendanceRow } from '../api';
 import { shiftRange } from '@/lib/format';
+import { MonthCalendar } from './month-calendar';
 
 const Tile = ({ label, value, dot }: { label: string; value: string | number; dot?: string }) => {
   const { c } = useTheme();
@@ -113,7 +114,7 @@ const DayDetail = ({
 };
 
 /**
- * Monthly summary tiles and the day-by-day list of the signed-in user's attendance.
+ * Month calendar, monthly summary tiles and the day-by-day list of the signed-in user's attendance.
  * `afterSummary` is rendered between the summary and the day list (e.g. the Regularization link).
  */
 export const MonthAttendance = ({ afterSummary }: { afterSummary?: ReactNode }) => {
@@ -152,6 +153,9 @@ export const MonthAttendance = ({ afterSummary }: { afterSummary?: ReactNode }) 
           disabled={month >= currentMonth}
         />
       </View>
+
+      {/* Calendar first: the month at a glance, each day coloured; tap a day for its details. */}
+      <MonthCalendar month={month} today={today} records={rows} onOpen={setSelected} />
 
       <Card>
         {summary.error ? (

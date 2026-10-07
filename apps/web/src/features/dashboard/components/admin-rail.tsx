@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlarmClock, Bell, Cake, ChevronRight, FileWarning, Hourglass, UserPlus, UserX } from 'lucide-react';
+import { AlarmClock, Bell, Cake, ChevronRight, FileWarning, Handshake, Hourglass, Trophy, UserPlus, UserX } from 'lucide-react';
+import { StatusBadge } from '@/components/common/status-badge';
 import { Avatar, Skeleton } from '@/components/ui/display';
-import { cn } from '@/lib/utils';
+import { cn, fullName } from '@/lib/utils';
+import { usePermissions } from '@/store/auth';
+import { useReferralSummary } from '@/features/recruitment/api';
 import { useAdminDashboard } from '../api';
 import { formatKey } from '../lib';
 import { ActivityFeed } from './activity-feed';
@@ -68,6 +71,79 @@ const NewJoinersCard = () => {
   );
 };
 
+/** Candidates referred by employees: totals, the latest few (who referred them, where they are) and the top referrer. */
+const ReferralsCard = () => {
+  const { can } = usePermissions();
+  const allowed = can('recruitment:read');
+  const q = useReferralSummary(allowed);
+  if (!allowed) return null;
+  const d = q.data;
+  const stats = d
+    ? [
+        { label: 'Referred', value: d.total },
+        { label: 'In process', value: d.inProcess },
+        { label: 'Hired', value: d.hired },
+      ]
+    : [];
+  return (
+    <RailCard title="Referrals" icon={<Handshake className="h-4 w-4" />} to="/recruitment/candidates?source=REFERRAL">
+      {q.isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-12" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-10" />
+          ))}
+        </div>
+      ) : q.isError ? (
+        <p className="py-3 text-center text-xs text-black/60 dark:text-muted">Couldn't load referrals.</p>
+      ) : d && d.total ? (
+        <div className="space-y-3">
+          <dl className="grid grid-cols-3 gap-2">
+            {stats.map((s) => (
+              <div key={s.label} className="rounded-xl bg-violet-50 px-2 py-1.5 text-center dark:bg-violet-500/10">
+                <dd className="text-lg leading-tight font-bold text-violet-700 tabular-nums dark:text-violet-200">{s.value}</dd>
+                <dt className="text-[11px] font-medium text-black/60 dark:text-muted">{s.label}</dt>
+              </div>
+            ))}
+          </dl>
+          <ul className="space-y-2">
+            {d.recent.slice(0, 4).map((c) => (
+              <li key={c._id}>
+                <Link to={`/recruitment/candidates/${c._id}`} className="flex items-center gap-3 rounded-lg px-1 py-0.5 hover:bg-violet-50 dark:hover:bg-violet-500/10">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-black dark:text-fg">{fullName(c)}</span>
+                    <span className="block truncate text-xs text-black/60 dark:text-muted">
+                      {[c.jobId?.title, c.referredBy ? `by ${fullName(c.referredBy)}` : null].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <StatusBadge status={c.stage} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {d.topReferrer && (
+            <Link
+              to={`/employees/${d.topReferrer._id}`}
+              className="flex items-center gap-2 rounded-lg border-t border-violet-100 px-1 pt-3 text-xs text-black/70 hover:text-black dark:border-violet-500/20 dark:text-muted dark:hover:text-fg"
+            >
+              <Trophy className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
+              <Avatar name={fullName(d.topReferrer)} src={d.topReferrer.profilePhoto ?? undefined} size="xs" />
+              <span className="min-w-0 flex-1 truncate">
+                Top referrer: <span className="font-semibold text-black dark:text-fg">{fullName(d.topReferrer)}</span>
+              </span>
+              <span className="shrink-0 font-semibold tabular-nums">{d.topReferrer.count}</span>
+            </Link>
+          )}
+        </div>
+      ) : (
+        <p className="py-3 text-center text-xs text-black/60 dark:text-muted">
+          No referrals yet. Add a candidate with source “Referral” and pick who referred them.
+        </p>
+      )}
+    </RailCard>
+  );
+};
+
 const ALERT_TONE = {
   rose: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300',
   amber: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300',
@@ -121,7 +197,7 @@ const EmployeeAlertsCard = () => {
 };
 
 /**
- * Admin dashboard right-hand column: Quick Actions, New Joiners, Employee Alerts, Employees — plus Todo and
+ * Admin dashboard right-hand column: Quick Actions, New Joiners, Referrals, Employee Alerts, Employees — plus Todo and
  * Recent activity unless `withRows` (the Company overview shows those two in its bottom rows instead).
  */
 export const AdminRail = ({
@@ -138,6 +214,7 @@ export const AdminRail = ({
   <aside aria-label="Shortcuts and alerts" className="space-y-4">
     <QuickActionsCard />
     <NewJoinersCard />
+    <ReferralsCard />
     <EmployeeAlertsCard />
     <WidgetBoundary title="Employees">
       <EmployeesCard />

@@ -228,6 +228,18 @@ export const CandidateProfilePage = () => {
                   { label: 'Expected salary', value: c.expectedSalary !== undefined && c.expectedSalary !== null ? formatMoney(c.expectedSalary, currency) : null },
                   { label: 'Notice period', value: c.noticePeriodDays !== undefined && c.noticePeriodDays !== null ? `${c.noticePeriodDays} days` : null },
                   { label: 'Source', value: label(c.source) },
+                  ...(c.source === 'REFERRAL'
+                    ? [
+                        {
+                          label: 'Referred by',
+                          value: c.referredBy ? (
+                            <Link to={`/employees/${c.referredBy._id}`} className="font-medium text-brand-700 hover:underline dark:text-brand-300">
+                              {fullName(c.referredBy)}
+                            </Link>
+                          ) : null,
+                        },
+                      ]
+                    : []),
                   { label: 'Skills', value: c.skills.length ? <SkillChips skills={c.skills} /> : null },
                   { label: 'Job code', value: c.jobId ? <span className="font-mono">{c.jobId.code}</span> : null },
                 ]}

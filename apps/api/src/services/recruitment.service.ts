@@ -15,6 +15,7 @@ import {
 import type { z } from 'zod';
 import {
   CandidateModel,
+  EmployeeModel,
   InterviewModel,
   JobOpeningModel,
   OnboardingModel,
@@ -235,6 +236,7 @@ export const removeJob = async (ctx: RequestContext, id: string) => {
 const CANDIDATE_POPULATE = [
   { path: 'jobId', select: 'code title status departmentId' },
   { path: 'hiredEmployeeId', select: 'employeeId firstName lastName' },
+  { path: 'referredBy', select: 'employeeId firstName lastName' },
 ];
 
 export const listCandidates = async (
@@ -260,7 +262,10 @@ export const listCandidates = async (
     page: q.page,
     limit: q.limit,
     sort: buildSort(q, ['firstName', 'lastName', 'createdAt', 'stage', 'experienceYears', 'rating'], { createdAt: -1 }),
-    populate: [{ path: 'jobId', select: 'code title status' }],
+    populate: [
+      { path: 'jobId', select: 'code title status' },
+      { path: 'referredBy', select: 'employeeId firstName lastName' },
+    ],
   });
 };
 
@@ -287,13 +292,15 @@ export const createCandidate = async (ctx: RequestContext, input: CandidateInput
   const job = await JobOpeningModel.findOne({ _id: input.jobId, organizationId: ctx.organizationId, deletedAt: null }).lean();
   if (!job) throw badRequest('Job opening not found', 'INVALID_REFERENCE', [{ path: 'jobId', message: 'Job opening not found' }]);
   if (job.status !== 'OPEN') throw unprocessable('Candidates can only be added to open jobs', 'JOB_NOT_OPEN');
-  await assertRefsInOrg(ctx.organizationId, input, ['resumeFileId']);
+  await assertRefsInOrg(ctx.organizationId, input, ['resumeFileId', 'referredBy']);
   if (await CandidateModel.exists({ organizationId: ctx.organizationId, jobId: job._id, email: input.email })) {
     throw conflict('This candidate has already applied for this job', 'DUPLICATE_CANDIDATE');
   }
   try {
     const candidate = await CandidateModel.create({
       ...input,
+      // A referrer only makes sense for referrals.
+      referredBy: input.source === 'REFERRAL' ? (input.referredBy ?? null) : null,
       organizationId: ctx.organizationId,
       jobId: job._id,
       stage: 'APPLIED',
@@ -316,13 +323,14 @@ export const createCandidate = async (ctx: RequestContext, input: CandidateInput
 
 export const updateCandidate = async (ctx: RequestContext, id: string, input: CandidateUpdateInput) => {
   const candidate = await findCandidate(ctx, id);
-  await assertRefsInOrg(ctx.organizationId, input, ['resumeFileId']);
+  await assertRefsInOrg(ctx.organizationId, input, ['resumeFileId', 'referredBy']);
   if (input.email && input.email !== candidate.email) {
     const dup = await CandidateModel.exists({ organizationId: ctx.organizationId, jobId: candidate.jobId, email: input.email, _id: { $ne: candidate._id } });
     if (dup) throw conflict('Another candidate for this job uses this email', 'DUPLICATE_CANDIDATE');
   }
   const before = candidate.toObject() as unknown as Record<string, unknown>;
   candidate.set(input);
+  if (candidate.source !== 'REFERRAL') candidate.set('referredBy', null);
   try {
     await candidate.save();
   } catch (err) {
@@ -573,5 +581,39 @@ export const recruitmentSummary = async (ctx: RequestContext) => {
     interviewsThisWeek,
     hires: tth[0]?.count ?? 0,
     timeToHireAvgDays: tth[0] ? round2(tth[0].avgMs / 86_400_000) : null,
+  };
+};
+
+/** Dashboard "Referrals" card: candidates whose source is REFERRAL — counts, the latest few and the top referrer. */
+export const referralSummary = async (ctx: RequestContext) => {
+  if (!can(ctx, 'recruitment:read')) throw forbidden();
+  const match = { organizationId: ctx.organizationId, deletedAt: null, source: 'REFERRAL' };
+  const [byStage, recent, top] = await Promise.all([
+    CandidateModel.aggregate<{ _id: CandidateStage; count: number }>([{ $match: match }, { $group: { _id: '$stage', count: { $sum: 1 } } }]),
+    CandidateModel.find(match)
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('firstName lastName stage jobId referredBy createdAt')
+      .populate({ path: 'jobId', select: 'code title' })
+      .populate({ path: 'referredBy', select: 'employeeId firstName lastName profilePhoto' })
+      .lean(),
+    CandidateModel.aggregate<{ _id: Id; count: number }>([
+      { $match: { ...match, referredBy: { $ne: null } } },
+      { $group: { _id: '$referredBy', count: { $sum: 1 } } },
+      { $sort: { count: -1, _id: 1 } },
+      { $limit: 1 },
+    ]),
+  ]);
+  const inStage = (s: CandidateStage) => byStage.find((b) => b._id === s)?.count ?? 0;
+  const total = byStage.reduce((s, b) => s + b.count, 0);
+  const topEmployee = top[0]
+    ? await EmployeeModel.findOne({ _id: top[0]._id, organizationId: ctx.organizationId }).select('employeeId firstName lastName profilePhoto').lean()
+    : null;
+  return {
+    total,
+    inProcess: total - inStage('HIRED') - inStage('REJECTED'),
+    hired: inStage('HIRED'),
+    recent,
+    topReferrer: topEmployee && top[0] ? { ...topEmployee, count: top[0].count } : null,
   };
 };

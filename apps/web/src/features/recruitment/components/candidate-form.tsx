@@ -5,13 +5,14 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { FileText } from 'lucide-react';
 import { CANDIDATE_SOURCES, candidateSchema } from '@stencil/shared';
-import { FileUpload } from '@/components/common/controls';
+import { EmployeePicker, FileUpload } from '@/components/common/controls';
 import { applyServerErrors, errorAt, FormError, FormField, FormGrid, FormSection } from '@/components/forms/form';
 import { Button } from '@/components/ui/button';
 import { Input, Select, Textarea } from '@/components/ui/input';
 import { Drawer } from '@/components/ui/overlay';
 import { openFile, toApiError } from '@/lib/api';
 import { label } from '@/lib/i18n';
+import { fullName } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { uploadResume, useJobOptions, useSaveCandidate, type CandidateDetail } from '../api';
 import { TagInput } from './shared';
@@ -34,6 +35,7 @@ const toFormValues = (c: CandidateDetail | undefined, jobId?: string): FormIn =>
   expectedSalary: c?.expectedSalary ?? undefined,
   noticePeriodDays: c?.noticePeriodDays ?? undefined,
   source: (c?.source as FormIn['source']) ?? 'CAREERS_PAGE',
+  referredBy: c?.referredBy?._id ?? '',
   notes: c?.notes ?? '',
 });
 
@@ -63,11 +65,12 @@ export const CandidateFormDrawer = ({
   const [resume, setResume] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const { register, handleSubmit, control, formState, reset, setError } = useForm<FormIn, unknown, FormOut>({
+  const { register, handleSubmit, control, formState, reset, setError, watch } = useForm<FormIn, unknown, FormOut>({
     resolver: zodResolver(candidateSchema),
     defaultValues: toFormValues(candidate, jobId),
   });
   const errors = formState.errors;
+  const referral = watch('source') === 'REFERRAL';
 
   useEffect(() => {
     if (open) {
@@ -91,6 +94,8 @@ export const CandidateFormDrawer = ({
       }
       const payload: Partial<FormOut> = { ...values, resumeFileId };
       for (const key of ['phone', 'currentCompany', 'notes', 'resumeFileId'] as const) if (!payload[key]) delete payload[key];
+      // Only referrals keep a referrer.
+      if (payload.source !== 'REFERRAL') payload.referredBy = null;
       if (editing) delete payload.jobId;
       const res = await save.mutateAsync(payload as FormOut);
       toast.success(res.message ?? (editing ? 'Candidate updated' : 'Candidate added'));
@@ -146,6 +151,24 @@ export const CandidateFormDrawer = ({
             <FormField label="Source" error={errors.source}>
               {({ id }) => <Select id={id} options={CANDIDATE_SOURCES.map((s) => ({ value: s, label: label(s) }))} {...register('source')} />}
             </FormField>
+            {referral && (
+              <FormField label="Referred by" error={errorAt(errors, 'referredBy')} hint="The employee who referred this candidate.">
+                {({ id }) => (
+                  <Controller
+                    control={control}
+                    name="referredBy"
+                    render={({ field }) => (
+                      <EmployeePicker
+                        id={id}
+                        value={(field.value as string | null | undefined) || null}
+                        onChange={(v) => field.onChange(typeof v === 'string' ? v : '')}
+                        selectedLabels={candidate?.referredBy ? { [candidate.referredBy._id]: fullName(candidate.referredBy) } : undefined}
+                      />
+                    )}
+                  />
+                )}
+              </FormField>
+            )}
             {text('experienceYears', 'Experience (years)', { type: 'number' })}
           </FormGrid>
           <FormField label="Skills" error={errorAt(errors, 'skills')} hint="Press Enter or comma to add a skill.">

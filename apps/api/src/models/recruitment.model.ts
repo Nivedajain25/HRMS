@@ -59,6 +59,8 @@ const candidateSchema = new Schema(
     expectedSalary: Number,
     noticePeriodDays: Number,
     source: { type: String, enum: CANDIDATE_SOURCES, default: 'CAREERS_PAGE' },
+    /** Employee who referred the candidate (source REFERRAL only). */
+    referredBy: ref('Employee'),
     stage: { type: String, enum: CANDIDATE_STAGES, default: 'APPLIED' },
     stageHistory: {
       type: [{ _id: false, from: String, to: String, note: String, by: Schema.Types.ObjectId, at: Date }],

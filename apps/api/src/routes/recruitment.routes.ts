@@ -146,3 +146,4 @@ r({ method: 'post', path: '/interviews/:id/feedback', summary: 'Submit interview
 
 /* Dashboard */
 r({ method: 'get', path: '/summary', summary: 'Recruitment dashboard summary', permissions: ['recruitment:read'] }, c.summary);
+r({ method: 'get', path: '/referrals/summary', summary: 'Employee referrals: counts, latest and top referrer', permissions: ['recruitment:read'] }, c.referrals);

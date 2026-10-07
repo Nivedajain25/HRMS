@@ -19,6 +19,7 @@ const REF_MODELS: Record<string, { model: Model<never>; label: string }> = {
   headId: { model: EmployeeModel as unknown as Model<never>, label: 'Department head' },
   employeeId: { model: EmployeeModel as unknown as Model<never>, label: 'Employee' },
   hiringManagerId: { model: EmployeeModel as unknown as Model<never>, label: 'Hiring manager' },
+  referredBy: { model: EmployeeModel as unknown as Model<never>, label: 'Referring employee' },
   attachmentId: { model: DocumentModel as unknown as Model<never>, label: 'Attachment' },
   receiptFileId: { model: DocumentModel as unknown as Model<never>, label: 'Receipt' },
   resumeFileId: { model: DocumentModel as unknown as Model<never>, label: 'Resume' },

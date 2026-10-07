@@ -36,4 +36,5 @@ export const recruitmentController = {
   interviewFeedback: handle((ctx, req) => interviews.submitFeedback(ctx, idOf(req), body(req)), 'Feedback submitted'),
 
   summary: handle((ctx) => rec.recruitmentSummary(ctx)),
+  referrals: handle((ctx) => rec.referralSummary(ctx)),
 };

@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/input';
 import { useListParams } from '@/hooks/use-list-params';
 import { ApiError } from '@/lib/api';
 import { label } from '@/lib/i18n';
-import { formatDate, formatMoney } from '@/lib/utils';
+import { formatDate, formatMoney, fullName } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { useCandidates, useJobOptions, type CandidateSummary } from './api';
 import { CandidateFormDrawer } from './components/candidate-form';
@@ -56,7 +56,16 @@ export const CandidatesPage = () => {
           ),
       },
       { id: 'stage', header: 'Stage', enableSorting: true, cell: ({ row }) => <StatusBadge status={row.original.stage} /> },
-      { id: 'source', header: 'Source', cell: ({ row }) => label(row.original.source) },
+      {
+        id: 'source',
+        header: 'Source',
+        cell: ({ row }) => (
+          <div className="min-w-0">
+            <p className="text-fg">{label(row.original.source)}</p>
+            {row.original.referredBy && <p className="max-w-40 truncate text-xs text-muted">by {fullName(row.original.referredBy)}</p>}
+          </div>
+        ),
+      },
       { id: 'experienceYears', header: 'Experience', enableSorting: true, cell: ({ row }) => `${row.original.experienceYears} yrs` },
       { id: 'skills', header: 'Skills', cell: ({ row }) => <SkillChips skills={row.original.skills} limit={3} className="max-w-56 flex-nowrap overflow-hidden" /> },
       { id: 'currentCompany', header: 'Current company', cell: ({ row }) => row.original.currentCompany || '—' },

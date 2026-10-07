@@ -342,3 +342,57 @@ describe('Recruitment: jobs, pipeline, interviews, hiring', () => {
     expect(foreignRef.body.code).toBe('INVALID_REFERENCE');
   });
 });
+
+describe('Recruitment: employee referrals', () => {
+  it('records who referred a candidate and summarises referrals for the dashboard', async () => {
+    const admin = await registerOrg();
+    const manju = await createEmployeeUser(admin.token, { firstName: 'Manju' });
+    const nanda = await createEmployeeUser(admin.token, { firstName: 'Nanda' });
+    const outsider = (await createEmployeeUser((await registerOrg()).token, { firstName: 'Out' })).employee._id;
+
+    // Employees without recruitment access can't see the summary.
+    expect((await as(manju.token).get('/api/v1/recruitment/referrals/summary')).status).toBe(403);
+
+    const job = (await as(admin.token).post('/api/v1/recruitment/jobs', { title: 'Site Engineer', description: 'On-site work', openings: 2 })).body.data;
+    expect((await as(admin.token).post(`/api/v1/recruitment/jobs/${job._id}/status`, { status: 'OPEN' })).status).toBe(200);
+    const add = (overrides: Record<string, unknown>) =>
+      as(admin.token).post('/api/v1/recruitment/candidates', { jobId: job._id, firstName: 'Ref', lastName: 'Cand', email: uniqueEmail('ref'), ...overrides });
+
+    const empty = await as(admin.token).get('/api/v1/recruitment/referrals/summary');
+    expect(empty.status).toBe(200);
+    expect(empty.body.data).toMatchObject({ total: 0, inProcess: 0, hired: 0, recent: [], topReferrer: null });
+
+    const r1 = await add({ source: 'REFERRAL', referredBy: manju.employee._id, firstName: 'Rohit' });
+    expect(r1.status).toBe(201);
+    expect(String(r1.body.data.referredBy)).toBe(manju.employee._id);
+    expect((await add({ source: 'REFERRAL', referredBy: manju.employee._id, firstName: 'Pranav' })).status).toBe(201);
+    expect((await add({ source: 'REFERRAL', referredBy: nanda.employee._id, firstName: 'Kiran' })).status).toBe(201);
+    // A referrer on a non-referral source is dropped; a referrer from another org is rejected.
+    const linkedIn = await add({ source: 'LINKEDIN', referredBy: manju.employee._id });
+    expect(linkedIn.status).toBe(201);
+    expect(linkedIn.body.data.referredBy).toBeNull();
+    const foreign = await add({ source: 'REFERRAL', referredBy: outsider });
+    expect(foreign.status).toBe(400);
+    expect(foreign.body.code).toBe('INVALID_REFERENCE');
+
+    const detail = await as(admin.token).get(`/api/v1/recruitment/candidates/${r1.body.data._id}`);
+    expect(detail.body.data.referredBy).toMatchObject({ _id: manju.employee._id, firstName: 'Manju' });
+
+    const summary = (await as(admin.token).get('/api/v1/recruitment/referrals/summary')).body.data;
+    expect(summary).toMatchObject({ total: 3, inProcess: 3, hired: 0 });
+    expect(summary.recent.map((c: { firstName: string }) => c.firstName)).toEqual(['Kiran', 'Pranav', 'Rohit']);
+    expect(summary.recent[0].referredBy).toMatchObject({ firstName: 'Nanda' });
+    expect(summary.recent[0].jobId).toMatchObject({ title: 'Site Engineer' });
+    expect(summary.topReferrer).toMatchObject({ _id: manju.employee._id, firstName: 'Manju', count: 2 });
+
+    // Changing the source away from REFERRAL clears the referrer; rejected referrals leave "in process".
+    const moved = await as(admin.token).patch(`/api/v1/recruitment/candidates/${r1.body.data._id}`, { source: 'CAREERS_PAGE' });
+    expect(moved.status).toBe(200);
+    expect(moved.body.data.referredBy).toBeNull();
+    const kiran = summary.recent[0]._id;
+    expect((await as(admin.token).post(`/api/v1/recruitment/candidates/${kiran}/stage`, { stage: 'REJECTED', rejectionReason: 'Not a fit' })).status).toBe(200);
+    const after = (await as(admin.token).get('/api/v1/recruitment/referrals/summary')).body.data;
+    expect(after).toMatchObject({ total: 2, inProcess: 1, hired: 0 });
+    expect(after.topReferrer).toMatchObject({ firstName: 'Manju', count: 1 });
+  });
+});

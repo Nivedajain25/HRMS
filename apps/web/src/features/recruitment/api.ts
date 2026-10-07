@@ -83,8 +83,19 @@ export interface CandidateSummary {
   currentCompany?: string;
   expectedSalary?: number | null;
   jobId: JobRef | null;
+  /** Employee who referred them (source REFERRAL). */
+  referredBy?: PersonRef | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Dashboard "Referrals" card. */
+export interface ReferralSummary {
+  total: number;
+  inProcess: number;
+  hired: number;
+  recent: (Pick<CandidateSummary, '_id' | 'firstName' | 'lastName' | 'stage' | 'createdAt'> & { jobId: JobRef | null; referredBy: PersonRef | null })[];
+  topReferrer: (PersonRef & { count: number }) | null;
 }
 
 export interface StageHistoryEntry {
@@ -212,6 +223,7 @@ export const recruitmentKeys = {
   interviews: (q: object) => ['recruitment', 'interviews', q] as const,
   interview: (id: string) => ['recruitment', 'interview', id] as const,
   summary: ['recruitment', 'summary'] as const,
+  referrals: ['recruitment', 'referrals'] as const,
   prefill: (id: string) => ['recruitment', 'hire-prefill', id] as const,
 };
 
@@ -266,6 +278,9 @@ export const useDeleteJob = () => {
 
 export const useRecruitmentSummary = (enabled: boolean) =>
   useQuery({ queryKey: recruitmentKeys.summary, queryFn: () => get<RecruitmentSummary>('/recruitment/summary'), enabled });
+
+export const useReferralSummary = (enabled: boolean) =>
+  useQuery({ queryKey: recruitmentKeys.referrals, queryFn: () => get<ReferralSummary>('/recruitment/referrals/summary'), enabled });
 
 /* ------------------------------- Pipeline ------------------------------- */
 

@@ -211,6 +211,8 @@ export const candidateSchema = z.object({
   expectedSalary: money.optional(),
   noticePeriodDays: z.coerce.number().int().min(0).max(365).optional(),
   source: z.enum(CANDIDATE_SOURCES).default('CAREERS_PAGE'),
+  /** The employee who referred them (only kept when `source` is REFERRAL); `null` / `''` clears it. */
+  referredBy: nullableObjectId,
   notes: optionalString(3000),
 });
 export type CandidateInput = z.input<typeof candidateSchema>;

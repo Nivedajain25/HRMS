@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell, ClipboardList, ExternalLink, FileText, LogOut, Megaphone, Package, PartyPopper, Receipt, Settings, Siren, Target, UserRound, Users, Wallet } from 'lucide-react-native';
+import { Bell, ClipboardList, DoorOpen, ExternalLink, FileText, LogOut, Megaphone, Package, PartyPopper, Receipt, Settings, Siren, Target, UserRound, Users, Wallet } from 'lucide-react-native';
 import { Appear, Avatar, Button, Card, ListItem, Screen, Header, Skeleton, Text, toast, useConfirm, type IconComponent } from '@/components';
 import { useUnreadAnnouncements } from '@/features/announcements/api';
 import { useUnreadCount } from '@/features/notifications/api';
@@ -40,6 +40,7 @@ const ENTRY_TONE: Record<string, Tone> = {
   documents: 'blue',
   assets: 'teal',
   team: 'blue',
+  resignation: 'gray',
   settings: 'gray',
 };
 
@@ -225,6 +226,14 @@ export const MoreScreen = () => {
             icon: Users,
             href: '/more/team',
             hidden: !isManager && !hasEmployee && !can('employee:read'),
+          },
+          {
+            key: 'resignation',
+            title: 'Resignation',
+            subtitle: 'Submit your resignation or follow its progress',
+            icon: DoorOpen,
+            href: '/more/resignation',
+            hidden: !hasEmployee,
           },
         ]}
       />

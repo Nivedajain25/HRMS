@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Building2, Camera, ChevronRight, KeyRound, LogOut, Mail, MessageSquareWarning, Palette, ShieldCheck, User, UserCircle } from 'lucide-react';
+import { Bell, Building2, Camera, ChevronRight, DoorOpen, KeyRound, LogOut, Mail, MessageSquareWarning, Palette, ShieldCheck, User, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, Badge, Card, IconTitle, PageHeader } from '@/components/ui/display';
 import { useLogout } from '@/features/auth/use-auth';
@@ -78,6 +78,15 @@ export const MyAccountPage = () => {
               sub={canAny('employee:update') ? 'Review and resolve employee complaints, or raise your own' : 'Raise a complaint with HR and track it'}
             />
             <Row to="/settings/appearance" icon={<Palette className="h-5 w-5" />} tone="bg-pink-100 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300" title="Appearance" sub="Colour theme and language" />
+            {user?.employeeId ? (
+              <Row
+                to="/resignation"
+                icon={<DoorOpen className="h-5 w-5" />}
+                tone="bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300"
+                title="Resignation"
+                sub="Submit your resignation or follow its progress"
+              />
+            ) : null}
           </ul>
         </Card>
 

@@ -1,5 +1,5 @@
 import { useState, type Ref } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { fonts, fontSize, radius, space, TOUCH_TARGET, useTheme } from '@/theme';
 import type { IconComponent } from './Button';
@@ -62,7 +62,7 @@ export const TextField = ({
             setFocused(false);
             rest.onBlur?.(e);
           }}
-          style={[styles.input, { color: c.fg }, multiline && styles.inputMultiline]}
+          style={[styles.input, { color: c.fg }, multiline && styles.inputMultiline, Platform.OS === 'web' && styles.noWebOutline]}
           textAlignVertical={multiline ? 'top' : 'center'}
         />
         {password ? (
@@ -94,5 +94,8 @@ const styles = StyleSheet.create({
   multiline: { alignItems: 'flex-start', paddingVertical: space(2) },
   input: { flex: 1, fontFamily: fonts.regular, fontSize: fontSize.md, paddingVertical: space(2) },
   inputMultiline: { minHeight: 96 },
+  // In a browser the inner text box gets its own focus outline (a dark box inside the field); the field's
+  // border already turns to the focus colour, so hide it.
+  noWebOutline: { outlineWidth: 0, outlineColor: 'transparent' },
   toggle: { width: TOUCH_TARGET, height: TOUCH_TARGET, alignItems: 'center', justifyContent: 'center', marginRight: -space(2) },
 });

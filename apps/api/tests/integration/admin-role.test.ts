@@ -92,4 +92,36 @@ describe('Admin role (everything but Super-Admin-only controls)', () => {
     expect(again.status).toBe(201);
     expect((await as(owner.token).delete(`/api/v1/users/${suchiUserId}`)).status).toBe(404);
   });
+
+  it('lets the Super Admin take a login off the staff list (the boss), keeping the login', async () => {
+    const owner = await registerOrg();
+    const boss = await createEmployeeUser(owner.token, { firstName: 'Boss', roles: ['admin'] });
+    const report = await createEmployeeUser(owner.token, { firstName: 'Report', managerId: boss.employee._id });
+    const users = (await as(owner.token).get('/api/v1/users?limit=100')).body.data as { _id: string; email: string }[];
+    const bossUserId = users.find((u) => u.email === boss.email)!._id;
+
+    // Only the Super Admin.
+    const byAdmin = await as(boss.token).delete(`/api/v1/users/${bossUserId}/employee`);
+    expect(byAdmin.status).toBe(403);
+
+    const res = await as(owner.token).delete(`/api/v1/users/${bossUserId}/employee`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ employee: boss.employee.employeeId, reportsUnassigned: [{ employeeId: report.employee.employeeId }] });
+
+    // The login still works, as Admin, without an employee record.
+    const me = await as(boss.token).get('/api/v1/auth/me');
+    expect(me.status).toBe(200);
+    expect(me.body.data.employeeId).toBeNull();
+    expect(me.body.data.roles.map((r: { key: string }) => r.key)).toContain('admin');
+    expect((await UserModel.findById(bossUserId).lean())?.status).toBe('ACTIVE');
+
+    // The record is archived (off the staff list) and their report has no manager now.
+    const emp = await EmployeeModel.findById(boss.employee._id).lean();
+    expect(emp).toMatchObject({ employmentStatus: 'ARCHIVED', userId: null });
+    expect(emp!.deletedAt).toBeTruthy();
+    expect((await EmployeeModel.findById(report.employee._id).lean())?.managerId).toBeNull();
+
+    // Nothing left to remove.
+    expect((await as(owner.token).delete(`/api/v1/users/${bossUserId}/employee`)).status).toBe(422);
+  });
 });

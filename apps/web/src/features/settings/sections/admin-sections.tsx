@@ -5,7 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { Copy, Link2, Lock, MailPlus, MoreHorizontal, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Copy, Link2, Lock, MailPlus, MoreHorizontal, Pencil, Plus, Trash2, Upload, UserMinus } from 'lucide-react';
 import { AUDIT_ACTIONS, USER_STATUS, WEEKDAYS, organizationUpdateSchema, roleSchema, userCreateSchema } from '@stencil/shared';
 import { Combobox, EmployeePicker, FilterBar, SearchInput } from '@/components/common/controls';
 import { StatusBadge } from '@/components/common/status-badge';
@@ -444,6 +444,31 @@ const EditUserModal = ({ user, onClose, roles, isSuperAdmin }: { user: UserRow |
     setErrors({});
   }, [user]);
   const lockedSuper = !!user?.roles.some((r) => r.key === 'super_admin') && !isSuperAdmin;
+  const confirm = useConfirm();
+
+  const removeRecord = useMutation({
+    mutationFn: () => del<{ employee: string | null; reportsUnassigned: { employeeId: string; name: string }[] }>(`/users/${user!._id}/employee`),
+    onSuccess: async (res) => {
+      const freed = res.data?.reportsUnassigned ?? [];
+      toast.success(
+        `${user?.firstName ?? 'They'} ${freed.length ? `is off the staff list. ${freed.map((r) => r.name).join(', ')} now ${freed.length === 1 ? 'has' : 'have'} no manager — assign one in People.` : 'is off the staff list.'}`,
+      );
+      await qc.invalidateQueries({ queryKey: ['users'] });
+      await qc.invalidateQueries({ queryKey: ['employees'] });
+      onClose();
+    },
+    onError: (err) => setErrors({ form: toApiError(err).message }),
+  });
+  const onRemoveRecord = async () => {
+    if (!user?.employeeId) return;
+    const name = `${user.firstName} ${user.lastName}`.trim();
+    const { confirmed } = await confirm({
+      title: `Remove ${name}'s employee record?`,
+      message: `${user.employeeId.employeeId} is archived: ${name} leaves the staff list, attendance and absent marking, and anyone reporting to them is left without a manager. ${name} keeps signing in with the same email, password and roles. Past records are kept.`,
+      confirmLabel: 'Remove record',
+    });
+    if (confirmed) removeRecord.mutate();
+  };
 
   const save = useMutation({
     mutationFn: () => {
@@ -527,6 +552,19 @@ const EditUserModal = ({ user, onClose, roles, isSuperAdmin }: { user: UserRow |
           ))}
           <p className="text-xs text-muted">{lockedSuper ? "Only a Super Admin can change a Super Admin's roles." : 'You can only grant permissions that you hold yourself.'}</p>
         </fieldset>
+        {/* Super Admin: take this login off the staff list (e.g. the owner), keeping the login and its roles. */}
+        {isSuperAdmin && user?.employeeId ? (
+          <div className="rounded-lg border border-line bg-surface-2 p-3">
+            <p className="text-sm font-medium text-fg">Employee record {user.employeeId.employeeId}</p>
+            <p className="mt-0.5 text-xs text-muted">
+              Not a staff member (for example the company&apos;s owner)? Remove the record: they keep signing in with the same roles, but drop out of the staff
+              list, attendance and absent marking. Past records are kept.
+            </p>
+            <Button className="mt-2" size="sm" variant="outline" icon={<UserMinus className="h-4 w-4" />} loading={removeRecord.isPending} onClick={() => void onRemoveRecord()}>
+              Remove employee record
+            </Button>
+          </div>
+        ) : null}
       </div>
     </Modal>
   );

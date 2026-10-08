@@ -62,4 +62,14 @@ userModule.route(
   { method: 'delete', path: '/:id', summary: 'Delete a login (Super Admin only); the linked employee record and history are kept', permissions: ['user:manage'], params: idParam },
   users.remove,
 );
+userModule.route(
+  {
+    method: 'delete',
+    path: '/:id/employee',
+    summary: 'Remove the login’s employee record (Super Admin only): the login stays; the record is archived and its reports unassigned',
+    permissions: ['user:manage'],
+    params: idParam,
+  },
+  users.removeEmployee,
+);
 userModule.route({ method: 'post', path: '/:id/invite-link', summary: 'Activation link to hand over directly (not-yet-activated users only)', permissions: ['user:manage'], params: idParam }, users.inviteLink);

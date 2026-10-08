@@ -34,6 +34,7 @@ export const userController = {
   update: handle((ctx, req) => rbac.updateUser(ctx, idOf(req), body<UserUpdateInput>(req)), 'User updated'),
   invite: handle((ctx, req) => rbac.inviteUser(ctx, idOf(req)), 'Invitation sent'),
   remove: handle((ctx, req) => rbac.deleteUser(ctx, idOf(req)), 'User deleted'),
+  removeEmployee: handle((ctx, req) => rbac.removeEmployeeRecord(ctx, idOf(req)), 'Employee record removed'),
   inviteLink: handle((ctx, req) => rbac.inviteLink(ctx, idOf(req))),
   preferences: handle((ctx, req) => rbac.updatePreferences(ctx, body<{ theme?: string; language?: string }>(req)), 'Preferences saved'),
 };

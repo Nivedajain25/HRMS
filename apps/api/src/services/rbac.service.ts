@@ -3,6 +3,7 @@ import { PERMISSION_GROUPS, type RoleInput, type UserCreateInput, type UserUpdat
 import { invalidateAuthCache } from '../middleware/auth';
 import {
   ActionTokenModel,
+  EmployeeHistoryModel,
   EmployeeModel,
   NotificationModel,
   NotificationPreferenceModel,
@@ -311,6 +312,73 @@ export const deleteUser = async (ctx: RequestContext, id: string) => {
     oldValues: { name: `${user.firstName} ${user.lastName}`.trim(), email: user.email, roles: user.roles.map(String), employee: linked?.employeeId ?? null },
   });
   return { deleted: true, employeeKept: linked?.employeeId ?? null };
+};
+
+/**
+ * Super Admin only: takes a login off the staff list (e.g. the company's owner, who doesn't clock in). The login keeps
+ * working with its roles; the linked employee record is archived (out of headcount, attendance and absent marking,
+ * its history kept) and anyone reporting to it is left without a manager to reassign.
+ */
+export const removeEmployeeRecord = async (ctx: RequestContext, id: string) => {
+  if (!ctx.roleKeys.includes('super_admin')) throw forbidden('Only the Super Admin can remove an employee record', 'SUPER_ADMIN_ONLY');
+  const user = await UserModel.findOne({ _id: id, organizationId: ctx.organizationId });
+  if (!user) throw notFound('User');
+  if (!user.employeeId) throw unprocessable('This login has no employee record', 'NO_EMPLOYEE');
+  const emp = await EmployeeModel.findOne({ _id: user.employeeId, organizationId: ctx.organizationId });
+  const now = new Date();
+  const reports = emp
+    ? await EmployeeModel.find({ organizationId: ctx.organizationId, managerId: emp._id, deletedAt: null }).select('_id employeeId firstName lastName').lean()
+    : [];
+
+  if (reports.length) {
+    await EmployeeModel.updateMany({ _id: { $in: reports.map((r) => r._id) } }, { $set: { managerId: null } });
+    await EmployeeHistoryModel.insertMany(
+      reports.map((r) => ({
+        organizationId: ctx.organizationId,
+        employeeId: r._id,
+        field: 'manager',
+        oldValue: String(emp!._id),
+        newValue: null,
+        oldLabel: `${emp!.firstName} ${emp!.lastName}`.trim(),
+        newLabel: '—',
+        effectiveDate: now,
+        changedBy: ctx.userId,
+      })),
+    );
+  }
+  if (emp && !emp.deletedAt) {
+    const status = emp.employmentStatus;
+    emp.employmentStatus = 'ARCHIVED';
+    emp.deletedAt = now;
+    emp.set('userId', null);
+    await emp.save();
+    await EmployeeHistoryModel.create({
+      organizationId: ctx.organizationId,
+      employeeId: emp._id,
+      field: 'status',
+      oldValue: status,
+      newValue: 'ARCHIVED',
+      oldLabel: status,
+      newLabel: 'ARCHIVED',
+      effectiveDate: now,
+      changedBy: ctx.userId,
+    });
+  } else if (emp) {
+    emp.set('userId', null);
+    await emp.save();
+  }
+  user.set('employeeId', null);
+  await user.save();
+  invalidateAuthCache(String(user._id));
+  await audit(ctx, {
+    action: 'USER_UPDATED',
+    module: 'users',
+    recordId: user._id,
+    recordLabel: user.email,
+    oldValues: { employee: emp?.employeeId ?? null },
+    newValues: { employee: null, employeeArchived: emp?.employeeId ?? null, reportsUnassigned: reports.map((r) => r.employeeId) },
+  });
+  return { employee: emp?.employeeId ?? null, reportsUnassigned: reports.map((r) => ({ employeeId: r.employeeId, name: `${r.firstName} ${r.lastName}`.trim() })) };
 };
 
 export const updatePreferences = async (ctx: RequestContext, prefs: { theme?: string; language?: string }) => {

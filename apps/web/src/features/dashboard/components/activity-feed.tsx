@@ -74,7 +74,7 @@ export const ActivityFeed = ({
         <WidgetEmpty
           icon={<Activity className="h-4 w-4" />}
           title="No activity yet"
-          description={scope === 'all' ? 'Clock-ins, leave, expenses and completed goals will show up here.' : 'Your clock-ins, leave and completed tasks will show up here.'}
+          description={scope === 'all' ? 'Check-ins, leave, expenses and completed goals will show up here.' : 'Your check-ins, leave and completed tasks will show up here.'}
         />
       }
     >

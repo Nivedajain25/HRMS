@@ -44,7 +44,7 @@ export const HeadSection = () => {
     <div className="space-y-4">
       {/*
         12-column grid, one row of equal-height halves: Attendance overview | Pending approvals.
-        The super admin is the boss: no clock-in cards (neither his own Today card nor the team Clock-In/Out list).
+        The super admin is the boss: no check-in cards (neither his own Today card nor the team Check-In/Out list).
       */}
       <div className="grid gap-4 lg:grid-cols-12">
         <WidgetBoundary title="Attendance overview">

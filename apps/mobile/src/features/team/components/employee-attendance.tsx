@@ -79,7 +79,7 @@ const DayRow = ({ d, divider, onSelfie }: { d: AttendanceDay; divider: boolean; 
       {d.checkInPhotoId || hasLoc ? (
         <View style={styles.proof}>
           {d.checkInPhotoId ? (
-            <Pressable onPress={() => onSelfie(d.checkInPhotoId!)} accessibilityRole="button" accessibilityLabel="View clock-in selfie" style={[styles.proofBtn, { backgroundColor: c.surface2 }]}>
+            <Pressable onPress={() => onSelfie(d.checkInPhotoId!)} accessibilityRole="button" accessibilityLabel="View check-in selfie" style={[styles.proofBtn, { backgroundColor: c.surface2 }]}>
               <Camera size={14} color={c.accent} />
               <Text size="xs" weight="semibold" color="accent">
                 Selfie
@@ -90,7 +90,7 @@ const DayRow = ({ d, divider, onSelfie }: { d: AttendanceDay; divider: boolean; 
             <Pressable
               onPress={() => void openUrl(`https://www.google.com/maps?q=${loc!.latitude},${loc!.longitude}`)}
               accessibilityRole="link"
-              accessibilityLabel="Open clock-in location on the map"
+              accessibilityLabel="Open check-in location on the map"
               style={[styles.proofBtn, { backgroundColor: c.surface2 }]}
             >
               <MapPin size={14} color={loc?.withinOffice === false ? c.warning : c.accent} />
@@ -147,13 +147,13 @@ export const EmployeeAttendance = ({ employeeId }: { employeeId: string }) => {
         )}
       </Card>
 
-      <BottomSheet open={!!selfie} onClose={() => setSelfie(null)} title="Clock-in selfie">
+      <BottomSheet open={!!selfie} onClose={() => setSelfie(null)} title="Check-in selfie">
         {selfie ? (
           <Image
             source={{ uri: apiUrl(`/api/v1/files/${selfie}`), headers: authHeaders() }}
             style={styles.selfie}
             contentFit="cover"
-            accessibilityLabel="Clock-in selfie"
+            accessibilityLabel="Check-in selfie"
           />
         ) : null}
         <Button variant="ghost" onPress={() => setSelfie(null)}>

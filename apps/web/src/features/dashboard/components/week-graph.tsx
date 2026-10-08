@@ -74,7 +74,7 @@ const WeekTooltip = ({ active, payload, timeZone, goalHours }: TooltipProps<numb
             </p>
           )}
           {row.lateMinutes > 0 && <p className="text-amber-700 dark:text-amber-300">Late by {minutesToHours(row.lateMinutes)}</p>}
-          {!row.checkIn && !row.isToday && <p className="text-muted">No clock-in</p>}
+          {!row.checkIn && !row.isToday && <p className="text-muted">No check-in</p>}
         </>
       )}
     </div>

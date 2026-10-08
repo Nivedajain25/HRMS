@@ -11,7 +11,7 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=en&lat=${latitude}&lon=${longitude}`;
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Stencil-HRMS/1.0 (attendance clock-in address)' },
+      headers: { 'User-Agent': 'Stencil-HRMS/1.0 (attendance check-in address)' },
       signal: AbortSignal.timeout(4000),
     });
     if (!res.ok) return null;

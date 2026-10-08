@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { CalendarPlus, FileClock, FilePenLine, PartyPopper, UserX } from 'lucide-react-native';
+import { FileClock, FilePenLine, PartyPopper, PlaneTakeoff, UserX } from 'lucide-react-native';
 import { Card, EmptyState, Header, IconButton, ListItem, RelatedLinks, Screen, Segmented } from '@/components';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/theme';
@@ -9,6 +9,7 @@ import { attendanceKeys, regularizationKeys } from '../api';
 import { ClockCard } from '../components/clock-card';
 import { EveryoneAttendance } from '../components/everyone-attendance';
 import { MonthAttendance } from '../components/month-attendance';
+import { usePlacePopup } from '../place-popup';
 
 type View_ = 'mine' | 'everyone';
 
@@ -18,6 +19,8 @@ export const AttendanceScreen = () => {
   // Everyone with an employee profile checks in, except the Super Admin / Admin.
   const clocksIn = hasEmployee && !(user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
   const qc = useQueryClient();
+  // Pop-up: at the office, or outside the office area and how far.
+  usePlacePopup('attendance');
   // HR / super admin can see everyone's attendance.
   const orgWide = can('attendance:read');
   const [requested, setView] = useState<View_>('mine');
@@ -73,7 +76,7 @@ export const AttendanceScreen = () => {
           <RelatedLinks
             links={[
               { label: 'Fix attendance', icon: FilePenLine, href: '/attendance/regularizations/new' },
-              { label: 'Apply leave', icon: CalendarPlus, href: '/leave/apply' },
+              { label: 'Apply leave', icon: PlaneTakeoff, href: '/leave/apply' },
               { label: 'Holidays', icon: PartyPopper, href: '/more/holidays' },
             ]}
           />
@@ -82,7 +85,7 @@ export const AttendanceScreen = () => {
               <Card padding={0}>
                 <ListItem
                   title="Regularization"
-                  subtitle="Fix a missed or wrong clock-in / clock-out"
+                  subtitle="Fix a missed or wrong check-in / check-out"
                   left={<FileClock size={22} color={c.accent} />}
                   onPress={() => router.push('/attendance/regularizations')}
                 />

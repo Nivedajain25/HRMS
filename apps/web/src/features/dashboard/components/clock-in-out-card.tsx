@@ -30,13 +30,13 @@ const Row = ({ c, timeZone }: { c: BoardCard; timeZone: string }) => {
         <p className="truncate text-xs text-black dark:text-fg">{c.employee.designation ?? c.employee.department ?? c.employee.employeeId}</p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {out ? <LogOut className="h-4 w-4 text-black dark:text-fg" aria-label="Clocked out" /> : <Clock3 className="h-4 w-4 text-black dark:text-fg" aria-hidden />}
+        {out ? <LogOut className="h-4 w-4 text-black dark:text-fg" aria-label="Checked out" /> : <Clock3 className="h-4 w-4 text-black dark:text-fg" aria-hidden />}
         <span
           className={cn(
             'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold text-white tabular-nums',
             out ? 'bg-sky-600' : 'bg-emerald-600',
           )}
-          title={out ? `In ${clock12(formatTimeIn(c.checkIn, timeZone))} · out ${clock12(formatTimeIn(c.checkOut, timeZone))}` : `Clocked in ${clock12(formatTimeIn(c.checkIn, timeZone))}`}
+          title={out ? `In ${clock12(formatTimeIn(c.checkIn, timeZone))} · out ${clock12(formatTimeIn(c.checkOut, timeZone))}` : `Checked in ${clock12(formatTimeIn(c.checkIn, timeZone))}`}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden />
           {clock12(formatTimeIn(out ? c.checkOut : c.checkIn, timeZone))}
@@ -86,7 +86,7 @@ export const ClockInOutCard = ({ className }: { className?: string }) => {
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-5 py-3.5 dark:bg-surface">
         <h3 className="rounded-lg bg-fuchsia-200 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
           <TitleIcon icon={Clock} />
-          Clock-In/Out
+          Check-In/Out
         </h3>
         <div className="flex items-center gap-2">
           <select
@@ -133,12 +133,12 @@ export const ClockInOutCard = ({ className }: { className?: string }) => {
             ))}
           </div>
         ) : !cards.length ? (
-          <p className="py-6 text-center text-sm text-black dark:text-fg">{isToday ? 'No one has clocked in yet today.' : 'No clock-ins on this day.'}</p>
+          <p className="py-6 text-center text-sm text-black dark:text-fg">{isToday ? 'No one has checked in yet today.' : 'No check-ins on this day.'}</p>
         ) : (
           <>
             <Group title="Late" items={late} timeZone={timeZone} />
             <Group title="On time" items={onTime} timeZone={timeZone} />
-            <Group title="Clocked out" items={left} timeZone={timeZone} />
+            <Group title="Checked out" items={left} timeZone={timeZone} />
           </>
         )}
       </div>

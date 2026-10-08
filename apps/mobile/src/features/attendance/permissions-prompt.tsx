@@ -106,10 +106,10 @@ export const PermissionsPrompt = () => {
       open={open}
       onClose={() => setOpen(false)}
       title="Set up attendance"
-      description="Allow these once so clocking in is quick. Your location is only recorded when you clock in or out."
+      description="Allow these once so checking in is quick. Your location is only recorded when you check in or out."
     >
-      <Row icon={MapPin} title="Track my location" text="Records where you clock in and out (office or outside)." status={status.location} />
-      <Row icon={Camera} title="Selfie camera" text="Takes a quick selfie when you clock in or out." status={status.camera} />
+      <Row icon={MapPin} title="Track my location" text="Records where you check in and out (office or outside)." status={status.location} />
+      <Row icon={Camera} title="Selfie camera" text="Takes a quick selfie when you check in or out." status={status.camera} />
       {allDone ? (
         <Button onPress={() => setOpen(false)}>Done</Button>
       ) : blocked && status.location !== 'ask' && status.camera !== 'ask' ? (

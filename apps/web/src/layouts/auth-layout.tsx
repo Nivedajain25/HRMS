@@ -5,7 +5,7 @@ import { Logo } from '@/components/common/brand';
 
 const HIGHLIGHTS = [
   { icon: Users, title: 'People, in one place', text: 'Profiles, org structure and history that stays accurate.' },
-  { icon: CalendarCheck, title: 'Time & leave', text: 'Clock-ins, shifts, holidays and approvals that just work.' },
+  { icon: CalendarCheck, title: 'Time & leave', text: 'Check-ins, shifts, holidays and approvals that just work.' },
   { icon: Wallet, title: 'Configurable payroll', text: 'Salary structures, payroll runs and payslips.' },
   { icon: ShieldCheck, title: 'Secure by design', text: 'Role-based access, tenant isolation and audit trails.' },
 ];

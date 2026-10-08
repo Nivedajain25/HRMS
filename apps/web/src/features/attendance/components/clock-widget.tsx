@@ -176,7 +176,7 @@ export const ClockWidget = () => {
   const onClockOut = async () => {
     const { confirmed } = await confirm({
       title: 'Check out for today?',
-      message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won't be able to clock in again today; use regularization for corrections.`,
+      message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won't be able to check in again today; use regularization for corrections.`,
       confirmLabel: 'Check out',
       tone: 'primary',
     });
@@ -184,9 +184,9 @@ export const ClockWidget = () => {
   };
 
   const captureHint = t.requireSelfie
-    ? `Clocking in needs a selfie${t.requireLocation ? ' and your location' : ''}.`
+    ? `Checking in needs a selfie${t.requireLocation ? ' and your location' : ''}.`
     : t.requireLocation
-      ? 'Clocking in needs your location.'
+      ? 'Checking in needs your location.'
       : '';
 
   const bigBtn = 'h-12 w-full rounded-xl text-base';
@@ -258,7 +258,7 @@ export const ClockWidget = () => {
           {runningLate && (
             <p role="status" className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
               <AlarmClock className="h-4 w-4" aria-hidden />
-              Your shift started at {formatTimeIn(t.shiftStart, timeZone)} — clocking in now will be marked late.
+              Your shift started at {formatTimeIn(t.shiftStart, timeZone)} — checking in now will be marked late.
             </p>
           )}
 
@@ -324,7 +324,7 @@ export const ClockWidget = () => {
               </Button>
               <p className="flex items-center gap-1.5 text-xs text-muted">
                 {t.requireSelfie ? <Camera className="h-3.5 w-3.5 shrink-0" aria-hidden /> : <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-                {captureHint || 'Your location is requested when you clock in and out (if permitted).'}
+                {captureHint || 'Your location is requested when you check in and out (if permitted).'}
               </p>
             </div>
           )}

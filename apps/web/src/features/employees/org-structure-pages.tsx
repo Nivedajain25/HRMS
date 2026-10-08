@@ -215,7 +215,7 @@ const UseMyLocation = ({ form }: { form: UseFormReturn<FieldValues> }) => {
     <div className="rounded-xl border border-dashed border-line p-4">
       <p className="text-sm font-medium text-fg">Office position for attendance</p>
       <p className="mt-1 text-xs text-muted">
-        Standing in the office? Fill the latitude and longitude from this device’s GPS. Clock-ins within the office area count as <span className="font-medium">At office</span>; others are
+        Standing in the office? Fill the latitude and longitude from this device’s GPS. Check-ins within the office area count as <span className="font-medium">At office</span>; others are
         allowed but flagged <span className="font-medium">Outside office</span> for HR and in reports.
       </p>
       <Button type="button" variant="outline" size="sm" className="mt-3" icon={<LocateFixed className="h-4 w-4" />} loading={busy} onClick={onClick}>
@@ -279,7 +279,7 @@ export const LocationsPage = () => {
           name: 'geofenceRadiusMeters',
           label: 'Office area radius (m)',
           type: 'number',
-          hint: `Clock-ins within this distance count as “At office”; further away is flagged “Outside office” (never blocked). 0 = record distance only. ${DEFAULT_OFFICE_RADIUS_M} m suits most offices.`,
+          hint: `Check-ins within this distance count as “At office”; further away is flagged “Outside office” (never blocked). 0 = record distance only. ${DEFAULT_OFFICE_RADIUS_M} m suits most offices.`,
         },
       ]}
       formExtras={(form) => <UseMyLocation form={form} />}

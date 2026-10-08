@@ -39,7 +39,7 @@ const SECTIONS: Section[] = [
   { key: 'organization', label: 'Organization', description: 'Company profile, locale and fiscal settings.', icon: Building2, permission: 'settings:manage', component: load(admin, 'OrganizationSection') },
   { key: 'users', label: 'Users', description: 'Accounts, invitations and access.', icon: UserCog, permission: 'user:manage', component: load(admin, 'UsersSection') },
   { key: 'roles', label: 'Roles & Permissions', description: 'System and custom roles.', icon: KeyRound, permission: 'role:manage', component: load(admin, 'RolesSection') },
-  { key: 'attendance', label: 'Attendance', description: 'Clock-in rules, overtime and absence marking.', icon: ClipboardList, permission: 'settings:manage', component: load(policy, 'AttendanceSettingsSection') },
+  { key: 'attendance', label: 'Attendance', description: 'Check-in rules, overtime and absence marking.', icon: ClipboardList, permission: 'settings:manage', component: load(policy, 'AttendanceSettingsSection') },
   { key: 'leave', label: 'Leave', description: 'Balances and backdating rules.', icon: ClipboardList, permission: 'settings:manage', component: load(policy, 'LeaveSettingsSection') },
   { key: 'payroll', label: 'Payroll', description: 'Pay day, basis and rule packs.', icon: SlidersHorizontal, permission: 'settings:manage', component: load(policy, 'PayrollSettingsSection') },
   { key: 'approvals', label: 'Approvals', description: 'Approval chains for leave, regularization and expenses.', icon: ShieldCheck, permission: 'settings:manage', component: load(policy, 'ApprovalSettingsSection') },

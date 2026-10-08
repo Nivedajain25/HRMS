@@ -194,7 +194,7 @@ export const MyAttendanceOverview = ({ date }: { date: string }) => {
           <WidgetEmpty
             icon={<CalendarCheck className="h-4 w-4" />}
             title="No attendance yet this month"
-            description="Clock in and your summary appears here."
+            description="Check in and your summary appears here."
           />
         ) : (
           <MyMonth counts={counts} onTimeRate={onTimeRate} row={row} />

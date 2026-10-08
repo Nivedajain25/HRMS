@@ -32,7 +32,7 @@ export const MyActivity = () => {
       icon={Activity}
       query={q}
       isEmpty={(d) => d.length === 0}
-      empty={{ icon: Activity, title: 'No activity yet', message: 'Your clock-ins, leave and completed tasks will show here.' }}
+      empty={{ icon: Activity, title: 'No activity yet', message: 'Your check-ins, leave and completed tasks will show here.' }}
     >
       {(d) => (
         <View>

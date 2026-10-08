@@ -128,7 +128,7 @@ const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; o
       onRowClick={(r) => onOpen(r._id)}
       emptyTitle={mode === 'me' ? 'No correction requests' : 'Nothing awaiting your approval'}
       emptyDescription={
-        hasFilters(filterKeys) ? 'Try changing your filters.' : mode === 'me' ? 'Missed a clock-in or clock-out? Request a correction.' : 'New requests show up here when they reach your step.'
+        hasFilters(filterKeys) ? 'Try changing your filters.' : mode === 'me' ? 'Missed a check-in or check-out? Request a correction.' : 'New requests show up here when they reach your step.'
       }
       emptyAction={
         mode === 'me' && onCreate && !hasFilters(filterKeys) ? (
@@ -193,7 +193,7 @@ export const RegularizationPage = () => {
     <>
       <PageHeader
         title="Regularization"
-        description="Correct missed or wrong clock-ins and clock-outs."
+        description="Correct missed or wrong check-ins and check-outs."
         breadcrumb={[{ label: 'Attendance', to: '/attendance' }, { label: 'Regularization' }]}
         actions={
           hasEmployee ? (

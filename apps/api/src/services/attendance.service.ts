@@ -142,9 +142,12 @@ export const getToday = async (ctx: RequestContext) => {
   // Independent lookups run in parallel: every query is a round trip to the (remote) database.
   const [emp, cfg] = await Promise.all([requireOwnEmployee(ctx), loadOrgAttendanceConfig(ctx.organizationId)]);
   const { record, dateKey } = await findCurrentRecord(ctx, emp, cfg);
-  const [shift, calendar] = await Promise.all([
+  const [shift, calendar, office] = await Promise.all([
     resolveShift(ctx.organizationId, emp, dateKey, cfg.attendance),
     buildWorkCalendar(ctx.organizationId, dateKey, dateKey, emp._id),
+    emp.locationId
+      ? LocationModel.findOne({ _id: emp.locationId, organizationId: ctx.organizationId }).select('name latitude longitude geofenceRadiusMeters').lean()
+      : null,
   ]);
   const window = shiftWindow(dateKey, shift, cfg.timezone);
   let workedMinutesSoFar = record?.workingMinutes ?? 0;
@@ -167,6 +170,11 @@ export const getToday = async (ctx: RequestContext) => {
     requireSelfie: cfg.attendance.requireSelfie,
     requireLocation: cfg.attendance.requireLocation,
     allowBreaks: cfg.attendance.allowBreaks,
+    // The employee's office (when it has coordinates), so the app can show "You're at the office" before checking in.
+    office:
+      office && typeof office.latitude === 'number' && typeof office.longitude === 'number'
+        ? { name: office.name, latitude: office.latitude, longitude: office.longitude, radiusMeters: office.geofenceRadiusMeters ?? 0 }
+        : null,
   };
 };
 
@@ -201,11 +209,11 @@ const resolveCapture = async (
   // The selfie is taken when clocking IN (clock-out may still carry one, but never requires it).
   // Same for location below.
   if (cfg.attendance.requireSelfie && action === 'check-in' && !input.photoId) {
-    throw badRequest('A selfie is required to clock in', 'SELFIE_REQUIRED', [{ path: 'photoId', message: 'Selfie required' }]);
+    throw badRequest('A selfie is required to check in', 'SELFIE_REQUIRED', [{ path: 'photoId', message: 'Selfie required' }]);
   }
   // Location is mandatory at clock-in; at clock-out it is recorded when the device provides it.
   if (cfg.attendance.requireLocation && action === 'check-in' && !hasCoords) {
-    throw badRequest('Your location is required to clock in', 'LOCATION_REQUIRED', [{ path: 'latitude', message: 'Location required' }]);
+    throw badRequest('Your location is required to check in', 'LOCATION_REQUIRED', [{ path: 'latitude', message: 'Location required' }]);
   }
   let photoId: Types.ObjectId | null = null;
   if (input.photoId) {
@@ -251,7 +259,7 @@ export const checkIn = async (ctx: RequestContext, input: z.output<typeof clockI
   const emp = await requireOwnEmployee(ctx);
   const cfg = await loadOrgAttendanceConfig(ctx.organizationId);
   if (input.workMode === 'REMOTE' && !cfg.attendance.allowRemoteClockIn) {
-    throw forbidden('Remote clock-in is not allowed in your organization', 'REMOTE_CLOCK_IN_DISABLED');
+    throw forbidden('Remote check-in is not allowed in your organization', 'REMOTE_CLOCK_IN_DISABLED');
   }
   const dateKey = todayKey(cfg.timezone);
   const existing = await AttendanceModel.findOne({ organizationId: ctx.organizationId, employeeId: emp._id, date: dateOnly(dateKey) });
@@ -526,10 +534,10 @@ const trendPoint = (r: TrendRow | undefined) => ({
  */
 export type BoardColumn = 'NOT_IN' | 'WORKING' | 'ON_BREAK' | 'DONE' | 'AWAY';
 const BOARD_COLUMNS: { key: BoardColumn; label: string }[] = [
-  { key: 'NOT_IN', label: 'Yet to clock in' },
+  { key: 'NOT_IN', label: 'Yet to check in' },
   { key: 'WORKING', label: 'Working' },
   { key: 'ON_BREAK', label: 'On break' },
-  { key: 'DONE', label: 'Clocked out' },
+  { key: 'DONE', label: 'Checked out' },
   { key: 'AWAY', label: 'On leave / off' },
 ];
 
@@ -593,7 +601,7 @@ export const attendanceBoard = async (ctx: RequestContext, q: { date?: string; s
   const leaveByEmp = new Map<string, { name: string; halfDay: boolean }>();
   for (const l of leaves) {
     const type = l.leaveTypeId as unknown as { name?: string; isWorkFromHome?: boolean } | null;
-    if (type?.isWorkFromHome) continue; // WFH leave: still expected to clock in (remotely)
+    if (type?.isWorkFromHome) continue; // WFH leave: still expected to check in (remotely)
     leaveByEmp.set(String(l.employeeId), { name: type?.name ?? 'Leave', halfDay: !!l.halfDay });
   }
   const dayKind = calendar.kindOf(date);
@@ -927,7 +935,7 @@ export const autoCloseOpenRecords = async (organizationId: Types.ObjectId, now =
     const window = shiftWindow(toDateKey(doc.date), shift, cfg.timezone);
     if (window.end.getTime() + AUTO_CLOSE_AFTER_HOURS * 3_600_000 > now.getTime()) continue;
     doc.checkOut = doc.checkIn! > window.end ? doc.checkIn : window.end;
-    doc.note = appendNote(doc.note, 'Auto clock-out');
+    doc.note = appendNote(doc.note, 'Auto check-out');
     applyMetrics(doc, shift, cfg);
     await doc.save();
     closed += 1;

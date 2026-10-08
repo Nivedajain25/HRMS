@@ -105,7 +105,7 @@ export const SelfieCapture = ({ open, title, onCancel, onCapture }: SelfieCaptur
                 Camera access is needed
               </Text>
               <Text size="sm" align="center" style={styles.dim}>
-                Your organization requires a selfie when you clock in or out.
+                Your organization requires a selfie when you check in or out.
               </Text>
               {permission.canAskAgain ? (
                 <Button onPress={() => void requestPermission()}>Allow camera</Button>

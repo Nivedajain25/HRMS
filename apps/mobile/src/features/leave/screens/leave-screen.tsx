@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, Clock, PartyPopper, UserX } from 'lucide-react-native';
+import { CalendarDays, Clock, PartyPopper, Plane, PlaneTakeoff, UserX } from 'lucide-react-native';
 import type { LeaveStatus } from '@stencil/shared';
 import { Button, Card, EmptyState, ErrorState, Header, IconButton, RelatedLinks, Screen, Segmented, SkeletonList, Text } from '@/components';
 import { useAuth } from '@/lib/auth';
@@ -73,7 +73,7 @@ export const LeaveScreen = () => {
             <Text size="lg" weight="semibold" accessibilityRole="header" style={styles.flex}>
               {`Leave balance ${year}`}
             </Text>
-            <Button size="sm" icon={CalendarPlus} onPress={() => openApply()}>
+            <Button size="sm" icon={PlaneTakeoff} onPress={() => openApply()}>
               Apply leave
             </Button>
           </View>
@@ -128,7 +128,7 @@ export const LeaveScreen = () => {
   ) : (
     <Card>
       <EmptyState
-        icon={CalendarDays}
+        icon={Plane}
         title={effectiveStatus === 'ALL' ? EMPTY_COPY[scope].title : `No ${label(effectiveStatus).toLowerCase()} requests`}
         message={effectiveStatus === 'ALL' ? EMPTY_COPY[scope].message : 'Try a different status.'}
       />

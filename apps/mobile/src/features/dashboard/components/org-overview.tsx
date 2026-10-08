@@ -287,7 +287,7 @@ export const TeamActivity = () => {
         ) : q.error ? (
           <ErrorState compact title="Could not load activity" error={q.error} onRetry={() => void q.refetch()} />
         ) : !items.length ? (
-          <EmptyState compact icon={Activity} title="No activity yet today" message="Clock-ins, leave and finished tasks show up here." />
+          <EmptyState compact icon={Activity} title="No activity yet today" message="Check-ins, leave and finished tasks show up here." />
         ) : (
           items.map((a, i) => {
             const kind = activityIcon(a.type);

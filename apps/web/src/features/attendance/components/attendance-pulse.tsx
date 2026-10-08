@@ -364,7 +364,7 @@ export const PulseStats = ({ d, loading, dayLabel }: { d: AttendanceDashboard | 
   const share = (n: number | undefined) => (d?.totalEmployees && n !== undefined ? `${Math.round((n / d.totalEmployees) * 100)}% of ${d.totalEmployees}` : undefined);
   const cards = [
     { label: `Present ${dayLabel}`, value: d?.presentToday, format: whole, hint: share(d?.presentToday), icon: <UserCheck className="h-4 w-4" />, tone: 'green' as Tone, spark: series('present') },
-    { label: `Absent ${dayLabel}`, value: d?.absentToday, format: whole, hint: d?.notClockedIn ? `${d.notClockedIn} not clocked in yet` : undefined, icon: <UserX className="h-4 w-4" />, tone: 'red' as Tone, spark: series('absent') },
+    { label: `Absent ${dayLabel}`, value: d?.absentToday, format: whole, hint: d?.notClockedIn ? `${d.notClockedIn} not checked in yet` : undefined, icon: <UserX className="h-4 w-4" />, tone: 'red' as Tone, spark: series('absent') },
     { label: `Late ${dayLabel}`, value: d?.lateToday, format: whole, hint: share(d?.lateToday), icon: <Clock3 className="h-4 w-4" />, tone: 'amber' as Tone, spark: series('late') },
     { label: 'On leave', value: d?.onLeave, format: whole, icon: <Plane className="h-4 w-4" />, tone: 'purple' as Tone, spark: series('onLeave') },
     { label: 'Work from home', value: d?.workFromHome, format: whole, icon: <Home className="h-4 w-4" />, tone: 'blue' as Tone, spark: series('workFromHome') },

@@ -19,7 +19,7 @@ describe('Activity feed', () => {
     const items = everyone.body.data as Item[];
     expect(items.filter((i) => i.type === 'CLOCK_IN').map((i) => i.employee.name.split(' ')[0]).sort()).toEqual(['Asha', 'Bala']);
     expect(items.some((i) => i.type === 'CLOCK_OUT' && i.employee.name.startsWith('Asha'))).toBe(true);
-    expect(items.find((i) => i.type === 'CLOCK_IN')!.title).toBe('clocked in remotely');
+    expect(items.find((i) => i.type === 'CLOCK_IN')!.title).toBe('checked in remotely');
 
     // An employee sees only their own, and cannot ask for everyone's.
     const mine = (await as(b.token).get('/api/v1/dashboard/activity')).body.data as Item[];

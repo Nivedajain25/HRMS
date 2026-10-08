@@ -46,7 +46,7 @@ export const RegularizationListScreen = () => {
           <EmptyState
             icon={FileClock}
             title={status === 'ALL' ? 'No regularization requests yet' : `No ${label(status).toLowerCase()} requests`}
-            message="Missed a clock-in or clocked out late? Request regularization and it goes through your approval chain."
+            message="Missed a check-in or checked out late? Request regularization and it goes through your approval chain."
           />
         </Card>
       ) : (

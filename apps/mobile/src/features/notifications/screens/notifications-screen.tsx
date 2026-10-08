@@ -5,13 +5,13 @@ import {
   Bell,
   BellOff,
   Briefcase,
-  CalendarDays,
   CheckCheck,
   Clock,
   ExternalLink,
   FileText,
   Megaphone,
   Package,
+  Plane,
   Receipt,
   Settings,
   Target,
@@ -31,9 +31,9 @@ import { radius, space, TOUCH_TARGET, useTheme } from '@/theme';
 import { useDeleteNotification, useMarkAllRead, useMarkRead, useNotifications, useUnreadCount, type NotificationItem } from '../api';
 
 const ICONS: Partial<Record<NotificationType, IconComponent>> = {
-  LEAVE_SUBMITTED: CalendarDays,
-  LEAVE_APPROVED: CalendarDays,
-  LEAVE_REJECTED: CalendarDays,
+  LEAVE_SUBMITTED: Plane,
+  LEAVE_APPROVED: Plane,
+  LEAVE_REJECTED: Plane,
   ATTENDANCE_CORRECTION: Clock,
   PAYROLL_GENERATED: Wallet,
   DOCUMENT_EXPIRY: FileText,

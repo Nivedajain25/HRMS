@@ -185,7 +185,7 @@ export const RegularizationFormScreen = () => {
               required
               multiline
               maxLength={1000}
-              placeholder="e.g. Forgot to clock out after the client meeting"
+              placeholder="e.g. Forgot to check out after the client meeting"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}

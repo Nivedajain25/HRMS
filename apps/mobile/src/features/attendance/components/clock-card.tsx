@@ -209,9 +209,9 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
   const canStartBreak = !!t.allowBreaks && t.state === 'CHECKED_IN';
   const showBreakTime = !!t.allowBreaks || onBreak > 0;
   const captureHint = t.requireSelfie
-    ? `Clocking in needs a selfie${t.requireLocation ? ' and your location' : ''}.`
+    ? `Checking in needs a selfie${t.requireLocation ? ' and your location' : ''}.`
     : t.requireLocation
-      ? 'Clocking in needs your location.'
+      ? 'Checking in needs your location.'
       : '';
 
   const runBreak = async (key: 'break/start' | 'break/end', success: string) => {
@@ -708,7 +708,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
         ) : null}
         {runningLate ? (
           <Notice tone="warning" icon={AlarmClock}>
-            {`Your shift started at ${formatTimeIn(t.shiftStart, timeZone)} — clocking in now will be marked late.`}
+            {`Your shift started at ${formatTimeIn(t.shiftStart, timeZone)} — checking in now will be marked late.`}
           </Notice>
         ) : null}
         {t.state === 'NOT_CHECKED_IN' && captureHint ? (
@@ -774,7 +774,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
       ) : null}
       {runningLate ? (
         <Notice tone="warning" icon={AlarmClock}>
-          {`Your shift started at ${formatTimeIn(t.shiftStart, timeZone)} — clocking in now will be marked late.`}
+          {`Your shift started at ${formatTimeIn(t.shiftStart, timeZone)} — checking in now will be marked late.`}
         </Notice>
       ) : null}
 
@@ -832,7 +832,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
           <View style={styles.hint}>
             {t.requireSelfie ? <Camera size={14} color={c.muted} /> : <MapPin size={14} color={c.muted} />}
             <Text size="xs" color="muted" style={styles.flex}>
-              {captureHint || 'Your location is recorded when you clock in and out (if permitted).'}
+              {captureHint || 'Your location is recorded when you check in and out (if permitted).'}
             </Text>
           </View>
         </View>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, ChevronLeft, FileText, Megaphone, Search, UserRound, X } from 'lucide-react-native';
+import { ChevronLeft, FileText, Megaphone, Plane, Search, UserRound, X } from 'lucide-react-native';
 import type { SearchResult } from '@stencil/types';
 import { IconButton, Screen, Text, type IconComponent } from '@/components';
 import { useAllFeatures, type QuickAction } from '@/features/quick-actions/quick-actions';
@@ -39,7 +39,7 @@ const KEYWORDS: Record<string, string> = {
 /** Records from the server search that the app can open, and where. */
 const RECORDS: Partial<Record<SearchResult['type'], { label: string; icon: IconComponent; href: (r: SearchResult) => Href }>> = {
   employee: { label: 'People', icon: UserRound, href: (r) => ({ pathname: '/more/team/[id]', params: { id: r.id } }) },
-  leave: { label: 'Leave requests', icon: CalendarDays, href: (r) => ({ pathname: '/leave/[id]', params: { id: r.id } }) },
+  leave: { label: 'Leave requests', icon: Plane, href: (r) => ({ pathname: '/leave/[id]', params: { id: r.id } }) },
   announcement: { label: 'Announcements', icon: Megaphone, href: (r) => ({ pathname: '/more/announcements/[id]', params: { id: r.id } }) },
   document: { label: 'Documents', icon: FileText, href: () => '/more/documents' },
 };

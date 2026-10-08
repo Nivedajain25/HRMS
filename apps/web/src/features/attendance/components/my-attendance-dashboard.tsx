@@ -195,7 +195,7 @@ const Selfie = ({ fileId, name, small = false }: { fileId: string | null | undef
     );
   }
   return (
-    <button type="button" onClick={() => void openFile(`/files/${fileId}`)} className={box} aria-label={`Open ${name}'s clock-in selfie`}>
+    <button type="button" onClick={() => void openFile(`/files/${fileId}`)} className={box} aria-label={`Open ${name}'s check-in selfie`}>
       <img src={url} alt="" className="h-full w-full object-cover" />
     </button>
   );
@@ -686,7 +686,7 @@ const RecentActivityCard = ({ r }: { r: AttendanceBase | null }) => {
           <Skeleton className="h-32" />
         </div>
       ) : !items.length ? (
-        <p className="p-6 text-center text-sm text-muted">Your clock-ins, breaks and leave show up here.</p>
+        <p className="p-6 text-center text-sm text-muted">Your check-ins, breaks and leave show up here.</p>
       ) : (
         <ul className="divide-y divide-line px-4">
           {items.map((a) => (

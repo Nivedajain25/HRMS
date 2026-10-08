@@ -79,8 +79,8 @@ export const AttendanceRecords = () => {
         ),
       },
       { id: 'checkOut', header: 'Out', enableSorting: true, cell: ({ row }) => <span className="tabular-nums">{formatTimeIn(row.original.checkOut, timeZone)}</span> },
-      { id: 'place', header: 'Clock-in location', cell: ({ row }) => (row.original.checkIn ? <PlaceCell point={row.original.checkInLocation} /> : '—') },
-      { id: 'placeOut', header: 'Clock-out location', cell: ({ row }) => (row.original.checkOut ? <PlaceCell point={row.original.checkOutLocation} /> : '—') },
+      { id: 'place', header: 'Check-in location', cell: ({ row }) => (row.original.checkIn ? <PlaceCell point={row.original.checkInLocation} /> : '—') },
+      { id: 'placeOut', header: 'Check-out location', cell: ({ row }) => (row.original.checkOut ? <PlaceCell point={row.original.checkOutLocation} /> : '—') },
       { id: 'verification', header: 'Selfie', cell: ({ row }) => <CaptureCell record={row.original} /> },
       { id: 'workMode', header: 'Mode', cell: ({ row }) => label(row.original.workMode) },
       {
@@ -139,7 +139,7 @@ export const AttendanceRecords = () => {
         onSortingChange={(s) => set({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
         onRowClick={(row) => setOpen(row)}
         emptyTitle="No attendance records"
-        emptyDescription={hasFilters(FILTER_KEYS) ? 'Try changing your filters.' : 'Records appear as employees clock in.'}
+        emptyDescription={hasFilters(FILTER_KEYS) ? 'Try changing your filters.' : 'Records appear as employees check in.'}
         emptyAction={
           canCreate ? (
             <Button icon={<CalendarPlus className="h-4 w-4" />} onClick={() => setMarking(true)}>

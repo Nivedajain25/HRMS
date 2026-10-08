@@ -135,7 +135,7 @@ const PersonCard = ({ card, now, timeZone, delay }: { card: BoardCard; now: numb
               </Badge>
             ) : (
               <Line icon={<UserX className="h-3.5 w-3.5" />} tone="muted">
-                Not clocked in yet
+                Not checked in yet
               </Line>
             ))}
 

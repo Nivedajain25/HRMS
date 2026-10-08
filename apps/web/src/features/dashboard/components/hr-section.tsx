@@ -37,7 +37,7 @@ const AttendanceToday = ({ d }: { d: AdminDashboard }) => {
       <StatCard
         label="Absent / not in"
         value={formatNumber(c.absentToday + c.notCheckedInToday)}
-        hint={c.notCheckedInToday ? `${c.notCheckedInToday} not clocked in yet` : 'Everyone accounted for'}
+        hint={c.notCheckedInToday ? `${c.notCheckedInToday} not checked in yet` : 'Everyone accounted for'}
         icon={<UserX className="h-5 w-5" />}
         tone="red"
         to="/attendance?view=board"
@@ -122,7 +122,7 @@ const LiveBoardPreview = () => {
         <div className="rounded-xl border border-line">
           <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
             <p className="text-sm font-semibold text-fg">
-              Not clocked in yet
+              Not checked in yet
               <span className="ml-2 rounded-full bg-surface-3 px-2 py-0.5 text-xs font-semibold text-fg-2 tabular-nums">{missing.length}</span>
             </p>
             {missing.length > 8 && (

@@ -107,7 +107,7 @@ export const RegularizationFormModal = ({ open, onClose, initialDate }: { open: 
           </FormField>
         </FormGrid>
         <FormField label="Reason" required error={errors.reason}>
-          {({ id, invalid }) => <Textarea id={id} rows={3} maxLength={1000} placeholder="e.g. Forgot to clock out after the client meeting" aria-invalid={invalid} {...register('reason')} />}
+          {({ id, invalid }) => <Textarea id={id} rows={3} maxLength={1000} placeholder="e.g. Forgot to check out after the client meeting" aria-invalid={invalid} {...register('reason')} />}
         </FormField>
         <FormField label="Attachment" hint="Optional proof such as a gate log or email (PDF or image, max 10 MB).">
           {({ id }) => <FileUpload id={id} file={file} onFile={setFile} accept=".pdf,.png,.jpg,.jpeg,.webp" label="Attach a file" />}

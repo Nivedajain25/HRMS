@@ -69,7 +69,7 @@ export const StatCards = ({ d }: { d: AdminDashboard }) => {
   // Marked absent + not clocked in yet: nobody has seen them today.
   const absentNow = c.absentToday + c.notCheckedInToday;
   const absentHint =
-    [c.absentToday && `${c.absentToday} marked absent`, c.notCheckedInToday && `${c.notCheckedInToday} not clocked in yet`]
+    [c.absentToday && `${c.absentToday} marked absent`, c.notCheckedInToday && `${c.notCheckedInToday} not checked in yet`]
       .filter(Boolean)
       .join(' · ') || 'Everyone accounted for';
 

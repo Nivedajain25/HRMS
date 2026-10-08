@@ -5,6 +5,7 @@ import { Bell, Search } from 'lucide-react-native';
 import { Appear, Card, Screen, SectionHeader, Text, Wave } from '@/components';
 import { attendanceKeys } from '@/features/attendance/api';
 import { ClockCard } from '@/features/attendance/components/clock-card';
+import { usePlacePopup } from '@/features/attendance/place-popup';
 import { EmergencyBanner } from '@/features/emergencies/emergency-banner';
 import { EmergencyButton } from '@/features/emergencies/emergency-button';
 import { AvatarPhotoButton } from '@/features/profile/components/avatar-photo-button';
@@ -55,6 +56,8 @@ export const HomeScreen = () => {
   const orgWide = can('employee:read') && can('attendance:read');
   const manager = useManagerDashboard(showTeam);
   const now = useNow(60_000);
+  // Pop-up: at the office, or outside the office area and how far.
+  usePlacePopup('home');
 
   const refresh = () =>
     Promise.all([

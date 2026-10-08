@@ -2,7 +2,7 @@ import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router/js-tabs';
-import { CalendarDays, Clock, Home, Menu, Plus, type LucideIcon } from 'lucide-react-native';
+import { Clock, Home, Menu, Plane, Plus, type LucideIcon } from 'lucide-react-native';
 import { Text } from '@/components';
 import { QuickActionsSheet } from '@/features/quick-actions/quick-actions';
 import { radius, space, useTheme } from '@/theme';
@@ -13,7 +13,7 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>
 const TABS: { name: string; label: string; icon: LucideIcon }[] = [
   { name: 'index', label: 'Home', icon: Home },
   { name: 'attendance', label: 'Attendance', icon: Clock },
-  { name: 'leave', label: 'Leave', icon: CalendarDays },
+  { name: 'leave', label: 'Leave', icon: Plane },
   { name: 'more', label: 'More', icon: Menu },
 ];
 

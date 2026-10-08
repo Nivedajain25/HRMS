@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Banknote, CalendarDays, ClipboardCheck, FileClock, Receipt } from 'lucide-react-native';
+import { Banknote, ClipboardCheck, FileClock, Plane, Receipt } from 'lucide-react-native';
 import { Card, EmptyState, ErrorState, Header, Screen, SkeletonList, type IconComponent } from '@/components';
 import { regularizationKeys, type Regularization } from '@/features/attendance/api';
 import { leaveKeys, type LeaveRequest } from '@/features/leave/api';
@@ -36,7 +36,7 @@ const isSegment = (v: unknown): v is Segment => typeof v === 'string' && (SEGMEN
 const COPY: Record<Segment, { label: string; icon: IconComponent; emptyTitle: string; emptyMessage: string; error: string }> = {
   leave: {
     label: 'Leave',
-    icon: CalendarDays,
+    icon: Plane,
     emptyTitle: 'You are all caught up',
     emptyMessage: 'Leave requests awaiting your decision appear here.',
     error: 'Could not load leave requests',

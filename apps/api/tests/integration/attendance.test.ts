@@ -374,7 +374,7 @@ describe('Attendance, shifts, holidays & regularization', () => {
       expect(await autoCloseOpenRecords(orgId)).toBeGreaterThanOrEqual(1);
       const closed = await AttendanceModel.findById(open.body.data._id).lean();
       expect(closed?.checkOut?.toISOString()).toBe('2026-02-02T18:00:00.000Z');
-      expect(closed?.note).toContain('Auto clock-out');
+      expect(closed?.note).toContain('Auto check-out');
       expect(closed?.workingMinutes).toBe(540);
 
       const first = await autoMarkPreviousDay(orgId);
@@ -561,6 +561,13 @@ describe('Office proximity at clock in/out', () => {
     away = await createEmployeeUser(admin.token, { firstName: 'Otto', locationId });
     noOffice = await createEmployeeUser(admin.token, { firstName: 'Nora' });
     silent = await createEmployeeUser(admin.token, { firstName: 'Sid', locationId });
+  });
+
+  it("sends the employee's office with today's attendance (for the app's \"you're at the office\" pop-up)", async () => {
+    const today = await as(atDesk.token).get('/api/v1/attendance/today');
+    expect(today.status).toBe(200);
+    expect(today.body.data.office).toEqual({ name: 'Head Office', ...OFFICE, radiusMeters: 150 });
+    expect((await as(noOffice.token).get('/api/v1/attendance/today')).body.data.office).toBeNull();
   });
 
   it('records the office distance and flags clock-ins outside the office instead of blocking them', async () => {

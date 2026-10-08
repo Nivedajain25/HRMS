@@ -68,7 +68,7 @@ dashboardModule.route(
   {
     method: 'get',
     path: '/activity',
-    summary: 'Recent activity feed (clock in/out, leave, regularization, expenses, goals, onboarding tasks)',
+    summary: 'Recent activity feed (check in/out, leave, regularization, expenses, goals, onboarding tasks)',
     description: '`scope=all` (requires `employee:read` or `attendance:read`) covers every employee; otherwise only the caller’s own activity. `days` (1–31, default 7), `limit` (1–50, default 20).',
     query: z.object({
       scope: z.enum(['all', 'me']).optional(),

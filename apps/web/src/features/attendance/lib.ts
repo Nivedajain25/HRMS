@@ -174,7 +174,7 @@ export const locationHelp = (error: 'denied' | 'unavailable' | 'unsupported') =>
   error === 'denied'
     ? 'Location access is blocked. Allow location for this site (click the lock icon in the address bar → Location → Allow, or enable it in your phone settings), then try again.'
     : error === 'unsupported'
-      ? 'This browser cannot share your location. Use a different browser or device to clock in.'
+      ? 'This browser cannot share your location. Use a different browser or device to check in.'
       : 'Your location could not be determined. Turn on location services / GPS, move to an open area and try again.';
 
 /** OpenStreetMap link for a coordinate. */

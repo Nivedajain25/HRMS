@@ -3,8 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import {
   Bell,
-  CalendarDays,
-  CalendarPlus,
   CalendarRange,
   ClipboardCheck,
   ClipboardList,
@@ -19,6 +17,8 @@ import {
   Megaphone,
   Package,
   PartyPopper,
+  Plane,
+  PlaneTakeoff,
   Receipt,
   ReceiptText,
   Settings,
@@ -56,7 +56,7 @@ export const useQuickActions = (): QuickAction[] => {
 
   const a = {
     approvals: { key: 'approvals', label: 'Approvals', icon: ClipboardCheck, href: '/approvals', tone: 'amber', badge: pending.data?.total },
-    leave: { key: 'leave', label: 'Apply leave', icon: CalendarPlus, href: '/leave/apply', tone: 'teal' },
+    leave: { key: 'leave', label: 'Apply leave', icon: PlaneTakeoff, href: '/leave/apply', tone: 'teal' },
     regularize: { key: 'regularize', label: 'Fix attendance', icon: FilePenLine, href: '/attendance/regularizations/new', tone: 'green' },
     payslips: { key: 'payslips', label: 'Payslips', icon: Wallet, href: '/more/payslips', tone: 'blue' },
     holidays: { key: 'holidays', label: 'Holidays', icon: PartyPopper, href: '/more/holidays', tone: 'purple' },
@@ -147,8 +147,8 @@ export const useAllFeatures = (): { title: string; items: QuickAction[] }[] => {
     {
       title: 'Leave',
       items: [
-        hasEmployee && { key: 'apply', label: 'Apply leave', icon: CalendarPlus, href: '/leave/apply', tone: 'teal' },
-        { key: 'leave', label: 'My leave', icon: CalendarDays, href: '/leave', tone: 'teal' },
+        hasEmployee && { key: 'apply', label: 'Apply leave', icon: PlaneTakeoff, href: '/leave/apply', tone: 'teal' },
+        { key: 'leave', label: 'My leave', icon: Plane, href: '/leave', tone: 'teal' },
         { key: 'calendar', label: 'Leave calendar', icon: CalendarRange, href: '/leave/calendar', tone: 'blue' },
       ],
     },

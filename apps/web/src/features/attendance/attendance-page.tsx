@@ -92,7 +92,7 @@ export const AttendancePage = () => {
           isAdmin
             ? 'Monitor and manage attendance across your organization.'
             : hasEmployee
-              ? 'Clock in, track your hours and review your attendance.'
+              ? 'Check in, track your hours and review your attendance.'
               : 'Attendance across your organization.'
         }
         actions={

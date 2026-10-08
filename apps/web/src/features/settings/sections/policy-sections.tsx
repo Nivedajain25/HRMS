@@ -105,23 +105,23 @@ export const AttendanceSettingsSection = () => {
     <SectionShell loading={!v} error={settings.error} onRetry={() => settings.refetch()} onSave={() => v && save.mutate(v)} saving={save.isPending}>
       {v && (
         <>
-          <ToggleRow title="Allow remote clock-in" description="Employees may clock in with the Remote work mode." checked={v.allowRemoteClockIn} onChange={(allowRemoteClockIn) => setValue({ ...v, allowRemoteClockIn })} />
-          <ToggleRow title="Auto-mark absence" description="Each night, working days without a clock-in or leave are marked absent; holidays and week-offs are recorded." checked={v.autoMarkAbsent} onChange={(autoMarkAbsent) => setValue({ ...v, autoMarkAbsent })} />
+          <ToggleRow title="Allow remote check-in" description="Employees may check in with the Remote work mode." checked={v.allowRemoteClockIn} onChange={(allowRemoteClockIn) => setValue({ ...v, allowRemoteClockIn })} />
+          <ToggleRow title="Auto-mark absence" description="Each night, working days without a check-in or leave are marked absent; holidays and week-offs are recorded." checked={v.autoMarkAbsent} onChange={(autoMarkAbsent) => setValue({ ...v, autoMarkAbsent })} />
           <ToggleRow
-            title="Require selfie at clock in"
-            description="Employees take a front-camera photo when they clock in. Photos are visible only to the employee, their managers and HR."
+            title="Require selfie at check-in"
+            description="Employees take a front-camera photo when they check in. Photos are visible only to the employee, their managers and HR."
             checked={v.requireSelfie ?? false}
             onChange={(requireSelfie) => setValue({ ...v, requireSelfie })}
           />
           <ToggleRow
-            title="Require location at clock in"
-            description="Clocking in needs the device's GPS location (clock-out records it when available). Locations are visible only to the employee, their managers and HR."
+            title="Require location at check-in"
+            description="Checking in needs the device's GPS location (check-out records it when available). Locations are visible only to the employee, their managers and HR."
             checked={v.requireLocation ?? false}
             onChange={(requireLocation) => setValue({ ...v, requireLocation })}
           />
           <ToggleRow
             title="Allow breaks"
-            description="Employees can start and end a break while clocked in; break time isn't counted as work. When off, the break buttons are hidden for everyone (anyone already on a break can still end it)."
+            description="Employees can start and end a break while checked in; break time isn't counted as work. When off, the break buttons are hidden for everyone (anyone already on a break can still end it)."
             checked={v.allowBreaks ?? false}
             onChange={(allowBreaks) => setValue({ ...v, allowBreaks })}
             disabled={!superAdmin}

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { CalendarDays, ClipboardCheck, Megaphone, PartyPopper, Pin, Receipt, Users } from 'lucide-react-native';
+import { ClipboardCheck, Megaphone, PartyPopper, Pin, Plane, Receipt, Users } from 'lucide-react-native';
 import {
   Badge,
   Card,
@@ -91,11 +91,11 @@ export const LeaveBalances = ({ query }: { query: UseQueryResult<EmployeeDashboa
   return (
     <Widget
       title="Leave balance"
-      icon={CalendarDays}
+      icon={Plane}
       query={query}
       padding={space(3)}
       isEmpty={(d) => d.leaveBalances.length === 0}
-      empty={{ icon: CalendarDays, title: 'No leave balances', message: 'Leave types assigned to you will show here.' }}
+      empty={{ icon: Plane, title: 'No leave balances', message: 'Leave types assigned to you will show here.' }}
       actionLabel="Leave"
       onAction={() => router.push('/leave')}
     >

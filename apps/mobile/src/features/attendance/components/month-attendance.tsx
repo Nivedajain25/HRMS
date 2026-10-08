@@ -65,7 +65,7 @@ const DayDetail = ({
   if (record.isEarlyDeparture) rows.push(['Left early by', minutesToHours(record.earlyDepartureMinutes)]);
   if (record.overtimeMinutes > 0) rows.push(['Overtime', minutesToHours(record.overtimeMinutes)]);
   if (record.shiftId) rows.push(['Shift', `${record.shiftId.name} (${shiftRange(record.shiftId.startTime, record.shiftId.endTime)})`]);
-  if (record.checkInLocation?.latitude != null) rows.push(['Location', 'Captured at clock in']);
+  if (record.checkInLocation?.latitude != null) rows.push(['Location', 'Captured at check-in']);
   return (
     <BottomSheet
       open
@@ -198,7 +198,7 @@ export const MonthAttendance = ({ afterSummary }: { afterSummary?: ReactNode }) 
             const key = r.date.slice(0, 10);
             const times = r.checkIn
               ? `${formatTimeIn(r.checkIn, timeZone)} – ${r.checkOut ? formatTimeIn(r.checkOut, timeZone) : 'now'}`
-              : 'No clock-in';
+              : 'No check-in';
             return (
               <ListItem
                 key={r._id}

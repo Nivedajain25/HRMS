@@ -13,7 +13,7 @@ const STEP_LABEL: Record<ClockStep, (a: FlowAction) => string> = {
   locating: () => 'Getting your location…',
   selfie: () => 'Waiting for your selfie…',
   uploading: () => 'Uploading photo…',
-  saving: (a) => (a === 'check-in' ? 'Clocking in…' : 'Clocking out…'),
+  saving: (a) => (a === 'check-in' ? 'Checking in…' : 'Checking out…'),
 };
 
 /** Maps clock-in/out API errors to actionable messages. */
@@ -26,7 +26,7 @@ const friendlyError = (e: ApiError, verb: string): { title: string; description?
     case 'INVALID_SELFIE':
       return { title: 'That selfie can no longer be used.', description: 'It expired or was already used. Please try again and take a new photo.' };
     case 'REMOTE_CLOCK_IN_DISABLED':
-      return { title: 'Remote clock-in is disabled.', description: 'Clock in from the office, or ask HR to enable remote clock-in.' };
+      return { title: 'Remote check-in is disabled.', description: 'Check in from the office, or ask HR to enable remote check-in.' };
     default:
       return { title: e.message };
   }
@@ -59,7 +59,7 @@ export const useClockFlow = () => {
 
   const run = async (action: FlowAction, opts: { workMode?: WorkMode; success: string }): Promise<boolean> => {
     if (active) return false;
-    const verb = action === 'check-in' ? 'clock in' : 'clock out';
+    const verb = action === 'check-in' ? 'check in' : 'check out';
     setActive(action);
     setNotice(null);
     try {
@@ -77,7 +77,7 @@ export const useClockFlow = () => {
           toast.error(`Your location is required to ${verb}.`, { description: help });
           return false;
         }
-        note = `Location ${loc.error === 'denied' ? 'permission is blocked' : 'was unavailable'}, so your ${verb === 'clock in' ? 'clock-in' : 'clock-out'} was recorded without a location.`;
+        note = `Location ${loc.error === 'denied' ? 'permission is blocked' : 'was unavailable'}, so your ${verb === 'check in' ? 'check-in' : 'check-out'} was recorded without a location.`;
       } else {
         Object.assign(body, loc);
       }
@@ -85,7 +85,7 @@ export const useClockFlow = () => {
       // Selfie at clock-in only.
       if (today.requireSelfie && action === 'check-in') {
         setStep('selfie');
-        const photo = await requestSelfie('Selfie to clock in');
+        const photo = await requestSelfie('Selfie to check in');
         if (!photo) {
           toast.info(`A selfie is required to ${verb}.`);
           return false;

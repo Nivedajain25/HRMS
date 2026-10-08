@@ -33,7 +33,7 @@ const explain = (err: unknown): Extract<CameraState, { kind: 'error' }> => {
     };
   }
   if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-    return { kind: 'error', title: 'No camera found', text: 'Connect a webcam, or clock in from the mobile app on your phone.' };
+    return { kind: 'error', title: 'No camera found', text: 'Connect a webcam, or check in from the mobile app on your phone.' };
   }
   if (name === 'NotReadableError' || name === 'AbortError') {
     return { kind: 'error', title: 'The camera is busy', text: 'Another app may be using it (e.g. Teams, Zoom or another browser tab). Close it and try again.' };

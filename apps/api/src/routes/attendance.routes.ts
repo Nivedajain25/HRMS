@@ -36,8 +36,8 @@ import { createModule } from './registry';
 export const attendanceModule = createModule('Attendance', '/api/v1/attendance');
 const CAPTURE_NOTE =
   'Optional `photoId` (fresh upload from `POST /files` with context ATTENDANCE, not used before) and `latitude`/`longitude`/`accuracy`. Required when the organization enables `settings.attendance.requireSelfie` (SELFIE_REQUIRED) / `requireLocation` (LOCATION_REQUIRED); an unusable photo fails with INVALID_SELFIE.';
-attendanceModule.route({ method: 'post', path: '/check-in', summary: 'Clock in (self)', description: CAPTURE_NOTE, body: clockInSchema }, att.checkIn);
-attendanceModule.route({ method: 'post', path: '/check-out', summary: 'Clock out (self)', description: CAPTURE_NOTE, body: clockOutSchema }, att.checkOut);
+attendanceModule.route({ method: 'post', path: '/check-in', summary: 'Check in (self)', description: CAPTURE_NOTE, body: clockInSchema }, att.checkIn);
+attendanceModule.route({ method: 'post', path: '/check-out', summary: 'Check out (self)', description: CAPTURE_NOTE, body: clockOutSchema }, att.checkOut);
 attendanceModule.route({ method: 'post', path: '/break/start', summary: 'Start a break (self)' }, att.breakStart);
 attendanceModule.route({ method: 'post', path: '/break/end', summary: 'End the current break (self)' }, att.breakEnd);
 attendanceModule.route({ method: 'get', path: '/today', summary: 'My attendance today: record, shift and live state' }, att.today);
@@ -66,7 +66,7 @@ attendanceModule.route(
     path: '/board',
     summary: 'Live attendance board: every employee in scope as a card, by today’s state',
     description:
-      'Columns: NOT_IN (yet to clock in, incl. marked absent), WORKING, ON_BREAK, DONE (clocked out), AWAY (leave / holiday / week off). Cards carry clock times, late flag, work mode and clock-in place (inside/outside the office area). Scoped like the dashboard (org-wide with attendance:read, otherwise the team). Plain employees get scope `peers`: themselves, their manager and colleagues sharing that manager, with colleagues\' cards reduced to status only (`restricted`).',
+      'Columns: NOT_IN (yet to check in, incl. marked absent), WORKING, ON_BREAK, DONE (checked out), AWAY (leave / holiday / week off). Cards carry clock times, late flag, work mode and check-in place (inside/outside the office area). Scoped like the dashboard (org-wide with attendance:read, otherwise the team). Plain employees get scope `peers`: themselves, their manager and colleagues sharing that manager, with colleagues\' cards reduced to status only (`restricted`).',
     query: attendanceBoardQuery,
   },
   att.board,

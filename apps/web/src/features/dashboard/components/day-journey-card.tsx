@@ -52,7 +52,7 @@ const PILL: Record<Exclude<DayState, 'NO_CLOCK'>, { text: string; dot: string; p
 const moodLine = (state: DayState, hour: number, status?: string): { text: string; icon?: LucideIcon } => {
   switch (state) {
     case 'NOT_CHECKED_IN':
-      return hour < 12 ? { text: 'Ready to start your day?', icon: Coffee } : { text: 'Don’t forget to clock in', icon: Hand };
+      return hour < 12 ? { text: 'Ready to start your day?', icon: Coffee } : { text: 'Don’t forget to check in', icon: Hand };
     case 'WORKING':
       return hour < 12
         ? { text: 'Great start — you’re on the clock!', icon: Rocket }
@@ -146,7 +146,7 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
   const clockOut = async () => {
     const { confirmed } = await confirm({
       title: 'Check out for today?',
-      message: `You have worked ${minutesToHours(workedMinutes)} so far. You won't be able to clock in again today; use regularization for corrections.`,
+      message: `You have worked ${minutesToHours(workedMinutes)} so far. You won't be able to check in again today; use regularization for corrections.`,
       confirmLabel: 'Check out',
       tone: 'primary',
     });
@@ -377,7 +377,7 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
             {MoodIcon ? <MoodIcon className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden /> : null}
           </p>
           {state === 'ON_BREAK' && (
-            <p className="text-xs text-amber-700 dark:text-amber-300">End your break on the attendance page before clocking out.</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">End your break on the attendance page before checking out.</p>
           )}
           <Link
             to="/attendance"

@@ -97,6 +97,8 @@ export interface TodayState {
   requireLocation: boolean;
   /** Breaks are turned on (web Settings → Attendance, Super Admin only). Missing on older servers. */
   allowBreaks?: boolean;
+  /** The employee's office with its check-in area (radius 0 = no area set). Null when it has no coordinates; missing on older servers. */
+  office?: { name: string; latitude: number; longitude: number; radiusMeters: number } | null;
 }
 
 export interface SummaryRow {

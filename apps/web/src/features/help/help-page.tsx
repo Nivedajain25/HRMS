@@ -27,9 +27,9 @@ const TOPICS: Topic[] = [
     icon: <Clock className="h-5 w-5" />,
     tone: 'bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
     faqs: [
-      { q: 'How do I clock in and clock out?', a: 'On the Dashboard, press Clock in at the start of your day and Clock out when you leave. You may be asked for a selfie and your location — allow the camera and location when your browser or phone asks.' },
-      { q: 'How do I take a break?', a: 'After clocking in, press Break on the Dashboard clock card, and End break when you are back. Break time is not counted as worked time.' },
-      { q: 'I forgot to clock in or out. What do I do?', a: 'Go to Attendance › Regularization and request a correction for that day with the right times and a reason. Your manager or HR will approve it.' },
+      { q: 'How do I check in and check out?', a: 'On the Dashboard, press Check in at the start of your day and Check out when you leave. You may be asked for a selfie and your location — allow the camera and location when your browser or phone asks.' },
+      { q: 'How do I take a break?', a: 'After checking in, press Break on the Dashboard clock card, and End break when you are back. Break time is not counted as worked time.' },
+      { q: 'I forgot to check in or out. What do I do?', a: 'Go to Attendance › Regularization and request a correction for that day with the right times and a reason. Your manager or HR will approve it.' },
       { q: 'Why does my selfie look mirrored?', a: 'The camera preview is shown the way you see yourself in a mirror; the saved photo is the same as the preview.' },
       { q: 'Where can I see my attendance history?', a: 'Attendance shows your month calendar, totals, timeline and recent activity. Live Board shows who in your team is in today.' },
     ],
@@ -85,7 +85,7 @@ const TOPICS: Topic[] = [
     faqs: [
       { q: 'How do I change my password?', a: 'Go to Settings and change your password there. If you forgot it, use Forgot password on the sign-in page.' },
       { q: 'How do I change the colours or switch to dark mode?', a: 'Use the sun / moon button in the top bar to pick a theme (Light, Sand, Lavender, Dark, Midnight, Navy, Plum or Graphite), or choose one with a preview in Settings → Appearance.' },
-      { q: 'Can I use Stencil on my phone?', a: 'Yes. The mobile app lets you clock in with a selfie, apply for leave, claim expenses, raise emergencies and see notifications. Sign in with the same email and password.' },
+      { q: 'Can I use Stencil on my phone?', a: 'Yes. The mobile app lets you check in with a selfie, apply for leave, claim expenses, raise emergencies and see notifications. Sign in with the same email and password.' },
     ],
   },
   {
@@ -98,7 +98,7 @@ const TOPICS: Topic[] = [
       { q: 'How do I add a new employee?', a: 'Go to People › Employees and press Add employee. Fill in their details, department, designation, manager and joining date. They get a sign-in invite by email.' },
       { q: 'How do I approve leave, regularizations and expenses?', a: 'Pending requests appear in Pending approvals on the Dashboard. You can also open Leave › Requests, Attendance › Regularization or Expenses › Approvals.' },
       { q: 'How do I approve an emergency request?', a: 'An alert pops up on the web and the phone. Press Approve or Decline — the employee is notified straight away. All past alerts are under Emergencies.' },
-      { q: 'How do I see today’s attendance for everyone?', a: 'Attendance shows today’s totals, the department breakdown, late arrivals and exceptions. Live Board shows who is in, on break or out; Records lists every clock-in with selfies and locations, and Export Report downloads it.' },
+      { q: 'How do I see today’s attendance for everyone?', a: 'Attendance shows today’s totals, the department breakdown, late arrivals and exceptions. Live Board shows who is in, on break or out; Records lists every check-in with selfies and locations, and Export Report downloads it.' },
       { q: 'How do I update the company sales figures?', a: 'On Sales, use the upload button on the Sales overview chart to upload the monthly sheet (month, sales, target). Team sales below shows what employees log themselves.' },
     ],
   },
@@ -142,7 +142,7 @@ export const HelpPage = () => {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-4">
-          <Input leftIcon={<Search className="h-4 w-4" />} placeholder="Search help — e.g. leave, payslip, clock in" aria-label="Search help" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input leftIcon={<Search className="h-4 w-4" />} placeholder="Search help — e.g. leave, payslip, check in" aria-label="Search help" value={search} onChange={(e) => setSearch(e.target.value)} />
 
           {topics.length === 0 ? (
             <Card>

@@ -100,12 +100,12 @@ export const activityFeed = async (ctx: RequestContext, q: { scope?: 'all' | 'me
         type: 'CLOCK_IN',
         at: a.checkIn,
         employeeId: a.employeeId,
-        title: a.workMode === 'REMOTE' ? 'clocked in remotely' : 'clocked in',
+        title: a.workMode === 'REMOTE' ? 'checked in remotely' : 'checked in',
         detail: a.isLate ? `Late by ${mins(a.lateMinutes ?? 0)}` : 'On time',
         link: '/attendance',
       });
     if (a.checkOut && a.checkOut >= since)
-      push({ id: `out-${a._id}`, type: 'CLOCK_OUT', at: a.checkOut, employeeId: a.employeeId, title: 'clocked out', detail: a.workingMinutes ? `Worked ${mins(a.workingMinutes)}` : undefined, link: '/attendance' });
+      push({ id: `out-${a._id}`, type: 'CLOCK_OUT', at: a.checkOut, employeeId: a.employeeId, title: 'checked out', detail: a.workingMinutes ? `Worked ${mins(a.workingMinutes)}` : undefined, link: '/attendance' });
   }
 
   for (const l of leaves) {

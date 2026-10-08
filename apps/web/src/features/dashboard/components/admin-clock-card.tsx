@@ -119,7 +119,7 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   const clockOut = async () => {
     const { confirmed } = await confirm({
       title: 'Check out for today?',
-      message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won't be able to clock in again today; use regularization for corrections.`,
+      message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won't be able to check in again today; use regularization for corrections.`,
       confirmLabel: 'Check out',
       tone: 'primary',
     });
@@ -314,7 +314,7 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
           </p>
         ) : null}
         {t.state === 'NOT_CHECKED_IN' && (t.requireSelfie || t.requireLocation) ? (
-          <p className="text-center text-xs text-black dark:text-fg">{`Clocking in needs ${[t.requireSelfie && 'a selfie', t.requireLocation && 'your location'].filter(Boolean).join(' and ')}.`}</p>
+          <p className="text-center text-xs text-black dark:text-fg">{`Checking in needs ${[t.requireSelfie && 'a selfie', t.requireLocation && 'your location'].filter(Boolean).join(' and ')}.`}</p>
         ) : null}
       </div>
       {flow.selfieDialog}

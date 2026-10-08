@@ -61,8 +61,8 @@ export const EmployeeListPage = () => {
                 return (
                   // Clicking a selfie opens it; it shouldn't also open the profile.
                   <span className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    {s.in ? <SelfieThumb fileId={s.in} label={`${name} clock-in selfie`} /> : null}
-                    {s.out ? <SelfieThumb fileId={s.out} label={`${name} clock-out selfie`} /> : null}
+                    {s.in ? <SelfieThumb fileId={s.in} label={`${name} check-in selfie`} /> : null}
+                    {s.out ? <SelfieThumb fileId={s.out} label={`${name} check-out selfie`} /> : null}
                   </span>
                 );
               },

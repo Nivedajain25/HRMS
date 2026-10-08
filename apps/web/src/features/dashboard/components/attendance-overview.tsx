@@ -156,7 +156,7 @@ export const AttendanceOverview = ({ className }: { className?: string }) => {
 
         {/* Absentees */}
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-violet-50 px-4 py-3.5 dark:bg-violet-500/10">
-          <span className="text-[15px] whitespace-nowrap text-black dark:text-fg" title={isToday ? 'Not clocked in yet or absent' : undefined}>
+          <span className="text-[15px] whitespace-nowrap text-black dark:text-fg" title={isToday ? 'Not checked in yet or absent' : undefined}>
             Absentees
           </span>
           <div className="flex -space-x-2">

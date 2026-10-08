@@ -104,15 +104,15 @@ export const CaptureCell = ({ record }: { record: AttendanceBase }) => {
   if (!record.checkInPhotoId && !record.checkOutPhotoId && !loc) return <span className="text-muted">—</span>;
   return (
     <span className="inline-flex items-center gap-1.5">
-      {record.checkInPhotoId && <SelfieThumb fileId={record.checkInPhotoId} label="Clock-in selfie" />}
-      {record.checkOutPhotoId && <SelfieThumb fileId={record.checkOutPhotoId} label="Clock-out selfie" />}
+      {record.checkInPhotoId && <SelfieThumb fileId={record.checkInPhotoId} label="Check-in selfie" />}
+      {record.checkOutPhotoId && <SelfieThumb fileId={record.checkOutPhotoId} label="Check-out selfie" />}
       {loc && (
         <a
           href={mapLink(loc.latitude, loc.longitude)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          aria-label={`Open clock-in location on map${loc.address ? `: ${loc.address}` : ''}`}
+          aria-label={`Open check-in location on map${loc.address ? `: ${loc.address}` : ''}`}
           title={loc.address ? `${loc.address} — open map` : 'Open location on map'}
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-brand-600 hover:bg-surface-3 dark:text-brand-400"
         >
@@ -169,12 +169,12 @@ const CapturePanel = ({ title, time, photoId, point, timeZone }: { title: string
 export const CaptureDetails = ({ record, timeZone, className }: { record: AttendanceBase; timeZone: string; className?: string }) => {
   if (!record.checkIn) return null;
   return (
-    <section aria-label="Clock-in verification" className={cn('grid gap-3 sm:grid-cols-2', className)}>
+    <section aria-label="Check-in verification" className={cn('grid gap-3 sm:grid-cols-2', className)}>
       <CapturePanel title="Check in" time={record.checkIn} photoId={record.checkInPhotoId} point={record.checkInLocation} timeZone={timeZone} />
       {record.checkOut ? (
         <CapturePanel title="Check out" time={record.checkOut} photoId={record.checkOutPhotoId} point={record.checkOutLocation} timeZone={timeZone} />
       ) : (
-        <div className="flex items-center justify-center rounded-xl border border-dashed border-line p-3 text-sm text-muted">Not clocked out yet</div>
+        <div className="flex items-center justify-center rounded-xl border border-dashed border-line p-3 text-sm text-muted">Not checked out yet</div>
       )}
     </section>
   );

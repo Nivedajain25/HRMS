@@ -131,6 +131,8 @@ export const userCreateSchema = z.object({
 export const userUpdateSchema = z.object({
   firstName: requiredString('First name', 60).optional(),
   lastName: requiredString('Last name', 60).optional(),
+  /** The sign-in email (also the linked employee's work email when they matched). */
+  email: email.optional(),
   roleIds: z.array(objectId).min(1).optional(),
   status: z.enum(USER_STATUS).optional(),
 });

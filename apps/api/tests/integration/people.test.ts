@@ -183,6 +183,30 @@ describe('People: employees, org structure, RBAC & tenant isolation', () => {
     expect((await as(admin.token).patch(`/api/v1/users/${me._id}`, { roleIds: [superId] })).status).toBe(403);
   });
 
+  it('edits a login’s name and email, keeping the linked employee in step', async () => {
+    const emp = await createEmployeeUser(admin.token, { firstName: 'Renamed' });
+    const other = await createEmployeeUser(admin.token, { firstName: 'Other' });
+    const users = await as(admin.token).get('/api/v1/users?limit=100');
+    const target = users.body.data.find((u: { email: string }) => u.email === emp.email);
+    const newEmail = `edited-${Date.now()}@example.com`;
+
+    const res = await as(admin.token).patch(`/api/v1/users/${target._id}`, { firstName: 'Priya', lastName: 'Sharma', email: newEmail.toUpperCase() });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ firstName: 'Priya', lastName: 'Sharma', email: newEmail });
+    const employee = await EmployeeModel.findById(emp.employee._id).lean();
+    expect(employee).toMatchObject({ firstName: 'Priya', lastName: 'Sharma', workEmail: newEmail });
+    // They sign in with the new email from now on.
+    expect((await as(admin.token).get('/api/v1/users?limit=100')).body.data.some((u: { email: string }) => u.email === emp.email)).toBe(false);
+
+    // Emails stay unique.
+    expect((await as(admin.token).patch(`/api/v1/users/${target._id}`, { email: other.email })).status).toBe(409);
+
+    // Only a Super Admin can change a Super Admin's email.
+    const hrAdmin = await createEmployeeUser(admin.token, { firstName: 'HrMail', roles: ['hr_admin'] });
+    const me = users.body.data.find((u: { email: string }) => u.email === admin.email);
+    expect((await as(hrAdmin.token).patch(`/api/v1/users/${me._id}`, { email: `takeover-${Date.now()}@example.com` })).status).toBe(403);
+  });
+
   it('supports custom roles and enforces them immediately', async () => {
     const role = await as(admin.token).post('/api/v1/roles', {
       name: `Dept Admin ${Date.now()}`,

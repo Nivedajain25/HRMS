@@ -5,7 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { Copy, KeyRound, Link2, Lock, MailPlus, MoreHorizontal, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Copy, Link2, Lock, MailPlus, MoreHorizontal, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { AUDIT_ACTIONS, USER_STATUS, WEEKDAYS, organizationUpdateSchema, roleSchema, userCreateSchema } from '@stencil/shared';
 import { Combobox, EmployeePicker, FilterBar, SearchInput } from '@/components/common/controls';
 import { StatusBadge } from '@/components/common/status-badge';
@@ -301,7 +301,7 @@ export const UsersSection = () => {
                 label="User actions"
                 trigger={<span className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface-3"><MoreHorizontal className="h-4 w-4" /></span>}
                 items={[
-                  { label: 'Edit roles', icon: <KeyRound className="h-4 w-4" />, onSelect: () => setEditing(row.original) },
+                  { label: 'Edit user', icon: <Pencil className="h-4 w-4" />, onSelect: () => setEditing(row.original) },
                   { label: 'Resend invite', icon: <MailPlus className="h-4 w-4" />, onSelect: () => invite.mutate(row.original._id), hidden: row.original.emailVerified },
                   { label: 'Get invite link', icon: <Link2 className="h-4 w-4" />, onSelect: () => inviteLink.mutate(row.original), hidden: row.original.emailVerified || !!row.original.lastLoginAt },
                   { label: 'Activate', onSelect: () => void setStatus(row.original, 'ACTIVE'), hidden: row.original.status === 'ACTIVE' },
@@ -345,7 +345,7 @@ export const UsersSection = () => {
         }
       />
       <InviteUserModal open={creating} onClose={() => setCreating(false)} roles={roles.data ?? []} />
-      <EditRolesModal user={editing} onClose={() => setEditing(null)} roles={roles.data ?? []} />
+      <EditUserModal user={editing} onClose={() => setEditing(null)} roles={roles.data ?? []} isSuperAdmin={isSuperAdmin} />
       <Modal
         open={!!link}
         onClose={() => setLink(null)}
@@ -424,25 +424,109 @@ const InviteUserModal = ({ open, onClose, roles }: { open: boolean; onClose: () 
   );
 };
 
-const EditRolesModal = ({ user, onClose, roles }: { user: UserRow | null; onClose: () => void; roles: RoleRow[] }) => {
-  const [selected, setSelected] = useState<string[]>([]);
+/**
+ * Edit a user: first and last name, sign-in email and roles. Only changed fields are sent. The linked employee's
+ * name (and work email, when it was the same as the login's) follows. A Super Admin's email and roles are left to
+ * Super Admins (the API enforces this too).
+ */
+const EditUserModal = ({ user, onClose, roles, isSuperAdmin }: { user: UserRow | null; onClose: () => void; roles: RoleRow[]; isSuperAdmin: boolean }) => {
   const qc = useQueryClient();
-  useEffect(() => setSelected(user?.roles.map((r) => r._id) ?? []), [user]);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{ firstName?: string; lastName?: string; email?: string; form?: string }>({});
+  useEffect(() => {
+    setFirstName(user?.firstName ?? '');
+    setLastName(user?.lastName ?? '');
+    setEmail(user?.email ?? '');
+    setSelected(user?.roles.map((r) => r._id) ?? []);
+    setErrors({});
+  }, [user]);
+  const lockedSuper = !!user?.roles.some((r) => r.key === 'super_admin') && !isSuperAdmin;
+
   const save = useMutation({
-    mutationFn: () => patch(`/users/${user!._id}`, { roleIds: selected }),
-    onSuccess: async () => {
-      toast.success('Roles updated');
+    mutationFn: () => {
+      if (!user) return Promise.resolve(null);
+      const body: Record<string, unknown> = {};
+      if (firstName.trim() !== user.firstName) body.firstName = firstName.trim();
+      if (lastName.trim() !== user.lastName) body.lastName = lastName.trim();
+      if (email.trim().toLowerCase() !== user.email.toLowerCase()) body.email = email.trim();
+      const before = user.roles.map((r) => r._id).sort().join();
+      if ([...selected].sort().join() !== before) body.roleIds = selected;
+      return Object.keys(body).length ? patch(`/users/${user._id}`, body) : Promise.resolve(null);
+    },
+    onSuccess: async (res) => {
+      if (res) toast.success('User updated');
       await qc.invalidateQueries({ queryKey: ['users'] });
+      await qc.invalidateQueries({ queryKey: ['employees'] });
       onClose();
     },
+    onError: (err) => {
+      const e = toApiError(err);
+      if (e.code === 'EMAIL_TAKEN') setErrors({ email: e.message });
+      else setErrors({ form: e.message });
+    },
   });
+
+  const submit = () => {
+    const next: typeof errors = {};
+    if (!firstName.trim()) next.firstName = 'First name is required';
+    if (!lastName.trim()) next.lastName = 'Last name is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = 'Enter a valid email';
+    setErrors(next);
+    if (!Object.keys(next).length) save.mutate();
+  };
+
   return (
-    <Modal open={!!user} onClose={onClose} title={`Roles for ${user?.firstName ?? ''} ${user?.lastName ?? ''}`} footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => save.mutate()} loading={save.isPending} disabled={!selected.length}>Save</Button></>}>
-      <div className="space-y-3">
-        {roles.map((r) => (
-          <Checkbox key={r._id} label={r.name} description={r.description} checked={selected.includes(r._id)} onChange={(e) => setSelected((s) => (e.target.checked ? [...s, r._id] : s.filter((x) => x !== r._id)))} />
-        ))}
-        <p className="text-xs text-muted">You can only grant permissions that you hold yourself.</p>
+    <Modal
+      open={!!user}
+      onClose={onClose}
+      title={`Edit ${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()}
+      description="Name, sign-in email and roles."
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={submit} loading={save.isPending} disabled={!selected.length}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <FormError error={errors.form ?? null} />
+        <FormGrid>
+          <FormField label="First name" required error={errors.firstName ? { message: errors.firstName } : undefined}>
+            {({ id, invalid }) => <Input id={id} aria-invalid={invalid} maxLength={60} value={firstName} onChange={(e) => setFirstName(e.target.value)} />}
+          </FormField>
+          <FormField label="Last name" required error={errors.lastName ? { message: errors.lastName } : undefined}>
+            {({ id, invalid }) => <Input id={id} aria-invalid={invalid} maxLength={60} value={lastName} onChange={(e) => setLastName(e.target.value)} />}
+          </FormField>
+        </FormGrid>
+        <FormField
+          label="Email"
+          required
+          error={errors.email ? { message: errors.email } : undefined}
+          hint={lockedSuper ? "Only a Super Admin can change a Super Admin's email." : 'They sign in with this email. Their employee work email changes with it.'}
+        >
+          {({ id, invalid }) => <Input id={id} type="email" aria-invalid={invalid} value={email} disabled={lockedSuper} onChange={(e) => setEmail(e.target.value)} />}
+        </FormField>
+        <fieldset className="space-y-3">
+          <legend className="mb-1 text-sm font-medium text-fg">Roles</legend>
+          {roles.map((r) => (
+            <Checkbox
+              key={r._id}
+              label={r.name}
+              description={r.description}
+              disabled={lockedSuper}
+              checked={selected.includes(r._id)}
+              onChange={(e) => setSelected((s) => (e.target.checked ? [...s, r._id] : s.filter((x) => x !== r._id)))}
+            />
+          ))}
+          <p className="text-xs text-muted">{lockedSuper ? "Only a Super Admin can change a Super Admin's roles." : 'You can only grant permissions that you hold yourself.'}</p>
+        </fieldset>
       </div>
     </Modal>
   );

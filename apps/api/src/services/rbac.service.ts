@@ -200,13 +200,30 @@ export const updateUser = async (ctx: RequestContext, id: string, input: UserUpd
   const user = await UserModel.findOne({ _id: id, organizationId: ctx.organizationId });
   if (!user) throw notFound('User');
   const isSelf = user._id.equals(ctx.userId);
-  const before = { firstName: user.firstName, lastName: user.lastName, status: user.status, roles: user.roles.map(String) };
-  // A Super Admin's roles and status are managed by Super Admins only.
-  if ((input.roleIds || (input.status && input.status !== user.status)) && !ctx.roleKeys.includes('super_admin')) {
+  const oldEmail = user.email;
+  const newEmail = input.email && input.email.toLowerCase() !== oldEmail ? input.email.toLowerCase() : null;
+  const before = { firstName: user.firstName, lastName: user.lastName, email: user.email, status: user.status, roles: user.roles.map(String) };
+  // A Super Admin's roles, status and sign-in email are managed by Super Admins only.
+  if ((input.roleIds || newEmail || (input.status && input.status !== user.status)) && !ctx.roleKeys.includes('super_admin')) {
     const superRole = await RoleModel.findOne({ organizationId: ctx.organizationId, key: 'super_admin' }).select('_id').lean();
     if (superRole && user.roles.some((r) => r.equals(superRole._id))) {
-      throw forbidden("Only a Super Admin can change a Super Admin's roles or status", 'SUPER_ADMIN_ONLY');
+      throw forbidden("Only a Super Admin can change a Super Admin's roles, status or email", 'SUPER_ADMIN_ONLY');
     }
+  }
+
+  // The linked employee keeps the same name and (when it matched the login) the same work email.
+  const employee = user.employeeId
+    ? await EmployeeModel.findOne({ _id: user.employeeId, organizationId: ctx.organizationId, deletedAt: null }).select('firstName lastName workEmail')
+    : null;
+  const syncWorkEmail = !!newEmail && !!employee && employee.workEmail === oldEmail;
+  if (newEmail) {
+    if (await UserModel.exists({ email: newEmail, _id: { $ne: user._id } })) {
+      throw conflict('Another login already uses this email', 'EMAIL_TAKEN');
+    }
+    if (syncWorkEmail && (await EmployeeModel.exists({ organizationId: ctx.organizationId, workEmail: newEmail, _id: { $ne: employee._id } }))) {
+      throw conflict('Another employee already has this work email', 'EMAIL_TAKEN');
+    }
+    user.email = newEmail;
   }
 
   if (input.roleIds) {
@@ -236,10 +253,16 @@ export const updateUser = async (ctx: RequestContext, id: string, input: UserUpd
   if (input.firstName) user.firstName = input.firstName;
   if (input.lastName) user.lastName = input.lastName;
   await user.save();
+  if (employee && (input.firstName || input.lastName || syncWorkEmail)) {
+    if (input.firstName) employee.firstName = input.firstName;
+    if (input.lastName) employee.lastName = input.lastName;
+    if (syncWorkEmail) employee.workEmail = newEmail!;
+    await employee.save();
+  }
 
   if (input.status && input.status !== 'ACTIVE') await revokeAllSessions(user._id);
   invalidateAuthCache(String(user._id));
-  const after = { firstName: user.firstName, lastName: user.lastName, status: user.status, roles: user.roles.map(String) };
+  const after = { firstName: user.firstName, lastName: user.lastName, email: user.email, status: user.status, roles: user.roles.map(String) };
   await audit(ctx, {
     action: input.roleIds ? 'ROLE_CHANGED' : 'USER_UPDATED',
     module: 'users',

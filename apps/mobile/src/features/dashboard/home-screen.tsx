@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell, Clock } from 'lucide-react-native';
@@ -18,6 +18,7 @@ import { MyTasks } from './components/my-tasks';
 import { AdminKpis, EmployeeAlerts, NewJoiners, QuickActions } from './components/admin-home';
 import { Celebrations, Departments, OrgToday, TasksOverview, TeamActivity, WhosIn } from './components/org-overview';
 import { Announcements, TeamSummary, UpcomingHolidays } from './components/widgets';
+import { EMPLOYEE_BANNER, employeeTitle, useEmployeeLook } from './employee-look';
 import { greetingFor, longDateIn } from './lib';
 
 /** Greeting banner colours by time of day (soft pastels in light mode, deep tints in dark mode). */
@@ -77,39 +78,52 @@ export const HomeScreen = () => {
 
   const name = user ? fullName(user) : '';
   const greeting = greetingFor(timeZone, now);
+  // Phones under 400 pt wide (most Android phones): a slightly smaller greeting and a short date, so they fit
+  // beside the Emergency button, bell and avatar.
+  const narrow = useWindowDimensions().width < 400;
+  const titleSize = narrow ? 'lg' : 'xl';
   // Super admin / Admin: the web admin dashboard's look (lavender banner, stat cards, Quick Actions, New Joiners, Alerts).
   const isAdmin = (user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
+  // Employees: the web employee dashboard's blue banner; HR keeps the time-of-day pastels.
+  const employeeLook = useEmployeeLook();
   const banner: [string, string, string] = isAdmin
     ? scheme === 'dark'
       ? ['#2a1d4f', '#24194a', '#1e1a3d']
       : ['#ddd6fe', '#ede9fe', '#f5f3ff']
-    : bannerColors(greeting.text, scheme);
+    : employeeLook
+      ? EMPLOYEE_BANNER[scheme]
+      : bannerColors(greeting.text, scheme);
 
   return (
     <Screen inTabs onRefresh={refresh}>
-      {/* Greeting first; bell and avatar on the right. */}
+      {/* Greeting first; Emergency, bell and avatar on the right. */}
       <Appear index={0}>
         <GradientCard colors={banner} style={styles.greeting}>
           <View style={styles.flex}>
-            {/* The emoji waves once when the screen opens. */}
+            {/* "Good Morning", then the name with the emoji (it waves once when the screen opens); on a narrow phone
+                the name and emoji wrap together to the next line, so the emoji is never left on a line of its own. */}
             <View style={styles.greetLine} accessible accessibilityRole="header" accessibilityLabel={`${greeting.text} ${name}`}>
-              <Text size="xl" weight="bold">
+              <Text size={titleSize} weight="bold">
                 {greeting.text}
               </Text>
-              <Wave>
-                <Text size="xl">{greeting.emoji}</Text>
-              </Wave>
-              <Text size="xl" weight="bold" numberOfLines={1} style={styles.shrink}>
-                {name}
-              </Text>
+              <View style={styles.nameLine}>
+                <Text size={titleSize} weight="bold" numberOfLines={1} style={styles.shrink}>
+                  {name}
+                </Text>
+                <Wave>
+                  <Text size={titleSize}>{greeting.emoji}</Text>
+                </Wave>
+              </View>
             </View>
             <Text size="sm" color="muted" numberOfLines={1}>
-              {longDateIn(timeZone, now)}
+              {longDateIn(timeZone, now, narrow ? 'EEE, d MMM yyyy' : 'EEEE, d MMMM yyyy')}
             </Text>
           </View>
-          {hasEmployee ? <EmergencyButton /> : null}
-          <UnreadBell count={employee.data?.unreadNotifications} />
-          <AvatarPhotoButton size={40} />
+          <View style={styles.headerActions}>
+            {hasEmployee ? <EmergencyButton /> : null}
+            <UnreadBell count={employee.data?.unreadNotifications} />
+            <AvatarPhotoButton size={40} />
+          </View>
         </GradientCard>
       </Appear>
 
@@ -130,7 +144,14 @@ export const HomeScreen = () => {
       {/* Clock in / Clock out: everyone with an employee profile except the super admin (the boss doesn't clock in). */}
       {hasEmployee && !isAdmin ? (
         <Appear index={1} style={styles.section}>
-          <SectionHeader title="Today" icon={Clock} tone="brand" actionLabel="Attendance" onAction={() => router.push('/attendance')} />
+          <SectionHeader
+            title="Today"
+            icon={Clock}
+            tone="brand"
+            emoji={employeeLook ? employeeTitle('Today', scheme === 'dark') : undefined}
+            actionLabel="Attendance"
+            onAction={() => router.push('/attendance')}
+          />
           <ClockCard compact />
         </Appear>
       ) : null}
@@ -202,8 +223,11 @@ export const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  greeting: { flexDirection: 'row', alignItems: 'center', gap: space(3), padding: space(4), marginTop: space(1) },
+  greeting: { flexDirection: 'row', alignItems: 'center', gap: space(2), padding: space(4), marginTop: space(1) },
   greetLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: space(1.5) },
+  nameLine: { flexDirection: 'row', alignItems: 'center', gap: space(1.5), flexShrink: 1 },
+  // Emergency, bell and avatar sit close together so the greeting keeps its room.
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space(1) },
   shrink: { flexShrink: 1 },
   section: { gap: space(2) },
   bell: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

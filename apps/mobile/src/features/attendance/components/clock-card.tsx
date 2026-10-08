@@ -172,7 +172,8 @@ const ClockSkeleton = () => (
 export const ClockCard = ({ compact }: { compact?: boolean }) => {
   const { c, scheme } = useTheme();
   const { timeZone, user } = useAuth();
-  const tones = clockColors(dashboardKind(user?.roles), c.scheme === 'dark');
+  const kind = dashboardKind(user?.roles);
+  const tones = clockColors(kind, c.scheme === 'dark');
   const today = useToday();
   const breakAction = useClockAction();
   const confirm = useConfirm();
@@ -303,10 +304,14 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
     const green = toneColors('green', c);
     const purple = toneColors('purple', c);
     const rose = toneColors('red', c);
+    // Employees: the web employee Today card's flat very light blue (#f8fbff; dark: the plain surface).
+    // Others: a soft tint of the current status.
+    const cardColors: [string, string] =
+      kind === 'employee' ? (scheme === 'dark' ? [c.surface, c.surface] : ['#f8fbff', '#f8fbff']) : CARD_TINTS[t.state][scheme];
 
     return (
       <View style={styles.gap}>
-        <GradientCard colors={CARD_TINTS[t.state][scheme]} style={[styles.gap, styles.tlCard, { borderColor: c.line }]}>
+        <GradientCard colors={cardColors} style={[styles.gap, styles.tlCard, { borderColor: c.line }]}>
           <View style={styles.tlHead}>
             <Badge tone={meta.tone} dot>
               {meta.label}

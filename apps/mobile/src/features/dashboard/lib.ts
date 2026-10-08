@@ -9,8 +9,8 @@ export const greetingFor = (timeZone: string, now = new Date()) => {
   return { text: 'Good Evening', emoji: '🌙' };
 };
 
-/** "Wednesday, 23 September 2026" in the organization's timezone. */
-export const longDateIn = (timeZone: string, now = new Date()) => formatKey(dateKeyIn(timeZone, now), 'EEEE, d MMMM yyyy');
+/** "Wednesday, 23 September 2026" (or another `pattern`, e.g. "Wed, 23 Sep 2026") in the organization's timezone. */
+export const longDateIn = (timeZone: string, now = new Date(), pattern = 'EEEE, d MMMM yyyy') => formatKey(dateKeyIn(timeZone, now), pattern);
 
 export const monthName = (month: number, year: number, pattern = 'MMMM yyyy') =>
   formatKey(`${year}-${String(month).padStart(2, '0')}-01`, pattern);

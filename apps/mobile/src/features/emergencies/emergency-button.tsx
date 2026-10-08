@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { G, Path, Rect } from 'react-native-svg';
 import { CheckCircle2, Siren } from 'lucide-react-native';
-import { BottomSheet, Button, Checkbox, PressScale, PulseRing, Text, TextField, toast } from '@/components';
+import { BottomSheet, Button, Checkbox, Text, TextField, toast } from '@/components';
 import { toApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { radius, space, useTheme } from '@/theme';
@@ -24,7 +24,7 @@ const SirenIcon = ({ size, dark }: { size: number; dark: boolean }) => (
 
 /**
  * Siren button (home header): a personal emergency, e.g. having to rush home. HR and the reporting manager
- * are notified immediately. Same flow and icon as the web "Emergency" button.
+ * are notified immediately. Same button, flow and icon as the web "Emergency" button.
  */
 export const EmergencyButton = () => {
   const { c, scheme } = useTheme();
@@ -56,13 +56,25 @@ export const EmergencyButton = () => {
 
   return (
     <>
-      <View style={styles.buttonWrap}>
-        {/* Soft pulse so the siren is easy to find, without being alarming. */}
-        <PulseRing size={40} color="#ef4444" />
-        <PressScale onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="Emergency: inform HR" hitSlop={6} scaleTo={0.9} style={styles.button}>
-          <SirenIcon size={34} dark={scheme === 'dark'} />
-        </PressScale>
-      </View>
+      {/* Same as the web header button: the siren with EMERGENCY under it in a rounded square (red tint when pressed). */}
+      <Pressable
+        onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Emergency: inform HR"
+        hitSlop={4}
+        style={({ pressed }) => [styles.button, pressed && { backgroundColor: scheme === 'dark' ? 'rgba(239,68,68,0.1)' : '#fef2f2' }]}
+      >
+        {({ pressed }) => (
+          <>
+            <View style={pressed ? styles.grow : undefined}>
+              <SirenIcon size={34} dark={scheme === 'dark'} />
+            </View>
+            <Text weight="bold" style={[styles.label, { color: scheme === 'dark' ? '#f87171' : '#dc2626' }]} numberOfLines={1}>
+              EMERGENCY
+            </Text>
+          </>
+        )}
+      </Pressable>
 
       <BottomSheet
         open={open}
@@ -126,8 +138,10 @@ export const EmergencyButton = () => {
 };
 
 const styles = StyleSheet.create({
-  buttonWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  button: { width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
+  // Rounded square like the web's (rounded-xl, 56 tall); just wide enough for EMERGENCY to leave the greeting room.
+  button: { width: 52, height: 56, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  grow: { transform: [{ scale: 1.1 }] },
+  label: { fontSize: 8, lineHeight: 9 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
   chip: { width: '31%', flexGrow: 1, alignItems: 'center', gap: space(1), paddingVertical: space(2.5), borderRadius: radius.md, borderWidth: 1 },
   done: { alignItems: 'center', gap: space(3), paddingVertical: space(2) },

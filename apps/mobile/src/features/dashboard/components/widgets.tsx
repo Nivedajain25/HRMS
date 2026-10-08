@@ -19,6 +19,7 @@ import { formatMoney, label } from '@/lib/format';
 import { formatDate, formatKey, timeAgo } from '@/lib/time';
 import { radius, space, TOUCH_TARGET, useTheme, withAlpha, type Tone } from '@/theme';
 import type { EmployeeDashboard, ManagerDashboard } from '../api';
+import { employeeTitle, useEmployeeLook } from '../employee-look';
 import { formatCount, inDaysLabel, monthName } from '../lib';
 
 /* -------------------------------- Frame -------------------------------- */
@@ -50,7 +51,7 @@ const SECTION_TONE: Record<string, Tone> = {
 /** Section title + card with its own loading / error / empty states. */
 export const Widget = <T,>({ title, icon, query, isEmpty, empty, children, actionLabel, onAction, padding = 0 }: WidgetProps<T>) => (
   <View style={styles.widget}>
-    <SectionHeader title={title} icon={icon} actionLabel={actionLabel} onAction={onAction} tone={SECTION_TONE[title] ?? 'brand'} />
+    <WidgetTitle title={title} icon={icon} actionLabel={actionLabel} onAction={onAction} />
     <Card padding={padding}>
       {query.isLoading ? (
         <View style={styles.pad}>
@@ -66,6 +67,22 @@ export const Widget = <T,>({ title, icon, query, isEmpty, empty, children, actio
     </Card>
   </View>
 );
+
+/** Employees: the web's emoji on a soft-blue tile + plain black title; everyone else: the coloured icon bubble. */
+const WidgetTitle = ({ title, icon, actionLabel, onAction }: { title: string; icon: IconComponent; actionLabel?: string; onAction?: () => void }) => {
+  const { c } = useTheme();
+  const employee = useEmployeeLook();
+  return (
+    <SectionHeader
+      title={title}
+      icon={icon}
+      actionLabel={actionLabel}
+      onAction={onAction}
+      tone={SECTION_TONE[title] ?? 'brand'}
+      emoji={employee ? employeeTitle(title, c.scheme === 'dark') : undefined}
+    />
+  );
+};
 
 /* ---------------------------- Leave balances --------------------------- */
 

@@ -34,7 +34,8 @@ const schema = z.object({
   SMTP_SECURE: bool,
   EMAIL_FROM: z.string().default('Stencil HRMS <no-reply@stencil.local>'),
 
-  STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
+  /** `mongo` (default): uploads live in the database (GridFS), so they survive redeploys with no extra setup. */
+  STORAGE_PROVIDER: z.enum(['mongo', 'local', 's3']).default('mongo'),
   STORAGE_LOCAL_DIR: z.string().default('uploads'),
   MAX_UPLOAD_MB: z.coerce.number().default(10),
   AWS_ACCESS_KEY_ID: z.string().optional(),

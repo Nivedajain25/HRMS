@@ -132,7 +132,7 @@ All variables are documented in [`.env.example`](.env.example) and validated at 
 | `CLIENT_URL`, `API_URL` | Allowed CORS origin(s) and public API URL (Swagger / emails) |
 | `COOKIE_SECURE`, `COOKIE_DOMAIN`, `TRUST_PROXY` | Cookie & proxy settings (set `COOKIE_SECURE=true` behind HTTPS) |
 | `SMTP_*`, `EMAIL_FROM` | Outgoing email (empty `SMTP_HOST` = render & log only) |
-| `STORAGE_PROVIDER`, `STORAGE_LOCAL_DIR`, `AWS_*`, `S3_ENDPOINT`, `MAX_UPLOAD_MB` | File storage |
+| `STORAGE_PROVIDER`, `STORAGE_LOCAL_DIR`, `AWS_*`, `S3_ENDPOINT`, `MAX_UPLOAD_MB` | File storage: `mongo` (default — uploads such as clock-in selfies live in the database and survive redeploys), `local` (server disk) or `s3` |
 | `REDIS_URL`, `ENABLE_JOBS`, `RUN_WORKER` | Background jobs |
 | `LOG_LEVEL`, `ENABLE_SWAGGER` | Logging / API docs in production |
 

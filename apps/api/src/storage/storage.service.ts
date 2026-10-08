@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
-import { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import mongoose from 'mongoose';
 import { env } from '../config/env';
 
 export interface StorageProvider {
@@ -96,6 +97,88 @@ export class S3StorageProvider implements StorageProvider {
   }
 }
 
+const missing = (key: string) => Object.assign(new Error(`Stored object missing: ${key}`), { code: 'ENOENT' });
+
+/**
+ * Files kept in the database itself (MongoDB GridFS, bucket `uploads`). Unlike a server's own disk, they survive
+ * redeploys and are covered by the database's backups, with nothing else to set up. Clock-in selfies are ~20 KB.
+ */
+export class MongoStorageProvider implements StorageProvider {
+  readonly name = 'mongo';
+
+  private bucket() {
+    const db = mongoose.connection.db;
+    if (!db) throw new Error('Database is not connected');
+    return new mongoose.mongo.GridFSBucket(db, { bucketName: 'uploads' });
+  }
+
+  private async remove(key: string) {
+    const bucket = this.bucket();
+    for (const f of await bucket.find({ filename: key }).toArray()) await bucket.delete(f._id);
+  }
+
+  async put(key: string, body: Buffer, contentType: string) {
+    await this.remove(key);
+    await new Promise<void>((resolve, reject) => {
+      const upload = this.bucket().openUploadStream(key, { metadata: { contentType } });
+      upload.once('error', reject).once('finish', () => resolve());
+      upload.end(body);
+    });
+  }
+
+  async getStream(key: string): Promise<Readable> {
+    const file = await this.bucket().find({ filename: key }).sort({ uploadDate: -1 }).limit(1).next();
+    if (!file) throw missing(key);
+    return this.bucket().openDownloadStream(file._id);
+  }
+
+  async getBuffer(key: string) {
+    const chunks: Buffer[] = [];
+    for await (const chunk of await this.getStream(key)) chunks.push(chunk as Buffer);
+    return Buffer.concat(chunks);
+  }
+
+  async delete(key: string) {
+    await this.remove(key);
+  }
+}
+
+/** New files go to `primary`; files saved before the switch are still read (and deleted) from `legacy`. */
+export class FallbackStorageProvider implements StorageProvider {
+  readonly name: string;
+
+  constructor(
+    private readonly primary: StorageProvider,
+    private readonly legacy: StorageProvider,
+  ) {
+    this.name = primary.name;
+  }
+
+  put(key: string, body: Buffer, contentType: string) {
+    return this.primary.put(key, body, contentType);
+  }
+
+  async getStream(key: string) {
+    try {
+      return await this.primary.getStream(key);
+    } catch {
+      return this.legacy.getStream(key);
+    }
+  }
+
+  async getBuffer(key: string) {
+    try {
+      return await this.primary.getBuffer(key);
+    } catch {
+      return this.legacy.getBuffer(key);
+    }
+  }
+
+  async delete(key: string) {
+    await Promise.all([this.primary.delete(key), this.legacy.delete(key).catch(() => undefined)]);
+  }
+}
+
 let provider: StorageProvider | null = null;
 
 export const storage = (): StorageProvider => {
@@ -103,8 +186,11 @@ export const storage = (): StorageProvider => {
   if (env.STORAGE_PROVIDER === 's3') {
     if (!env.AWS_BUCKET) throw new Error('AWS_BUCKET is required when STORAGE_PROVIDER=s3');
     provider = new S3StorageProvider(env.AWS_BUCKET);
-  } else {
+  } else if (env.STORAGE_PROVIDER === 'local') {
     provider = new LocalStorageProvider(env.STORAGE_LOCAL_DIR);
+  } else {
+    // Database storage; files uploaded before it was turned on stay readable from the local folder.
+    provider = new FallbackStorageProvider(new MongoStorageProvider(), new LocalStorageProvider(env.STORAGE_LOCAL_DIR));
   }
   return provider;
 };

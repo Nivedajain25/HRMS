@@ -31,13 +31,14 @@ export const Card = ({ children, style, padding = space(4), onPress, accessibili
   );
 };
 
+// Rounder corners and a soft, wide shadow (the new mobile look) instead of a heavy outline.
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth * 2 },
+  card: { borderRadius: radius.xl, borderWidth: StyleSheet.hairlineWidth },
   shadow: {
-    shadowColor: '#101828',
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowColor: '#1e1b4b',
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 });

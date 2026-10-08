@@ -9,7 +9,7 @@ export interface SegmentOption<V extends string> {
   icon?: IconComponent;
 }
 
-/** Single-choice segmented control (radio group). */
+/** Single-choice segmented control (radio group): pills, the chosen one filled in the role's colour. */
 export const Segmented = <V extends string>({
   value,
   options,
@@ -39,14 +39,13 @@ export const Segmented = <V extends string>({
             style={({ pressed }) => [
               styles.option,
               {
-                borderColor: selected ? c.primary : c.lineStrong,
-                backgroundColor: selected ? c.accentSoft : pressed ? c.surface2 : c.surface,
-                borderWidth: selected ? 2 : 1,
+                borderColor: selected ? c.primary : c.line,
+                backgroundColor: selected ? (pressed ? c.primaryPressed : c.primary) : pressed ? c.surface2 : c.surface,
               },
             ]}
           >
-            {Icon ? <Icon size={18} color={selected ? c.accent : c.fg2} /> : null}
-            <Text weight={selected ? 'semibold' : 'medium'} style={{ color: selected ? c.accent : c.fg2 }}>
+            {Icon ? <Icon size={18} color={selected ? c.onPrimary : c.fg2} /> : null}
+            <Text weight={selected ? 'semibold' : 'medium'} style={{ color: selected ? c.onPrimary : c.fg2 }}>
               {label}
             </Text>
           </Pressable>
@@ -60,8 +59,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: space(2) },
   option: {
     flex: 1,
-    minHeight: TOUCH_TARGET + 4,
-    borderRadius: radius.md,
+    minHeight: TOUCH_TARGET,
+    borderRadius: radius.full,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
+import { dashboardKind, useAuthStore } from '@/lib/auth';
 import { storage, StorageKeys } from '@/lib/storage';
-import { darkPalette, lightPalette, type Palette } from './tokens';
+import { paletteFor, type Palette, type RoleLook } from './tokens';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 const PREFERENCES: ThemePreference[] = ['system', 'light', 'dark'];
@@ -9,6 +10,8 @@ const PREFERENCES: ThemePreference[] = ['system', 'light', 'dark'];
 interface ThemeContextValue {
   /** Active palette. */
   c: Palette;
+  /** The signed-in role's colour family (employee blue / navy, admin & HR purple). */
+  look: RoleLook;
   scheme: 'light' | 'dark';
   preference: ThemePreference;
   setPreference: (p: ThemePreference) => void;
@@ -50,9 +53,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const scheme: 'light' | 'dark' = preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
+  // Colours follow the signed-in role, like the web: employees blue / navy, HR and admins purple.
+  const look = useAuthStore((s): RoleLook => (!s.user ? 'brand' : dashboardKind(s.user.roles) === 'employee' ? 'employee' : 'admin'));
   const value = useMemo<ThemeContextValue>(
-    () => ({ c: scheme === 'dark' ? darkPalette : lightPalette, scheme, preference, setPreference, ready }),
-    [scheme, preference, setPreference, ready],
+    () => ({ c: paletteFor(scheme, look), look, scheme, preference, setPreference, ready }),
+    [scheme, look, preference, setPreference, ready],
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

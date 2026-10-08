@@ -116,6 +116,25 @@ export const useExpenseInbox = (scope: 'approvals' | 'payable', enabled: boolean
     enabled,
   });
 
+/**
+ * How many requests are waiting for me (leave + attendance corrections + expenses) — the Home highlight and the
+ * quick-action badge. Queues I can't act on simply count 0.
+ */
+export const usePendingApprovals = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['approvals', 'pending-count'],
+    queryFn: async () => {
+      const total = (path: string) =>
+        getPaged<unknown>(path, { scope: 'approvals', page: 1, limit: 1 })
+          .then((r) => r.pagination.total)
+          .catch(() => 0);
+      const [leave, attendance, expenses] = await Promise.all([total('/leaves'), total('/attendance/regularizations'), total('/expenses')]);
+      return { leave, attendance, expenses, total: leave + attendance + expenses };
+    },
+    enabled,
+    refetchInterval: 60_000,
+  });
+
 /* ---------------------------- Regularization --------------------------- */
 
 export const useRegularizationDecision = () => {

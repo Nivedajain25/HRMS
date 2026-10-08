@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   AlarmClock,
@@ -169,7 +169,7 @@ const ClockSkeleton = () => (
  * status badges, worked/break timers and the clock in → break → clock out actions.
  * `compact` is the Home screen variant.
  */
-export const ClockCard = ({ compact }: { compact?: boolean }) => {
+export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the "Today's Overview" highlight card in the role's colour. */ hero?: boolean }) => {
   const { c, scheme } = useTheme();
   const { timeZone, user } = useAuth();
   const kind = dashboardKind(user?.roles);
@@ -276,6 +276,175 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
       {flow.selfieModal}
     </>
   );
+
+  if (hero) {
+    // "Today's Overview" (the new Home look): date, status, Clock In / Clock Out times and one big action button,
+    // on a gradient in the role's colour (employee navy / blue, HR & admin purple).
+    const done = t.state === 'CHECKED_OUT';
+    const working = t.state === 'CHECKED_IN' || t.state === 'ON_BREAK';
+    const end = new Date(t.shiftEnd).getTime();
+    const left = Math.max(0, end - now.getTime());
+    const onHero = { color: '#ffffff' };
+    const soft = { color: 'rgba(255,255,255,0.82)' };
+    const glass = { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' };
+    const timeBox = (label: string, value: string | null | undefined, Icon: IconComponent) => (
+      <View style={[styles.heroBox, glass]} accessible accessibilityLabel={`${label}: ${value ? formatTimeIn(value, timeZone) : 'not yet'}`}>
+        <View style={styles.heroBoxLabel}>
+          <Icon size={14} color="rgba(255,255,255,0.85)" />
+          <Text size="xs" weight="medium" style={soft}>
+            {label}
+          </Text>
+        </View>
+        <Text size="xl" weight="bold" tabular style={onHero}>
+          {value ? formatTimeIn(value, timeZone) : '--:--'}
+        </Text>
+      </View>
+    );
+    return (
+      <View style={styles.gap}>
+        <GradientCard colors={c.hero} radius={radius.xl} style={styles.heroCard}>
+          <View style={styles.heroTop}>
+            <View style={styles.flex}>
+              <Text size="sm" weight="semibold" style={soft}>
+                Today’s Overview
+              </Text>
+              <Text size="xs" style={soft} numberOfLines={1}>
+                {`${t.shift.name} · ${formatTimeIn(t.shiftStart, timeZone)} – ${formatTimeIn(t.shiftEnd, timeZone)}`}
+              </Text>
+            </View>
+            <View style={[styles.heroPill, glass]}>
+              <Text size="xs" weight="semibold" style={onHero}>
+                {formatKey(t.date, 'd MMM yyyy')}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.heroChips}>
+            <View style={[styles.heroPill, glass]}>
+              <View style={[styles.heroDot, { backgroundColor: working ? '#34d399' : done ? '#93c5fd' : '#fbbf24' }]} />
+              <Text size="xs" weight="semibold" style={onHero}>
+                {meta.label}
+              </Text>
+            </View>
+            {r?.isLate || runningLate ? (
+              <View style={[styles.heroPill, { backgroundColor: 'rgba(251,191,36,0.25)', borderColor: 'rgba(251,191,36,0.5)' }]}>
+                <AlarmClock size={12} color="#fde68a" />
+                <Text size="xs" weight="semibold" style={{ color: '#fde68a' }}>
+                  {r?.isLate ? `Late ${minutesToHours(r.lateMinutes)}` : 'Running late'}
+                </Text>
+              </View>
+            ) : null}
+            {r?.checkIn ? (
+              <View style={[styles.heroPill, glass]}>
+                {r.workMode === 'REMOTE' ? <Home size={12} color="#ffffff" /> : <Building2 size={12} color="#ffffff" />}
+                <Text size="xs" weight="semibold" style={onHero}>
+                  {r.workMode === 'REMOTE' ? 'Remote' : 'Office'}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.heroBoxes}>
+            {timeBox('Clock In', r?.checkIn, LogIn)}
+            {timeBox('Clock Out', r?.checkOut, LogOut)}
+          </View>
+
+          <View style={styles.heroWorked}>
+            <Timer size={14} color="rgba(255,255,255,0.85)" />
+            <Text size="sm" style={soft}>
+              {'Worked '}
+              <Text size="sm" weight="bold" tabular style={onHero}>
+                {t.state === 'NOT_CHECKED_IN' ? '0h' : minutesToHours(Math.floor(worked / 60))}
+              </Text>
+              {working && left > 0 ? ` · ${minutesToHours(Math.ceil(left / 60_000))} left in shift` : ''}
+            </Text>
+          </View>
+
+          {t.dayKind !== 'WORKING' ? (
+            <Text size="sm" weight="semibold" style={onHero}>
+              {t.dayKind === 'HOLIDAY' ? `🎉 Holiday${t.holiday ? `: ${t.holiday}` : ''}` : '🌴 Today is a week off'}
+            </Text>
+          ) : null}
+
+          {t.state === 'NOT_CHECKED_IN' && t.allowRemoteClockIn ? (
+            <View style={styles.heroModes} accessibilityRole="radiogroup" accessibilityLabel="Where are you working today?">
+              {(['OFFICE', 'REMOTE'] as const).map((m) => {
+                const selected = mode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => setMode(m)}
+                    disabled={busy}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={m === 'OFFICE' ? 'Office' : 'Remote'}
+                    style={[styles.heroMode, selected ? { backgroundColor: '#ffffff', borderColor: '#ffffff' } : glass]}
+                  >
+                    {m === 'OFFICE' ? <Building2 size={16} color={selected ? c.hero[0] : '#ffffff'} /> : <Home size={16} color={selected ? c.hero[0] : '#ffffff'} />}
+                    <Text size="sm" weight="semibold" style={{ color: selected ? c.hero[0] : '#ffffff' }}>
+                      {m === 'OFFICE' ? 'Office' : 'Remote'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {done ? (
+            <View style={[styles.heroAction, glass]}>
+              <CheckCircle2 size={20} color="#ffffff" />
+              <Text weight="bold" style={onHero}>
+                Done for today
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              onPress={working ? () => void onClockOut() : onClockIn}
+              disabled={busy || t.state === 'ON_BREAK'}
+              accessibilityRole="button"
+              accessibilityLabel={working ? 'Clock out' : 'Clock in'}
+              style={({ pressed }) => [styles.heroAction, { backgroundColor: '#ffffff', opacity: pressed || busy ? 0.85 : 1 }]}
+            >
+              {flow.active ? (
+                <ActivityIndicator size="small" color={c.hero[0]} />
+              ) : working ? (
+                <LogOut size={20} color={c.hero[0]} />
+              ) : (
+                <LogIn size={20} color={c.hero[0]} />
+              )}
+              <Text size="lg" weight="bold" style={{ color: c.hero[0] }}>
+                {working ? 'Clock out' : 'Clock in'}
+              </Text>
+            </Pressable>
+          )}
+
+          {canStartBreak || t.state === 'ON_BREAK' ? (
+            <Pressable
+              onPress={() => void runBreak(t.state === 'ON_BREAK' ? 'break/end' : 'break/start', t.state === 'ON_BREAK' ? 'Welcome back!' : 'Break started')}
+              disabled={busy}
+              accessibilityRole="button"
+              style={[styles.heroBreak, glass]}
+            >
+              {pendingBreak ? <ActivityIndicator size="small" color="#ffffff" /> : t.state === 'ON_BREAK' ? <Play size={16} color="#ffffff" /> : <Coffee size={16} color="#ffffff" />}
+              <Text size="sm" weight="semibold" style={onHero}>
+                {t.state === 'ON_BREAK' ? 'End break' : 'Start break'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </GradientCard>
+
+        {t.state === 'NOT_CHECKED_IN' && captureHint ? (
+          <View style={styles.hint}>
+            {t.requireSelfie ? <Camera size={14} color={c.muted} /> : <MapPin size={14} color={c.muted} />}
+            <Text size="xs" color="muted" style={styles.flex}>
+              {captureHint}
+            </Text>
+          </View>
+        ) : null}
+        {feedback}
+      </View>
+    );
+  }
 
   if (compact) {
     // Day timeline: shift start ━━━●─── shift end, "now" marker, and dots where you clocked in / out.
@@ -700,6 +869,20 @@ export const ClockCard = ({ compact }: { compact?: boolean }) => {
 };
 
 const styles = StyleSheet.create({
+  // Home "Today's Overview" (hero) card.
+  heroCard: { padding: space(4), gap: space(3) },
+  heroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space(2) },
+  heroChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space(1.5) },
+  heroPill: { flexDirection: 'row', alignItems: 'center', gap: space(1), borderRadius: radius.full, borderWidth: 1, paddingHorizontal: space(2.5), paddingVertical: space(1) },
+  heroDot: { width: 7, height: 7, borderRadius: 4 },
+  heroBoxes: { flexDirection: 'row', gap: space(2.5) },
+  heroBox: { flex: 1, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: space(3), paddingVertical: space(2.5), gap: space(1) },
+  heroBoxLabel: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
+  heroWorked: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
+  heroModes: { flexDirection: 'row', gap: space(2) },
+  heroMode: { flex: 1, minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(1.5), borderRadius: radius.full, borderWidth: 1 },
+  heroAction: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(2), borderRadius: radius.lg, borderWidth: 0 },
+  heroBreak: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(2), borderRadius: radius.full, borderWidth: 1 },
   tlHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space(2) },
   tlShift: { marginLeft: 'auto' },
   tlEnds: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space(2) },

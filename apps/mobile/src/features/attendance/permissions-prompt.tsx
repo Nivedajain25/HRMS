@@ -49,6 +49,8 @@ const Row = ({ icon: Icon, title, text, status }: { icon: IconComponent; title: 
  */
 export const PermissionsPrompt = () => {
   const { hasEmployee, user } = useAuth();
+  // The Super Admin / Admin don't clock in, so they're never asked for location and camera.
+  const clocksIn = hasEmployee && !(user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<{ location: Status; camera: Status }>({ location: 'ask', camera: 'ask' });
   const [busy, setBusy] = useState(false);
@@ -57,7 +59,7 @@ export const PermissionsPrompt = () => {
   useEffect(() => setPermissionsOpen(open), [open, setPermissionsOpen]);
 
   useEffect(() => {
-    if (!hasEmployee || shownThisLaunch) {
+    if (!clocksIn || shownThisLaunch) {
       setSettled(true);
       return;
     }
@@ -80,7 +82,7 @@ export const PermissionsPrompt = () => {
     return () => {
       cancelled = true;
     };
-  }, [hasEmployee, user?._id, setSettled]);
+  }, [clocksIn, user?._id, setSettled]);
 
   const allow = async () => {
     setBusy(true);

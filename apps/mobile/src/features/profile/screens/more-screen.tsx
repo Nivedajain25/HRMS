@@ -1,18 +1,19 @@
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell, ClipboardList, DoorOpen, ExternalLink, FileText, LogOut, Megaphone, Package, PartyPopper, Receipt, Settings, Siren, Target, UserRound, Users, Wallet } from 'lucide-react-native';
-import { Appear, Avatar, Button, Card, ListItem, Screen, Header, Skeleton, Text, toast, useConfirm, type IconComponent } from '@/components';
+import { Bell, ChevronRight, ClipboardCheck, ClipboardList, DoorOpen, ExternalLink, FileText, LogOut, Megaphone, Package, PartyPopper, Receipt, Settings, Siren, Target, UserRound, Users, Wallet } from 'lucide-react-native';
+import { Appear, Avatar, Button, Card, GradientCard, ListItem, Screen, Header, Skeleton, Text, toast, useConfirm, type IconComponent } from '@/components';
 import { useUnreadAnnouncements } from '@/features/announcements/api';
 import { useUnreadCount } from '@/features/notifications/api';
+import { usePendingApprovals } from '@/features/approvals/api';
 import { useActiveEmergencies } from '@/features/emergencies/api';
 import { useAssignable, useTasks } from '@/features/tasks/api';
 import { signOut, useAuth } from '@/lib/auth';
 import { API_ORIGIN, APP_VERSION } from '@/lib/config';
 import { fullName } from '@/lib/format';
 import { openWebApp } from '@/lib/links';
-import { space, toneColors, useTheme, type Tone } from '@/theme';
+import { radius, space, toneColors, useTheme, type Tone } from '@/theme';
 import { useMyEmployee } from '../api';
 import { CountBadge } from '../kit/ui';
 
@@ -33,6 +34,7 @@ const ENTRY_TONE: Record<string, Tone> = {
   notifications: 'red',
   announcements: 'amber',
   profile: 'brand',
+  approvals: 'amber',
   goals: 'purple',
   tasks: 'amber',
   emergencies: 'red',
@@ -45,7 +47,7 @@ const ENTRY_TONE: Record<string, Tone> = {
 };
 
 /** Menu groups slide in one after another (staggered by their title's position). */
-const GROUP_ORDER = ['Pay & claims', 'Stay informed', 'Me & my team', 'App'];
+const GROUP_ORDER = ['Needs you', 'Pay & claims', 'Stay informed', 'Me & my team', 'App'];
 
 const Group = ({ title, entries }: { title: string; entries: Entry[] }) => {
   const { c } = useTheme();
@@ -82,7 +84,9 @@ const Group = ({ title, entries }: { title: string; entries: Entry[] }) => {
 };
 
 export const MoreScreen = () => {
-  const { user, hasEmployee, isManager, can } = useAuth();
+  const { user, hasEmployee, isManager, isApprover, can } = useAuth();
+  const { c } = useTheme();
+  const pending = usePendingApprovals(isApprover);
   const qc = useQueryClient();
   const confirm = useConfirm();
   const me = useMyEmployee();
@@ -119,40 +123,63 @@ export const MoreScreen = () => {
   };
 
   return (
-    <Screen inTabs header={<Header title="More" large tone="purple" />} onRefresh={refresh}>
-      <Card
+    <Screen inTabs header={<Header title="More" large />} onRefresh={refresh}>
+      {/* Profile banner (reference design): photo and details on the role's colour; tap for My profile. */}
+      <Pressable
         onPress={hasEmployee ? () => router.push('/more/profile') : undefined}
+        disabled={!hasEmployee}
+        accessibilityRole={hasEmployee ? 'button' : 'summary'}
         accessibilityLabel={hasEmployee ? `${name}, view my profile` : name}
-        style={styles.profile}
       >
-        <Avatar name={name} uri={user.avatar ?? e?.profilePhoto} size={56} />
-        <View style={styles.flex}>
-          <Text size="lg" weight="semibold" numberOfLines={1}>
-            {name}
-          </Text>
-          {hasEmployee && me.isLoading ? (
-            <Skeleton width={140} height={14} />
-          ) : e ? (
-            <>
-              {e.designationId ? (
-                <Text size="sm" color="fg2" numberOfLines={1}>
-                  {e.designationId.name}
-                </Text>
-              ) : null}
-              <Text size="xs" color="muted" numberOfLines={1}>
-                {[e.employeeId, e.departmentId?.name].filter(Boolean).join(' · ')}
-              </Text>
-            </>
-          ) : (
-            <Text size="sm" color="muted" numberOfLines={1}>
-              {user.email}
+        <GradientCard colors={c.hero} radius={radius.xl} style={styles.profile}>
+          <View style={styles.avatarRing}>
+            <Avatar name={name} uri={user.avatar ?? e?.profilePhoto} size={60} />
+          </View>
+          <View style={styles.flex}>
+            <Text size="lg" weight="bold" numberOfLines={1} style={styles.white}>
+              {name}
             </Text>
-          )}
-          <Text size="xs" color="subtle" numberOfLines={1}>
-            {user.organization.name}
-          </Text>
-        </View>
-      </Card>
+            {hasEmployee && me.isLoading ? (
+              <Skeleton width={140} height={14} />
+            ) : e ? (
+              <>
+                {e.designationId ? (
+                  <Text size="sm" numberOfLines={1} style={styles.soft}>
+                    {e.designationId.name}
+                  </Text>
+                ) : null}
+                <Text size="xs" numberOfLines={1} style={styles.soft}>
+                  {[e.employeeId, e.departmentId?.name].filter(Boolean).join(' · ')}
+                </Text>
+              </>
+            ) : (
+              <Text size="sm" numberOfLines={1} style={styles.soft}>
+                {user.email}
+              </Text>
+            )}
+            <Text size="xs" numberOfLines={1} style={styles.soft}>
+              {`${user.roles.map((r) => r.name).join(', ')} · ${user.organization.name}`}
+            </Text>
+          </View>
+          {hasEmployee ? <ChevronRight size={20} color="#ffffff" /> : null}
+        </GradientCard>
+      </Pressable>
+
+      {isApprover ? (
+        <Group
+          title="Needs you"
+          entries={[
+            {
+              key: 'approvals',
+              title: 'Approvals',
+              subtitle: 'Leave, attendance and expense requests',
+              icon: ClipboardCheck,
+              href: '/approvals',
+              right: <CountBadge count={pending.data?.total} label="requests waiting" />,
+            },
+          ]}
+        />
+      ) : null}
 
       <Group
         title="Pay & claims"
@@ -261,7 +288,10 @@ export const MoreScreen = () => {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: 2 },
-  profile: { flexDirection: 'row', alignItems: 'center', gap: space(3) },
+  profile: { flexDirection: 'row', alignItems: 'center', gap: space(3), padding: space(4) },
+  avatarRing: { borderRadius: 34, borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)', padding: 2 },
+  white: { color: '#ffffff' },
+  soft: { color: 'rgba(255,255,255,0.85)' },
   group: { gap: space(2) },
   groupTitle: { paddingHorizontal: space(1), letterSpacing: 0.5 },
   icon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

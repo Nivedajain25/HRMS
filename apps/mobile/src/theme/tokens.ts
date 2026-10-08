@@ -42,7 +42,76 @@ export interface Palette {
   success: string;
   warning: string;
   overlay: string;
+  /** Highlight cards (Today's overview, profile banner): a strong gradient in the role's colour, white text on it. */
+  hero: [string, string, string];
 }
+
+/**
+ * Role looks (same split as the web): employees blue / navy, HR and admins purple; `brand` before sign-in.
+ * Only the accent-related colours change — neutrals stay calm and slightly tinted to match.
+ */
+export type RoleLook = 'brand' | 'employee' | 'admin';
+
+type AccentSet = Pick<
+  Palette,
+  'primary' | 'primaryPressed' | 'accent' | 'accentSoft' | 'ring' | 'hero' | 'canvas' | 'surface2' | 'surface3' | 'line' | 'lineStrong'
+>;
+
+const LOOKS: Record<RoleLook, { light: Partial<AccentSet>; dark: Partial<AccentSet> }> = {
+  brand: { light: {}, dark: {} },
+  employee: {
+    light: {
+      primary: '#1e3a8a',
+      primaryPressed: '#172f70',
+      accent: '#1d4ed8',
+      accentSoft: '#eff6ff',
+      ring: '#2563eb',
+      hero: ['#1e3a8a', '#1d4ed8', '#3b82f6'],
+      canvas: '#f3f6fc',
+      surface2: '#f6f9ff',
+      surface3: '#eaf1fb',
+      line: '#e2e8f3',
+      lineStrong: '#cdd8ea',
+    },
+    dark: {
+      primary: '#2563eb',
+      primaryPressed: '#1d4ed8',
+      accent: '#93c5fd',
+      accentSoft: 'rgba(59, 130, 246, 0.15)',
+      ring: '#60a5fa',
+      hero: ['#172554', '#1e3a8a', '#1d4ed8'],
+    },
+  },
+  admin: {
+    light: {
+      primary: '#7c3aed',
+      primaryPressed: '#6d28d9',
+      accent: '#7c3aed',
+      accentSoft: '#f5f3ff',
+      ring: '#8b5cf6',
+      hero: ['#5b21b6', '#7c3aed', '#a855f7'],
+      canvas: '#f6f5fc',
+      surface2: '#f9f8fe',
+      surface3: '#f0edfa',
+      line: '#e9e5f6',
+      lineStrong: '#d8d1ee',
+    },
+    dark: {
+      primary: '#7c3aed',
+      primaryPressed: '#8b5cf6',
+      accent: '#c4b5fd',
+      accentSoft: 'rgba(139, 92, 246, 0.15)',
+      ring: '#a78bfa',
+      hero: ['#2e1065', '#5b21b6', '#7c3aed'],
+    },
+  },
+};
+
+/** The palette for a colour scheme and role look. */
+export const paletteFor = (scheme: 'light' | 'dark', look: RoleLook): Palette => {
+  const base = scheme === 'dark' ? darkPalette : lightPalette;
+  return { ...base, ...LOOKS[look][scheme] };
+};
 
 export const lightPalette: Palette = {
   scheme: 'light',
@@ -68,6 +137,7 @@ export const lightPalette: Palette = {
   success: '#059669',
   warning: '#d97706',
   overlay: 'rgba(15, 23, 42, 0.45)',
+  hero: ['#3730a3', '#4f46e5', '#6366f1'],
 };
 
 export const darkPalette: Palette = {
@@ -93,6 +163,7 @@ export const darkPalette: Palette = {
   success: '#34d399',
   warning: '#fbbf24',
   overlay: 'rgba(0, 0, 0, 0.6)',
+  hero: ['#1e1b4b', '#312e81', '#4338ca'],
 };
 
 /* --------------------------------- Tones -------------------------------- */
@@ -140,7 +211,7 @@ export const toneColors = (tone: Tone, palette: Palette): ToneColors => {
 /** 4-pt spacing scale: `space(4)` = 16. */
 export const space = (n: number) => n * 4;
 
-export const radius = { sm: 8, md: 12, lg: 16, full: 999 } as const;
+export const radius = { sm: 8, md: 12, lg: 16, xl: 20, full: 999 } as const;
 
 export const fonts = {
   regular: 'Outfit_400Regular',

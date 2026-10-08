@@ -153,7 +153,7 @@ export const IconButton = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     paddingHorizontal: space(4),
     alignItems: 'center',

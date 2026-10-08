@@ -24,14 +24,5 @@ export const employeeTitle = (title: string, dark: boolean) => {
   return { emoji: t.emoji, tile: dark ? withAlpha(t.hue, 0.3) : t.tile };
 };
 
-/** Greeting banner: blue-100 → white → sky-50 (dark: soft blue / sky washes over the surface). */
-export const EMPLOYEE_BANNER: Record<'light' | 'dark', [string, string, string]> = {
-  light: ['#dbeafe', '#ffffff', '#f0f9ff'],
-  dark: ['#1a2640', '#12151c', '#10222f'],
-};
-
-/** The menu's current-page pill: dark navy with a white icon. */
-export const EMPLOYEE_NAVY = '#1e3a8a';
-
 /** True on the employee dashboard look (not Super Admin / Admin / HR). */
 export const useEmployeeLook = () => dashboardKind(useAuth().user?.roles) === 'employee';

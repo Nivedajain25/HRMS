@@ -1,67 +1,52 @@
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell, Clock } from 'lucide-react-native';
-import { Appear, GradientCard, Screen, SectionHeader, Text, Wave } from '@/components';
+import { Bell } from 'lucide-react-native';
+import { Appear, Card, Screen, SectionHeader, Text, Wave } from '@/components';
 import { attendanceKeys } from '@/features/attendance/api';
 import { ClockCard } from '@/features/attendance/components/clock-card';
 import { EmergencyBanner } from '@/features/emergencies/emergency-banner';
 import { EmergencyButton } from '@/features/emergencies/emergency-button';
 import { AvatarPhotoButton } from '@/features/profile/components/avatar-photo-button';
-import { useAuth } from '@/lib/auth';
+import { QuickActionsRow } from '@/features/quick-actions/quick-actions';
+import { dashboardKind, useAuth } from '@/lib/auth';
 import { fullName } from '@/lib/format';
 import { useNow } from '@/lib/time';
 import { radius, space, useTheme } from '@/theme';
 import { dashboardKeys, useEmployeeDashboard, useManagerDashboard } from './api';
 import { MyActivity } from './components/my-activity';
 import { MyTasks } from './components/my-tasks';
-import { AdminKpis, EmployeeAlerts, NewJoiners, QuickActions, Referrals } from './components/admin-home';
+import { EmployeeAlerts, NewJoiners, Referrals } from './components/admin-home';
+import { ApprovalsHighlight, CompanyTodayHero, MonthStats } from './components/home-hero';
 import { Celebrations, Departments, OrgToday, TasksOverview, TeamActivity, WhosIn } from './components/org-overview';
 import { Announcements, TeamSummary, UpcomingHolidays } from './components/widgets';
-import { EMPLOYEE_BANNER, employeeTitle, useEmployeeLook } from './employee-look';
 import { greetingFor, longDateIn } from './lib';
 
-/** Greeting banner colours by time of day (soft pastels in light mode, deep tints in dark mode). */
-const bannerColors = (greeting: string, scheme: 'light' | 'dark'): [string, string, string] => {
-  const light: Record<string, [string, string, string]> = {
-    'Good Morning': ['#fef3c7', '#fde7d4', '#e0f2fe'],
-    'Good Afternoon': ['#e0f2fe', '#e0e7ff', '#f3e8ff'],
-    'Good Evening': ['#e0e7ff', '#f3e8ff', '#fce7f3'],
-  };
-  const dark: Record<string, [string, string, string]> = {
-    'Good Morning': ['#3a2f12', '#2b2433', '#12283a'],
-    'Good Afternoon': ['#12283a', '#1e1f45', '#2a1d3f'],
-    'Good Evening': ['#1e1f45', '#2a1d3f', '#3a1a31'],
-  };
-  const set = scheme === 'dark' ? dark : light;
-  return set[greeting] ?? set['Good Afternoon']!;
-};
-
+/** Bell in a soft round button (opens Notifications), with the unread count. */
 const UnreadBell = ({ count }: { count: number | undefined }) => {
   const { c } = useTheme();
   const n = count ?? 0;
   return (
-    <View
-      style={styles.bell}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={n ? `${n} unread notification${n === 1 ? '' : 's'}` : 'No unread notifications'}
+    <Pressable
+      onPress={() => router.push('/more/notifications')}
+      accessibilityRole="button"
+      accessibilityLabel={n ? `Notifications, ${n} unread` : 'Notifications'}
+      style={({ pressed }) => [styles.bell, { backgroundColor: c.surface, borderColor: c.line }, pressed && { opacity: 0.8 }]}
     >
-      <Bell size={24} color={c.fg2} />
+      <Bell size={22} color={c.fg2} />
       {n > 0 ? (
-        <View style={[styles.bellBadge, { backgroundColor: c.danger, borderColor: c.canvas }]}>
+        <View style={[styles.bellBadge, { backgroundColor: c.danger, borderColor: c.surface }]}>
           <Text size="xs" weight="bold" style={styles.bellText}>
             {n > 99 ? '99+' : String(n)}
           </Text>
         </View>
       ) : null}
-    </View>
+    </Pressable>
   );
 };
 
 export const HomeScreen = () => {
   const { user, timeZone, hasEmployee, can, isApprover } = useAuth();
-  const { scheme } = useTheme();
   const qc = useQueryClient();
   const employee = useEmployeeDashboard();
   const showTeam = can('team:view');
@@ -76,83 +61,63 @@ export const HomeScreen = () => {
       hasEmployee ? qc.invalidateQueries({ queryKey: attendanceKeys.today }) : Promise.resolve(),
     ]);
 
-  const name = user ? fullName(user) : '';
+  const firstName = user?.firstName || (user ? fullName(user) : '');
   const greeting = greetingFor(timeZone, now);
-  // Phones under 400 pt wide (most Android phones): a slightly smaller greeting and a short date, so they fit
-  // beside the Emergency button, bell and avatar.
+  // Phones under 400 pt wide (most Android phones): a slightly smaller name and a short date beside the buttons.
   const narrow = useWindowDimensions().width < 400;
-  const titleSize = narrow ? 'lg' : 'xl';
-  // Super admin / Admin: the web admin dashboard's look (lavender banner, stat cards, Quick Actions, New Joiners, Alerts).
+  // Super Admin / Admin don't clock in: their highlight card is the company today instead.
   const isAdmin = (user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
-  // Employees: the web employee dashboard's blue banner; HR keeps the time-of-day pastels.
-  const employeeLook = useEmployeeLook();
-  const banner: [string, string, string] = isAdmin
-    ? scheme === 'dark'
-      ? ['#2a1d4f', '#24194a', '#1e1a3d']
-      : ['#ddd6fe', '#ede9fe', '#f5f3ff']
-    : employeeLook
-      ? EMPLOYEE_BANNER[scheme]
-      : bannerColors(greeting.text, scheme);
+  const employeeKind = dashboardKind(user?.roles) === 'employee';
 
   return (
     <Screen inTabs onRefresh={refresh}>
-      {/* Greeting first; Emergency, bell and avatar on the right. */}
+      {/* Header (reference design): photo, hello + name, greeting and date; Emergency and the bell on the right. */}
       <Appear index={0}>
-        <GradientCard colors={banner} style={styles.greeting}>
-          <View style={styles.flex}>
-            {/* "Good Morning", then the name with the emoji (it waves once when the screen opens); on a narrow phone
-                the name and emoji wrap together to the next line, so the emoji is never left on a line of its own. */}
-            <View style={styles.greetLine} accessible accessibilityRole="header" accessibilityLabel={`${greeting.text} ${name}`}>
-              <Text size={titleSize} weight="bold">
-                {greeting.text}
+        <View style={styles.header}>
+          <AvatarPhotoButton size={48} />
+          <View style={styles.flex} accessible accessibilityRole="header" accessibilityLabel={`${greeting.text}, ${firstName}`}>
+            <View style={styles.nameLine}>
+              <Text size={narrow ? 'lg' : 'xl'} weight="bold" numberOfLines={1} style={styles.shrink}>
+                {`Hi, ${firstName}`}
               </Text>
-              <View style={styles.nameLine}>
-                <Text size={titleSize} weight="bold" numberOfLines={1} style={styles.shrink}>
-                  {name}
-                </Text>
-                <Wave>
-                  <Text size={titleSize}>{greeting.emoji}</Text>
-                </Wave>
-              </View>
+              <Wave>
+                <Text size={narrow ? 'lg' : 'xl'}>{greeting.emoji}</Text>
+              </Wave>
             </View>
+            {/* The date is on the Today's Overview card; wide screens show it here too. */}
             <Text size="sm" color="muted" numberOfLines={1}>
-              {longDateIn(timeZone, now, narrow ? 'EEE, d MMM yyyy' : 'EEEE, d MMMM yyyy')}
+              {narrow ? greeting.text : `${greeting.text} · ${longDateIn(timeZone, now, 'EEE, d MMM')}`}
             </Text>
           </View>
           <View style={styles.headerActions}>
             {hasEmployee ? <EmergencyButton /> : null}
             <UnreadBell count={employee.data?.unreadNotifications} />
-            <AvatarPhotoButton size={40} />
           </View>
-        </GradientCard>
+        </View>
       </Appear>
 
       {/* HR / super admin: unresolved emergencies stay on top until handled. */}
       <EmergencyBanner />
 
-      {isAdmin ? (
-        <>
-          <Appear index={1}>
-            <AdminKpis />
-          </Appear>
-          <Appear index={1}>
-            <QuickActions />
-          </Appear>
-        </>
-      ) : null}
+      {/* Today's Overview: clock in / out for everyone who clocks in; the company today for the boss. */}
+      <Appear index={1}>{isAdmin ? <CompanyTodayHero /> : hasEmployee ? <ClockCard hero /> : null}</Appear>
 
-      {/* Clock in / Clock out: everyone with an employee profile except the super admin (the boss doesn't clock in). */}
-      {hasEmployee && !isAdmin ? (
-        <Appear index={1} style={styles.section}>
-          <SectionHeader
-            title="Today"
-            icon={Clock}
-            tone="brand"
-            emoji={employeeLook ? employeeTitle('Today', scheme === 'dark') : undefined}
-            actionLabel="Attendance"
-            onAction={() => router.push('/attendance')}
-          />
-          <ClockCard compact />
+      {/* What needs you: requests waiting for your approval. */}
+      <ApprovalsHighlight />
+
+      {/* Quick actions: the four most important shortcuts for the role (all of them behind the + in the bar). */}
+      <Appear index={1} style={styles.section}>
+        <SectionHeader title="Quick Actions" />
+        <Card>
+          <QuickActionsRow />
+        </Card>
+      </Appear>
+
+      {/* Employees: this month at a glance. */}
+      {hasEmployee && employeeKind ? (
+        <Appear index={2} style={styles.section}>
+          <SectionHeader title="This Month" actionLabel="Attendance" onAction={() => router.push('/attendance')} />
+          <MonthStats />
         </Appear>
       ) : null}
 
@@ -232,14 +197,13 @@ export const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  greeting: { flexDirection: 'row', alignItems: 'center', gap: space(2), padding: space(4), marginTop: space(1) },
-  greetLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: space(1.5) },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space(3), marginTop: space(1) },
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: space(1.5), flexShrink: 1 },
-  // Emergency, bell and avatar sit close together so the greeting keeps its room.
+  // Emergency and the bell sit close together so the name keeps its room.
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: space(1) },
   shrink: { flexShrink: 1 },
   section: { gap: space(2) },
-  bell: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  bell: { width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   bellBadge: {
     position: 'absolute',
     top: 4,

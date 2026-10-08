@@ -13,7 +13,7 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://hr.example.com"
+        "EXPO_PUBLIC_API_URL": "https://hrms-production-c889.up.railway.app"
       }
     },
     "preview": {
@@ -21,7 +21,7 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://hr.example.com"
+        "EXPO_PUBLIC_API_URL": "https://hrms-production-c889.up.railway.app"
       }
     },
     "lan": {
@@ -35,7 +35,7 @@
       "autoIncrement": true,
       "android": { "buildType": "app-bundle" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://hr.example.com"
+        "EXPO_PUBLIC_API_URL": "https://hrms-production-c889.up.railway.app"
       }
     }
   },

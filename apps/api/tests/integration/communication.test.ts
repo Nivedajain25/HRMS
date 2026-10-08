@@ -351,3 +351,36 @@ describe('Announcement highlights (pop-up + pinned bar)', () => {
     expect(titles(own.body.data.bar)).toContain('Office party');
   });
 });
+
+describe('Announcements come down at 12:00 AM after their day', () => {
+  it('ends new ones at the next midnight (org time), hides older ones without an end time, keeps chosen end times', async () => {
+    const admin = await registerOrg({ timezone: 'Asia/Kolkata' });
+    const reader = await createEmployeeUser(admin.token, { firstName: 'Reader' });
+    const istTime = (d: Date) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+    const titles = async (token: string) => ((await as(token).get('/api/v1/announcements')).body.data as { title: string }[]).map((a) => a.title);
+
+    // A new announcement with no end time chosen comes down at 12:00 AM tonight (India time).
+    const created = await as(admin.token).post('/api/v1/announcements', { title: 'Birthday', content: '<p>Happy Birthday Nandakumar</p>', pinned: true });
+    expect(created.status).toBe(201);
+    const ends = new Date(created.body.data.expiresAt);
+    expect(istTime(ends)).toBe('00:00');
+    expect(ends.getTime()).toBeGreaterThan(Date.now());
+    expect(ends.getTime() - Date.now()).toBeLessThanOrEqual(24 * 3600_000);
+    expect(await titles(reader.token)).toContain('Birthday');
+
+    // Posted two days ago: without an end time it's gone; with a later chosen end time it stays.
+    const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
+    const base = { organizationId: admin.user.organization._id, content: '<p>x</p>', audience: 'ALL', publishAt: twoDaysAgo, createdBy: admin.user._id, notifiedAt: twoDaysAgo };
+    const old = await AnnouncementModel.create({ ...base, title: 'Anniversary', expiresAt: null, pinned: true });
+    await AnnouncementModel.create({ ...base, title: 'Leave policy', expiresAt: new Date(Date.now() + 5 * 86_400_000) });
+    const feed = await titles(reader.token);
+    expect(feed).not.toContain('Anniversary');
+    expect(feed).toContain('Leave policy');
+
+    // HR's list shows the old one as expired, with the time it came down.
+    const all = (await as(admin.token).get('/api/v1/announcements?scope=all')).body.data as { _id: string; status: string; expiresAt: string }[];
+    const row = all.find((a) => a._id === String(old._id))!;
+    expect(row.status).toBe('EXPIRED');
+    expect(istTime(new Date(row.expiresAt))).toBe('00:00');
+  });
+});

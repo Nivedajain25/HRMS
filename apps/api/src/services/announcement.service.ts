@@ -8,9 +8,11 @@ import {
   DepartmentModel,
   DocumentModel,
   EmployeeModel,
+  OrganizationModel,
   UserModel,
   type Announcement,
 } from '../models';
+import { addDaysKey, dateKeyInTz, zonedInstant } from '../utils/dates';
 import { can, type RequestContext } from '../types/context';
 import { badRequest, forbidden, notFound } from '../utils/errors';
 import { buildPagination, escapeRegex } from '../utils/pagination';
@@ -26,9 +28,23 @@ type AnnouncementLean = Announcement & { _id: Types.ObjectId; createdAt?: Date; 
 const ATTACHMENT_POPULATE = { path: 'attachmentIds', select: 'title originalName mimeType size' };
 const AUTHOR_POPULATE = { path: 'createdBy', select: 'firstName lastName avatar' };
 
-const statusOf = (a: Pick<Announcement, 'publishAt' | 'expiresAt'>, now = new Date()) => {
+const orgTimeZone = async (organizationId: Types.ObjectId) =>
+  (await OrganizationModel.findById(organizationId).select('timezone').lean())?.timezone || 'UTC';
+
+/** 12:00 AM after the day `from` falls on, in the organization's timezone. */
+export const nextMidnight = (from: Date, timeZone: string) => zonedInstant(addDaysKey(dateKeyInTz(from, timeZone), 1), '00:00', timeZone);
+
+/**
+ * When an announcement comes down: its own end time, or — without one (it's the default) — 12:00 AM the night after
+ * the day it was published, so a day's wishes and notices don't linger.
+ */
+const endOf = (a: Pick<Announcement, 'publishAt' | 'expiresAt'>, timeZone: string) =>
+  a.expiresAt ?? (a.publishAt ? nextMidnight(a.publishAt, timeZone) : null);
+
+const statusOf = (a: Pick<Announcement, 'publishAt' | 'expiresAt'>, timeZone: string, now = new Date()) => {
   if (a.publishAt && a.publishAt > now) return 'SCHEDULED' as const;
-  if (a.expiresAt && a.expiresAt <= now) return 'EXPIRED' as const;
+  const end = endOf(a, timeZone);
+  if (end && end <= now) return 'EXPIRED' as const;
   return 'PUBLISHED' as const;
 };
 
@@ -44,15 +60,17 @@ const viewerDepartment = async (ctx: RequestContext) => {
  * expired, not deleted and targeted at everyone / their department / them.
  */
 export const visibleFilter = async (ctx: RequestContext, now = new Date()): Promise<FilterQuery<Announcement>> => {
-  const departmentId = await viewerDepartment(ctx);
+  const [departmentId, timeZone] = await Promise.all([viewerDepartment(ctx), orgTimeZone(ctx.organizationId)]);
   const audience: Record<string, unknown>[] = [{ audience: 'ALL' }];
   if (departmentId) audience.push({ audience: 'DEPARTMENTS', departmentIds: departmentId });
   if (ctx.employeeId) audience.push({ audience: 'EMPLOYEES', employeeIds: ctx.employeeId });
+  // No end time → only until 12:00 AM after its day, i.e. visible while it was published today.
+  const startOfToday = zonedInstant(dateKeyInTz(now, timeZone), '00:00', timeZone);
   return {
     organizationId: ctx.organizationId,
     deletedAt: null,
     publishAt: { $lte: now },
-    $and: [{ $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }] }, { $or: audience }],
+    $and: [{ $or: [{ expiresAt: { $gt: now } }, { expiresAt: null, publishAt: { $gte: startOfToday } }] }, { $or: audience }],
   };
 };
 
@@ -189,7 +207,7 @@ export const listAnnouncements = async (ctx: RequestContext, q: AnnouncementList
     AnnouncementModel.countDocuments(filter),
   ]);
   const ids = items.map((i) => i._id);
-  const read = await readSet(ctx, ids);
+  const [read, timeZone] = await Promise.all([readSet(ctx, ids), orgTimeZone(ctx.organizationId)]);
   let readCounts = new Map<string, number>();
   if (manage && ids.length) {
     const agg = await AnnouncementReadModel.aggregate<{ _id: Types.ObjectId; count: number }>([
@@ -201,7 +219,8 @@ export const listAnnouncements = async (ctx: RequestContext, q: AnnouncementList
   return {
     items: items.map((a) => ({
       ...a,
-      status: statusOf(a),
+      expiresAt: endOf(a, timeZone),
+      status: statusOf(a, timeZone),
       read: read.has(String(a._id)),
       ...(manage ? { readCount: readCounts.get(String(a._id)) ?? 0 } : {}),
     })),
@@ -245,11 +264,12 @@ export const announcementHighlights = async (ctx: RequestContext) => {
     .populate(AUTHOR_POPULATE)
     .populate(ATTACHMENT_POPULATE)
     .lean();
-  const read = await readSet(ctx, items.map((i) => i._id));
+  const [read, timeZone] = await Promise.all([readSet(ctx, items.map((i) => i._id)), orgTimeZone(ctx.organizationId)]);
   const shape = (a: (typeof items)[number]) => ({
     ...a,
     excerpt: excerpt(a.content, 160),
-    status: statusOf(a, now),
+    expiresAt: endOf(a, timeZone),
+    status: statusOf(a, timeZone, now),
     read: read.has(String(a._id)),
   });
   const mine = (a: (typeof items)[number]) => String((a.createdBy as { _id?: Types.ObjectId } | null)?._id ?? a.createdBy) === String(ctx.userId);
@@ -278,8 +298,8 @@ const loadForViewer = async (ctx: RequestContext, id: string) => {
 
 export const getAnnouncement = async (ctx: RequestContext, id: string) => {
   const a = await loadForViewer(ctx, id);
-  const read = await readSet(ctx, [a._id]);
-  const base = { ...a, status: statusOf(a), read: read.has(String(a._id)) };
+  const [read, timeZone] = await Promise.all([readSet(ctx, [a._id]), orgTimeZone(ctx.organizationId)]);
+  const base = { ...a, expiresAt: endOf(a, timeZone), status: statusOf(a, timeZone), read: read.has(String(a._id)) };
   if (!can(ctx, 'announcement:manage')) return base;
   // Managers editing the announcement get audience names alongside the ids.
   const [departments, employees] = await Promise.all([
@@ -304,7 +324,8 @@ export const getAnnouncement = async (ctx: RequestContext, id: string) => {
 export const createAnnouncement = async (ctx: RequestContext, input: CreateInput) => {
   await validateRefs(ctx, input);
   const publishAt = input.publishAt ? new Date(input.publishAt) : new Date();
-  const expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+  // Without a chosen end time it comes down at 12:00 AM after the day it's published.
+  const expiresAt = input.expiresAt ? new Date(input.expiresAt) : nextMidnight(publishAt, await orgTimeZone(ctx.organizationId));
   assertDates(publishAt, expiresAt);
   const doc = await AnnouncementModel.create({
     organizationId: ctx.organizationId,
@@ -363,7 +384,9 @@ export const updateAnnouncement = async (ctx: RequestContext, id: string, input:
     if (doc.notifiedAt && next > new Date()) doc.notifiedAt = null;
     doc.publishAt = next;
   }
-  if (input.expiresAt !== undefined) doc.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+  if (input.expiresAt !== undefined) {
+    doc.expiresAt = input.expiresAt ? new Date(input.expiresAt) : nextMidnight(doc.publishAt ?? new Date(), await orgTimeZone(ctx.organizationId));
+  }
   assertDates(doc.publishAt ?? new Date(), doc.expiresAt ?? null);
   await doc.save();
 

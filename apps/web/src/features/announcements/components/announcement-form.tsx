@@ -292,7 +292,7 @@ export const AnnouncementFormDrawer = ({ open, onClose, announcement }: { open: 
             <FormField label="Publish at" error={errors.publishAt} hint={editing && announcement?.status !== 'SCHEDULED' ? 'Already published. Set a future time to re-schedule.' : 'Leave empty to publish now.'}>
               {({ id, invalid, describedBy }) => <Input id={id} type="datetime-local" aria-invalid={invalid} aria-describedby={describedBy} {...register('publishAt')} />}
             </FormField>
-            <FormField label="Expires at" error={errors.expiresAt} hint="Optional. Hidden from the feed afterwards.">
+            <FormField label="Expires at" error={errors.expiresAt} hint="Leave empty and it comes down at 12:00 AM after the day it is published. Pick a later date to keep it up longer.">
               {({ id, invalid, describedBy }) => <Input id={id} type="datetime-local" aria-invalid={invalid} aria-describedby={describedBy} {...register('expiresAt')} />}
             </FormField>
           </FormGrid>

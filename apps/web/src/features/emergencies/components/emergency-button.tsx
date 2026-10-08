@@ -114,25 +114,26 @@ export const EmergencyButton = () => {
             <fieldset>
               <legend className="mb-2 text-sm font-medium text-fg">What happened?</legend>
               <div className="grid grid-cols-3 gap-2">
-                {(Object.keys(CATEGORY_META) as EmergencyCategory[]).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={category === c}
-                    onClick={() => setCategory(c)}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition-colors',
-                      category === c
-                        ? 'border-red-500 bg-red-50 text-red-700 ring-1 ring-red-500 dark:bg-red-500/15 dark:text-red-300'
-                        : 'border-line text-fg-2 hover:bg-surface-2',
-                    )}
-                  >
-                    <span className="text-xl" aria-hidden>
-                      {CATEGORY_META[c].emoji}
-                    </span>
-                    {CATEGORY_META[c].label}
-                  </button>
-                ))}
+                {(Object.keys(CATEGORY_META) as EmergencyCategory[]).map((c) => {
+                  const Icon = CATEGORY_META[c].icon;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-pressed={category === c}
+                      onClick={() => setCategory(c)}
+                      className={cn(
+                        'flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition-colors',
+                        category === c
+                          ? 'border-red-500 bg-red-50 text-red-700 ring-1 ring-red-500 dark:bg-red-500/15 dark:text-red-300'
+                          : 'border-line text-fg-2 hover:bg-surface-2',
+                      )}
+                    >
+                      <Icon className="h-6 w-6" aria-hidden />
+                      {CATEGORY_META[c].label}
+                    </button>
+                  );
+                })}
               </div>
             </fieldset>
             <div className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2">

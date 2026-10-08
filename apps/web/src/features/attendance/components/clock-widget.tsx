@@ -13,10 +13,10 @@ import { formatClock, formatTimeIn, useNow, useOrgTimezone } from '../lib';
 import { useClockFlow } from '../use-clock-flow';
 
 const STATE_META: Record<LiveState, { label: string; tone: Tone }> = {
-  NOT_CHECKED_IN: { label: 'Not clocked in', tone: 'gray' },
+  NOT_CHECKED_IN: { label: 'Not checked in', tone: 'gray' },
   CHECKED_IN: { label: 'Working', tone: 'green' },
   ON_BREAK: { label: 'On break', tone: 'amber' },
-  CHECKED_OUT: { label: 'Clocked out', tone: 'blue' },
+  CHECKED_OUT: { label: 'Checked out', tone: 'blue' },
 };
 
 /** Live worked / break seconds computed from the record's instants. */
@@ -171,16 +171,16 @@ export const ClockWidget = () => {
     }
   };
 
-  const onClockIn = () => flow.run('check-in', { workMode: mode, success: 'Clocked in. Have a productive day!' });
+  const onClockIn = () => flow.run('check-in', { workMode: mode, success: 'Checked in. Have a productive day!' });
 
   const onClockOut = async () => {
     const { confirmed } = await confirm({
-      title: 'Clock out for today?',
+      title: 'Check out for today?',
       message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won't be able to clock in again today; use regularization for corrections.`,
-      confirmLabel: 'Clock out',
+      confirmLabel: 'Check out',
       tone: 'primary',
     });
-    if (confirmed) await flow.run('check-out', { success: 'Clocked out. Have a good evening!' });
+    if (confirmed) await flow.run('check-out', { success: 'Checked out. Have a good evening!' });
   };
 
   const captureHint = t.requireSelfie
@@ -264,8 +264,8 @@ export const ClockWidget = () => {
 
           {/* Stats */}
           <div className={cn('grid grid-cols-2 gap-3', showBreakTime ? 'xl:grid-cols-4' : 'xl:grid-cols-3')}>
-            <Metric label="Clock in" icon={<LogIn className="h-4 w-4" />} tile={accent.tile} value={r?.checkIn ? formatTimeIn(r.checkIn, timeZone) : '—'} />
-            <Metric label="Clock out" icon={<LogOut className="h-4 w-4" />} tile={accent.tile} value={r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—'} />
+            <Metric label="Check in" icon={<LogIn className="h-4 w-4" />} tile={accent.tile} value={r?.checkIn ? formatTimeIn(r.checkIn, timeZone) : '—'} />
+            <Metric label="Check out" icon={<LogOut className="h-4 w-4" />} tile={accent.tile} value={r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—'} />
             {showBreakTime && (
               <Metric
                 label="Break"
@@ -320,7 +320,7 @@ export const ClockWidget = () => {
                 </fieldset>
               )}
               <Button size="lg" className={cn(bigBtn, 'bg-emerald-600 text-white hover:bg-emerald-700')} icon={<LogIn className="h-5 w-5" />} loading={flow.active === 'check-in'} disabled={busy} onClick={onClockIn}>
-                Clock in
+                Check in
               </Button>
               <p className="flex items-center gap-1.5 text-xs text-muted">
                 {t.requireSelfie ? <Camera className="h-3.5 w-3.5 shrink-0" aria-hidden /> : <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />}
@@ -341,7 +341,7 @@ export const ClockWidget = () => {
                 </Button>
               ) : null}
               <Button size="lg" className={cn(bigBtn, 'bg-rose-600 text-white hover:bg-rose-700')} icon={<LogOut className="h-5 w-5" />} loading={flow.active === 'check-out'} disabled={busy} onClick={onClockOut}>
-                Clock out
+                Check out
               </Button>
             </div>
           )}

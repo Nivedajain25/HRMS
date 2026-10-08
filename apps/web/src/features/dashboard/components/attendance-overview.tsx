@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays } from 'lucide-react';
+import { BarChart3, CalendarDays, PartyPopper } from 'lucide-react';
 import { Avatar, Card } from '@/components/ui/display';
 import { useAttendanceBoard, useAttendanceDashboard } from '@/features/attendance/api';
 import { dateKeyIn, formatKey, useOrgTimezone } from '@/features/attendance/lib';
 import { cn } from '@/lib/utils';
+import { TitleIcon } from './widget';
 
 const SEGMENTS = [
   // Shades of violet, darkest to lightest.
@@ -99,7 +100,7 @@ export const AttendanceOverview = ({ className }: { className?: string }) => {
       <div className="flex min-h-16 items-center justify-between gap-3 border-b border-line bg-white px-5 py-3.5 dark:bg-surface">
         {/* Title in a violet box with black text. */}
         <h3 className="truncate rounded-lg bg-violet-300 px-2.5 py-0.5 text-base font-semibold whitespace-nowrap text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">📊</span>
+          <TitleIcon icon={BarChart3} />
           Attendance Overview
         </h3>
         <div className="relative">
@@ -167,7 +168,11 @@ export const AttendanceOverview = ({ className }: { className?: string }) => {
             {absentees.length > 4 ? (
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-700 text-xs font-bold text-white ring-2 ring-violet-50 dark:ring-violet-950">{`+${absentees.length - 4}`}</span>
             ) : null}
-            {!absentees.length && !board.isLoading ? <span className="text-xs text-black dark:text-fg">None 🎉</span> : null}
+            {!absentees.length && !board.isLoading ? (
+              <span className="inline-flex items-center gap-1 text-xs text-black dark:text-fg">
+                None <PartyPopper className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" aria-hidden />
+              </span>
+            ) : null}
           </div>
           <Link to="/attendance?view=board" className="ml-auto text-sm font-medium whitespace-nowrap text-black underline decoration-violet-600 underline-offset-2 hover:decoration-2 dark:text-fg">
             View Details

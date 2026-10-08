@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
+import { Users } from 'lucide-react';
 import { Avatar, Card } from '@/components/ui/display';
 import { useEmployees } from '@/features/employees/api';
 import { cn } from '@/lib/utils';
+import { TitleIcon } from './widget';
 
 /** Pastel tag colours; a department always gets the same one. */
 const TAGS = [
@@ -24,7 +26,7 @@ export const EmployeesCard = ({ className }: { className?: string }) => {
     <Card className={cn('flex flex-col overflow-hidden motion-safe:animate-fade-up', className)}>
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
         <h3 className="text-base font-semibold text-fg">
-          <span aria-hidden className="mr-1.5">👥</span>
+          <TitleIcon icon={Users} />
           Employees
         </h3>
         <Link to="/employees" className="inline-flex h-7 items-center rounded-md border border-line bg-surface-2 px-2.5 text-xs font-medium text-fg hover:bg-surface-3">

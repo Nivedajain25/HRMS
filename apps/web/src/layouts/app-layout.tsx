@@ -30,7 +30,7 @@ import { Dropdown } from '@/components/ui/overlay';
 import { AvatarCameraBadge, useChangeAvatar } from './avatar-camera';
 import { get, patch, post } from '@/lib/api';
 import { cn, timeAgo } from '@/lib/utils';
-import { TONE_TEXT } from '@/lib/module-colors';
+import { AppIcon } from '@/components/common/app-icon';
 import { useLogout } from '@/features/auth/use-auth';
 import { keepLabel, READ_NOTIFICATION_TTL_HOURS } from '@/features/notifications/api';
 import { StarButton } from '@/features/notifications/star-button';
@@ -70,13 +70,13 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               title={collapsed ? g.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-base/5 font-semibold transition-colors',
+                  'group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-base/5 font-semibold transition-colors',
                   isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg hover:bg-surface-3',
                   collapsed && 'justify-center',
                 )
               }
             >
-              <Icon className={cn('nav-icon h-[18px] w-[18px] shrink-0', TONE_TEXT[g.tone])} />
+              <AppIcon icon={Icon} tone={g.tone} />
               {!collapsed && g.label}
             </NavLink>
           );
@@ -90,12 +90,12 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               aria-expanded={isOpen}
               title={collapsed ? g.label : undefined}
               className={cn(
-                'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-base/5 font-semibold text-fg transition-colors',
+                'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-base/5 font-semibold text-fg transition-colors',
                 !activeGroup(g) && 'hover:bg-surface-3',
                 collapsed && 'justify-center',
               )}
             >
-              <Icon className={cn('nav-icon h-[18px] w-[18px] shrink-0', TONE_TEXT[g.tone])} />
+              <AppIcon icon={Icon} tone={g.tone} />
               {!collapsed && (
                 <>
                   <span className="flex-1 text-left">{g.label}</span>
@@ -104,7 +104,7 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               )}
             </button>
             {isOpen && !collapsed && (
-              <div className="mt-0.5 mb-1 ml-[19px] space-y-0.5 border-l border-line pl-2.5">
+              <div className="mt-0.5 mb-1 ml-[25px] space-y-0.5 border-l border-line pl-2.5">
                 {g.children!.map((c) => (
                   <NavLink
                     key={c.to}
@@ -113,12 +113,12 @@ const SidebarNav = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2.5 rounded-md px-2.5 py-1 text-[15px]/5 font-medium transition-colors',
+                        'group flex items-center gap-2.5 rounded-md px-2.5 py-1 text-[15px]/5 font-medium transition-colors',
                         isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-fg hover:bg-surface-3',
                       )
                     }
                   >
-                    <c.icon className={cn('nav-icon h-4 w-4 shrink-0', TONE_TEXT[c.tone ?? g.tone])} aria-hidden />
+                    <AppIcon icon={c.icon} tone={c.tone ?? g.tone} size="sm" />
                     {c.label}
                   </NavLink>
                 ))}

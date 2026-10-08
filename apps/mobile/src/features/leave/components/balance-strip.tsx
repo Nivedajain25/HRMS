@@ -4,11 +4,12 @@ import { Wallet } from 'lucide-react-native';
 import { Card, EmptyState, ErrorState, Skeleton, Text } from '@/components';
 import { radius, space, useTheme, withAlpha } from '@/theme';
 import type { LeaveBalance } from '../api';
-import { formatNum, typeColor, typeEmoji } from '../lib';
+import { formatNum, typeColor, typeIcon } from '../lib';
 
 const BalanceChip = ({ b, onPress }: { b: LeaveBalance; onPress?: (typeId: string) => void }) => {
   const { c } = useTheme();
   const color = typeColor(b.leaveType);
+  const TypeIcon = typeIcon(b.leaveType);
   const unpaid = b.leaveType.paid === false;
   const entitlement = Math.max(0, b.opening + b.allocated + b.carryForward + b.adjusted - b.encashed);
   const usedPct = entitlement > 0 ? Math.min(100, (b.used / entitlement) * 100) : 0;
@@ -34,9 +35,7 @@ const BalanceChip = ({ b, onPress }: { b: LeaveBalance; onPress?: (typeId: strin
       ]}
     >
       <View style={styles.head}>
-        <Text size="sm" accessibilityElementsHidden importantForAccessibility="no">
-          {typeEmoji(b.leaveType)}
-        </Text>
+        <TypeIcon size={14} color={color} accessibilityElementsHidden importantForAccessibility="no" />
         <Text size="xs" weight="semibold" numberOfLines={1} style={[styles.shrink, ink]}>
           {b.leaveType.name}
         </Text>

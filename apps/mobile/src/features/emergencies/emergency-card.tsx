@@ -121,7 +121,10 @@ export const EmergencyCard = ({ e }: { e: Emergency }) => {
       </View>
 
       <View style={[styles.what, { backgroundColor: open ? tone.bg : c.surface2 }]}>
-        <Text size="md" weight="semibold" style={open ? { color: tone.fg } : undefined}>{`${cat.emoji} ${cat.label}${e.needToLeave ? ' · needs to leave now' : ''}`}</Text>
+        <View style={styles.row}>
+          <cat.icon size={18} color={open ? tone.fg : c.fg2} />
+          <Text size="md" weight="semibold" style={[styles.flex, open ? { color: tone.fg } : undefined]}>{`${cat.label}${e.needToLeave ? ' · needs to leave now' : ''}`}</Text>
+        </View>
         {e.message ? (
           <Text size="sm" style={{ color: open ? tone.fg : c.fg2 }}>
             {`“${e.message}”`}

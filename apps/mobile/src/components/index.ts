@@ -13,6 +13,7 @@ export * from './ListItem';
 export * from './Logo';
 export * from './Motion';
 export * from './ProgressRing';
+export * from './RelatedLinks';
 export * from './Screen';
 export * from './SectionHeader';
 export * from './Segmented';

@@ -1,5 +1,6 @@
 import type { AuthUser } from '@stencil/types';
 import { hasPermission, LEAVE_WORKFLOW, type LeaveStatus, type Permission } from '@stencil/shared';
+import { Baby, Briefcase, CalendarDays, Coffee, House, Plane, Repeat, Thermometer, TreePalm, Wallet, type LucideIcon } from 'lucide-react-native';
 import { formatDate } from '@/lib/time';
 import type { CalendarLeave, LeaveAttachment, LeaveRequest, LeaveType, LeaveTypeRef } from './api';
 
@@ -18,23 +19,33 @@ export const attachmentOf = (l: LeaveRequest): LeaveAttachment | null =>
 
 export const typeColor = (t: { color?: string } | null | undefined) => (t?.color && /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : DEFAULT_TYPE_COLOR);
 
-/** An emoji for a leave type: by its code first, then by words in its name; 📅 otherwise. */
-export const typeEmoji = (t: { code?: string; name?: string; isWorkFromHome?: boolean; paid?: boolean } | null | undefined) => {
-  if (!t) return '📅';
-  const byCode: Record<string, string> = { CL: '🌴', SL: '🤒', EL: '⭐', PL: '💼', LOP: '💸', ML: '🤱', PTL: '👶', CO: '🔁', WFH: '🏠' };
+/** An icon for a leave type: by its code first, then by words in its name; a calendar otherwise. */
+export const typeIcon = (t: { code?: string; name?: string; isWorkFromHome?: boolean; paid?: boolean } | null | undefined): LucideIcon => {
+  if (!t) return CalendarDays;
+  const byCode: Record<string, LucideIcon> = {
+    CL: Coffee,
+    SL: Thermometer,
+    EL: TreePalm,
+    PL: Plane,
+    LOP: Wallet,
+    ML: Baby,
+    PTL: Baby,
+    CO: Repeat,
+    WFH: House,
+  };
   const code = (t.code ?? '').toUpperCase();
   if (byCode[code]) return byCode[code];
   const name = (t.name ?? '').toLowerCase();
-  if (t.isWorkFromHome || /work\s*from\s*home|wfh|remote/.test(name)) return '🏠';
-  if (/sick|medical/.test(name)) return '🤒';
-  if (/casual/.test(name)) return '🌴';
-  if (/earned|privilege|annual/.test(name)) return '⭐';
-  if (/matern/.test(name)) return '🤱';
-  if (/patern/.test(name)) return '👶';
-  if (/comp/.test(name)) return '🔁';
-  if (t.paid === false || /unpaid|loss of pay|lop/.test(name)) return '💸';
-  if (/paid/.test(name)) return '💼';
-  return '📅';
+  if (t.isWorkFromHome || /work\s*from\s*home|wfh|remote/.test(name)) return House;
+  if (/sick|medical/.test(name)) return Thermometer;
+  if (/casual/.test(name)) return Coffee;
+  if (/earned|annual/.test(name)) return TreePalm;
+  if (/privilege/.test(name)) return Plane;
+  if (/matern|patern/.test(name)) return Baby;
+  if (/comp/.test(name)) return Repeat;
+  if (t.paid === false || /unpaid|loss of pay|lop/.test(name)) return Wallet;
+  if (/paid/.test(name)) return Briefcase;
+  return CalendarDays;
 };
 
 /** `1.5` / `2` (no trailing zeros). */

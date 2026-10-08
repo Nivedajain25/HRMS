@@ -1,6 +1,22 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import {
+  AlarmClock,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Bell,
+  CalendarDays,
+  ClipboardList,
+  History,
+  Hourglass,
+  Megaphone,
+  PartyPopper,
+  RefreshCw,
+  Target,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { ErrorBoundary } from '@/app/error-boundary';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/display';
@@ -68,76 +84,79 @@ export const ListSkeleton = ({ rows = 4 }: { rows?: number }) => (
 );
 
 /**
- * Boxed card titles for a whole dashboard (HR / employee), exactly like the super admin's ("✅ Tasks"): an emoji and
+ * Boxed card titles for a whole dashboard (HR / employee), exactly like the super admin's (Tasks): an icon and
  * the title in a violet / purple / pink pill with black text, a violet card border and a line under the header.
  * A card's own `titleBox` still wins.
  */
 export const TitleBoxContext = createContext<boolean | Readonly<Record<string, string>>>(false);
 
-/** Cards whose admin-style title shows without the coloured pill (emoji + plain black title). */
+/** Cards whose admin-style title shows without the coloured pill (icon + plain black title). */
 export const PlainTitlesContext = createContext<ReadonlySet<string>>(new Set());
 
 /** HR dashboard: these cards drop the pill colour. */
 export const HR_PLAIN_TITLES: ReadonlySet<string> = new Set(['Quick Actions', 'Latest announcements', 'Upcoming holidays', 'My goals']);
 
 /**
- * Employee dashboard: plain black titles; the colour sits only on a small soft-blue tile behind each card's emoji
- * (a different light blue per card). Any other card gets the default tile.
+ * Employee dashboard: plain black titles; the colour sits only on a small soft-blue tile behind each card's icon
+ * (a different light blue per card, the icon in a deeper shade of it). Any other card gets the default tile.
  */
 export const EMPLOYEE_TILES: Readonly<Record<string, string>> = {
-  Today: 'bg-blue-200 dark:bg-blue-500/30',
-  Attendance: 'bg-sky-200 dark:bg-sky-500/30',
-  'My tasks': 'bg-indigo-200 dark:bg-indigo-500/30',
-  Notifications: 'bg-sky-200 dark:bg-sky-500/30',
-  'My recent activity': 'bg-cyan-200 dark:bg-cyan-500/30',
-  'Quick Actions': 'bg-blue-200 dark:bg-blue-500/30',
-  'Latest announcements': 'bg-indigo-200 dark:bg-indigo-500/30',
-  'Upcoming holidays': 'bg-sky-200 dark:bg-sky-500/30',
-  'My goals': 'bg-cyan-200 dark:bg-cyan-500/30',
+  Today: 'bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-200',
+  Attendance: 'bg-sky-200 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200',
+  'My tasks': 'bg-indigo-200 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200',
+  Notifications: 'bg-sky-200 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200',
+  'My recent activity': 'bg-cyan-200 text-cyan-700 dark:bg-cyan-500/30 dark:text-cyan-200',
+  'Quick Actions': 'bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-200',
+  'Latest announcements': 'bg-indigo-200 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200',
+  'Upcoming holidays': 'bg-sky-200 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200',
+  'My goals': 'bg-cyan-200 text-cyan-700 dark:bg-cyan-500/30 dark:text-cyan-200',
 };
-const DEFAULT_TILE = 'bg-blue-200 dark:bg-blue-500/30';
+const DEFAULT_TILE = 'bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-200';
 
-/** Emoji on a soft tile + plain black title (employee dashboard headers). */
-export const EmojiTitle = ({ title, emoji, tile, as: Tag = 'h3', id }: { title: string; emoji: string; tile?: string; as?: 'h2' | 'h3'; id?: string }) => (
+/** Icon on a soft tile + plain black title (employee dashboard headers). */
+export const TileTitle = ({ title, icon: Icon, tile, as: Tag = 'h3', id }: { title: string; icon?: LucideIcon; tile?: string; as?: 'h2' | 'h3'; id?: string }) => (
   <Tag id={id} className="flex min-w-0 items-center gap-2.5 text-base font-semibold text-black dark:text-fg">
-    {emoji ? (
-      <span aria-hidden className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base leading-none', tile ?? DEFAULT_TILE)}>
-        {emoji}
+    {Icon ? (
+      <span aria-hidden className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', tile ?? DEFAULT_TILE)}>
+        <Icon className="h-4 w-4" />
       </span>
     ) : null}
     <span className="truncate">{title}</span>
   </Tag>
 );
 
+/** A card-title icon that sits inline before the title text (in a pill or a plain title). */
+export const TitleIcon = ({ icon: Icon }: { icon: LucideIcon }) => <Icon aria-hidden className="mr-1.5 inline-block h-4 w-4 shrink-0 align-[-0.125em]" />;
+
 /** The employee dashboard's tile for a card title. */
 export const employeeTile = (title: string) => EMPLOYEE_TILES[title] ?? DEFAULT_TILE;
 
-/** The super admin's emoji + pill colour for each card (same card → same look on every dashboard). */
-const ADMIN_STYLE: Record<string, { emoji: string; box: string }> = {
-  Today: { emoji: '⏰', box: 'bg-blue-400' },
-  Attendance: { emoji: '📊', box: 'bg-violet-300' },
-  'Attendance overview': { emoji: '📊', box: 'bg-violet-300' },
-  'My tasks': { emoji: '📋', box: 'bg-fuchsia-200' },
-  Notifications: { emoji: '🔔', box: 'bg-violet-200' },
-  'My recent activity': { emoji: '🕒', box: 'bg-purple-300' },
-  'Recent activity': { emoji: '🕒', box: 'bg-purple-300' },
-  'Quick Actions': { emoji: '⚡', box: 'bg-violet-200' },
-  'Latest announcements': { emoji: '📢', box: 'bg-fuchsia-300' },
-  Announcements: { emoji: '📢', box: 'bg-fuchsia-300' },
-  'Upcoming holidays': { emoji: '🎉', box: 'bg-purple-200' },
-  'My goals': { emoji: '🎯', box: 'bg-violet-300' },
-  'Awaiting your approval': { emoji: '⏳', box: 'bg-violet-200' },
-  Schedules: { emoji: '🗓️', box: 'bg-purple-300' },
+/** The super admin's icon + pill colour for each card (same card → same look on every dashboard). */
+const ADMIN_STYLE: Record<string, { icon?: LucideIcon; box: string }> = {
+  Today: { icon: AlarmClock, box: 'bg-blue-400' },
+  Attendance: { icon: BarChart3, box: 'bg-violet-300' },
+  'Attendance overview': { icon: BarChart3, box: 'bg-violet-300' },
+  'My tasks': { icon: ClipboardList, box: 'bg-fuchsia-200' },
+  Notifications: { icon: Bell, box: 'bg-violet-200' },
+  'My recent activity': { icon: History, box: 'bg-purple-300' },
+  'Recent activity': { icon: History, box: 'bg-purple-300' },
+  'Quick Actions': { icon: Zap, box: 'bg-violet-200' },
+  'Latest announcements': { icon: Megaphone, box: 'bg-fuchsia-300' },
+  Announcements: { icon: Megaphone, box: 'bg-fuchsia-300' },
+  'Upcoming holidays': { icon: PartyPopper, box: 'bg-purple-200' },
+  'My goals': { icon: Target, box: 'bg-violet-300' },
+  'Awaiting your approval': { icon: Hourglass, box: 'bg-violet-200' },
+  Schedules: { icon: CalendarDays, box: 'bg-purple-300' },
 };
 const ADMIN_FALLBACK = ['bg-violet-200', 'bg-purple-200', 'bg-fuchsia-200', 'bg-violet-300', 'bg-purple-300', 'bg-indigo-200'];
 
-/** The admin-style pill (emoji + colour) for a card title; unknown cards get a colour from the same family. */
-export const adminTitleStyle = (title: string) => {
+/** The admin-style pill (icon + colour) for a card title; unknown cards get a colour from the same family (no icon). */
+export const adminTitleStyle = (title: string): { icon?: LucideIcon; box: string } => {
   const known = ADMIN_STYLE[title];
   if (known) return known;
   let h = 0;
   for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return { emoji: '', box: ADMIN_FALLBACK[h % ADMIN_FALLBACK.length]! };
+  return { box: ADMIN_FALLBACK[h % ADMIN_FALLBACK.length]! };
 };
 
 /** Card border + header line that go with boxed titles. */
@@ -165,11 +184,14 @@ export const Widget = ({
   className,
   bodyClassName,
   titleBox,
+  titleIcon,
   children,
 }: {
   title: string;
   /** Background classes to show the title in a coloured box with black text (admin dashboard). */
   titleBox?: string;
+  /** Line icon shown inline before the title text (with `titleBox`, inside the coloured box). */
+  titleIcon?: LucideIcon;
   description?: ReactNode;
   icon?: ReactNode;
   accent?: Accent;
@@ -184,18 +206,19 @@ export const Widget = ({
   bodyClassName?: string;
   children?: ReactNode;
 }) => {
-  // Dashboard-wide admin style (HR / employee): emoji + title in the admin's pill colour; no icon tile.
+  // Dashboard-wide admin style (HR / employee): icon + title in the admin's pill colour; no icon tile.
   // The context may also carry per-card pill colours (employee blues) that replace the admin colour.
   const dashboardStyle = useContext(TitleBoxContext);
   const auto = dashboardStyle && !titleBox ? adminTitleStyle(title) : null;
-  // Employee dashboard (tiles map in the context): emoji on a soft-blue tile, plain black title.
-  const tiles = typeof dashboardStyle === 'object' && !titleBox && auto?.emoji ? dashboardStyle : null;
+  // Employee dashboard (tiles map in the context): icon on a soft-blue tile, plain black title.
+  const tiles = typeof dashboardStyle === 'object' && !titleBox && auto?.icon ? dashboardStyle : null;
   // Plain (no pill) for cards listed in PlainTitlesContext.
   const plainTitles = useContext(PlainTitlesContext);
   const plain = !titleBox && !tiles && !!auto && plainTitles.has(title);
   const box = titleBox ?? (tiles || plain ? undefined : auto?.box);
-  // Unknown cards (no emoji) keep their icon, inside the pill.
-  const pillIcon = auto && !auto.emoji ? icon : null;
+  // Unknown cards (no admin-style icon) keep their own icon, inside the pill.
+  const pillIcon = auto && !auto.icon ? icon : null;
+  const inlineIcon = auto?.icon ?? titleIcon;
   return (
   <section aria-label={title} aria-busy={loading || undefined} className={cn('card flex h-full min-w-0 flex-col', auto && (tiles ? '[&>header]:border-b [&>header]:border-line' : boxedCard), className)}>
     <header className="flex min-h-16 items-center justify-between gap-3 px-5 py-3.5">
@@ -204,11 +227,11 @@ export const Widget = ({
         {/* Note sits beside the title (not under it), so every box header has the same height. */}
         <div className="flex min-w-0 items-baseline gap-2">
           {tiles ? (
-            <EmojiTitle title={title} emoji={auto!.emoji} tile={tiles[title]} />
+            <TileTitle title={title} icon={auto!.icon} tile={tiles[title]} />
           ) : (
             <h3 className={cn('truncate text-lg font-semibold', box ? cn(titlePill, box, pillIcon && 'inline-flex items-center gap-1.5 [&_svg]:h-4 [&_svg]:w-4') : plain ? 'text-base text-black dark:text-fg' : 'text-fg')}>
               {pillIcon ? <span aria-hidden className="inline-flex">{pillIcon}</span> : null}
-              {auto?.emoji ? <span aria-hidden className="mr-1.5">{auto.emoji}</span> : null}
+              {inlineIcon ? <TitleIcon icon={inlineIcon} /> : null}
               {title}
             </h3>
           )}

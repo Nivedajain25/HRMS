@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlarmClock, Award, Briefcase, Cake, CircleCheck, Coffee, LayoutGrid, LogOut, Plane, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { AlarmClock, Award, Briefcase, Cake, CircleCheck, Coffee, LayoutGrid, LogOut, PartyPopper, Plane, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { Avatar, ErrorState, Skeleton, StatCard } from '@/components/ui/display';
 import { cn, formatNumber } from '@/lib/utils';
 import { useAttendanceBoard, type BoardColumnKey } from '@/features/attendance/api';
@@ -59,7 +59,7 @@ const AttendanceToday = ({ d }: { d: AdminDashboard }) => {
 const COLUMN_META: Record<BoardColumnKey, { label: string; icon: ReactNode; bar: string; tile: string; text: string }> = {
   WORKING: { label: 'Working', icon: <Briefcase className="h-4 w-4" />, bar: 'bg-emerald-500', tile: 'bg-emerald-50 ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-300' },
   ON_BREAK: { label: 'On break', icon: <Coffee className="h-4 w-4" />, bar: 'bg-amber-400', tile: 'bg-amber-50 ring-amber-100 dark:bg-amber-500/10 dark:ring-amber-500/20', text: 'text-amber-700 dark:text-amber-300' },
-  DONE: { label: 'Clocked out', icon: <LogOut className="h-4 w-4" />, bar: 'bg-sky-500', tile: 'bg-sky-50 ring-sky-100 dark:bg-sky-500/10 dark:ring-sky-500/20', text: 'text-sky-700 dark:text-sky-300' },
+  DONE: { label: 'Checked out', icon: <LogOut className="h-4 w-4" />, bar: 'bg-sky-500', tile: 'bg-sky-50 ring-sky-100 dark:bg-sky-500/10 dark:ring-sky-500/20', text: 'text-sky-700 dark:text-sky-300' },
   AWAY: { label: 'On leave / off', icon: <Plane className="h-4 w-4" />, bar: 'bg-violet-500', tile: 'bg-violet-50 ring-violet-100 dark:bg-violet-500/10 dark:ring-violet-500/20', text: 'text-violet-700 dark:text-violet-300' },
   NOT_IN: { label: 'Not in yet', icon: <UserX className="h-4 w-4" />, bar: 'bg-slate-300 dark:bg-slate-600', tile: 'bg-slate-50 ring-slate-200 dark:bg-slate-500/10 dark:ring-slate-500/20', text: 'text-slate-700 dark:text-slate-300' },
 };
@@ -132,7 +132,10 @@ const LiveBoardPreview = () => {
             )}
           </div>
           {missing.length === 0 ? (
-            <p className="px-4 py-4 text-sm text-emerald-700 dark:text-emerald-300">Everyone expected today is in 🎉</p>
+            <p className="flex items-center gap-1.5 px-4 py-4 text-sm text-emerald-700 dark:text-emerald-300">
+              Everyone expected today is in
+              <PartyPopper className="h-4 w-4 shrink-0" aria-hidden />
+            </p>
           ) : (
             <ul className="grid gap-x-2 p-2 sm:grid-cols-2">
               {missing.slice(0, 8).map((c) => {

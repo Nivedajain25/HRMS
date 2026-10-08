@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/display';
 import { dateKeyIn, formatKey, useOrgTimezone } from '@/features/attendance/lib';
 import { del, get, patch, post } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { TitleIcon } from './widget';
 
 interface Todo {
   _id: string;
@@ -99,7 +100,7 @@ export const TodoCard = ({ className, compact, fill }: { className?: string; com
     <Card className={cn('flex flex-col overflow-hidden border-violet-200 motion-safe:animate-fade-up dark:border-violet-500/20', className)}>
       <div className="flex items-center justify-between gap-2 min-h-16 border-b border-line px-5 py-3.5">
         <h3 className="rounded-lg bg-purple-300 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">📝</span>
+          <TitleIcon icon={ListTodo} />
           Todo
         </h3>
         <div className="flex items-center gap-2">

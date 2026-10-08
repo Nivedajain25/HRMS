@@ -1,29 +1,36 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { Megaphone, Pin } from 'lucide-react';
+import { CalendarDays, Cake, ClipboardList, GraduationCap, Megaphone, PartyPopper, Pin, Siren, Sparkles, type LucideIcon } from 'lucide-react';
 import { cn, timeAgo } from '@/lib/utils';
 import type { DashboardAnnouncement, EmployeeDashboard } from '../api';
 import { ViewAllLink, Widget, WidgetEmpty } from './widget';
 
-/** A fitting emoji from the announcement's words. */
-const emojiFor = (a: DashboardAnnouncement) => {
+/** A fitting icon from the announcement's words. */
+const iconFor = (a: DashboardAnnouncement): LucideIcon => {
   const t = `${a.title} ${a.excerpt}`.toLowerCase();
-  if (a.priority === 'URGENT') return '🚨';
-  if (/birthday|b'day/.test(t)) return '🎂';
-  if (/congrat|anniversar|welcome|promot|award|achiev|milestone|farewell/.test(t)) return '🎉';
-  if (/holiday|closed|diwali|festival|christmas|thanksgiving|eid|pongal|new year/.test(t)) return '🗓️';
-  if (/policy|update|guideline|rule|process/.test(t)) return '📋';
-  if (/event|party|celebrat|lunch|outing|team/.test(t)) return '🥳';
-  if (/training|workshop|session|webinar/.test(t)) return '🎓';
-  return '📣';
+  if (a.priority === 'URGENT') return Siren;
+  if (/birthday|b'day/.test(t)) return Cake;
+  if (/congrat|anniversar|welcome|promot|award|achiev|milestone|farewell/.test(t)) return PartyPopper;
+  if (/holiday|closed|diwali|festival|christmas|thanksgiving|eid|pongal|new year/.test(t)) return CalendarDays;
+  if (/policy|update|guideline|rule|process/.test(t)) return ClipboardList;
+  if (/event|party|celebrat|lunch|outing|team/.test(t)) return Sparkles;
+  if (/training|workshop|session|webinar/.test(t)) return GraduationCap;
+  return Megaphone;
 };
 
-/** Soft tile behind the emoji, cycled per strip (urgent ones always red). */
-const TILES = ['bg-orange-100 dark:bg-orange-500/20', 'bg-indigo-100 dark:bg-indigo-500/20', 'bg-teal-100 dark:bg-teal-500/20', 'bg-pink-100 dark:bg-pink-500/20', 'bg-amber-100 dark:bg-amber-500/20'];
+/** Soft tile behind the icon, cycled per strip (urgent ones always red). */
+const TILES = [
+  'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-300',
+  'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300',
+  'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-300',
+  'bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-300',
+  'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300',
+];
 
 /** One announcement as a slim notification strip (like a taskbar notification). */
 const AnnouncementStrip = ({ a, index }: { a: DashboardAnnouncement; index: number }) => {
   const urgent = a.priority === 'URGENT';
+  const Icon = iconFor(a);
   return (
     <li className="motion-safe:animate-pop-in" style={{ animationDelay: `${index * 70}ms` } as CSSProperties}>
       <Link
@@ -34,8 +41,14 @@ const AnnouncementStrip = ({ a, index }: { a: DashboardAnnouncement; index: numb
           urgent ? 'border-rose-200 border-l-rose-500 dark:border-rose-500/30' : a.read ? 'border-line border-l-line-strong' : 'border-line border-l-brand-500',
         )}
       >
-        <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg leading-none', urgent ? 'bg-rose-100 dark:bg-rose-500/20' : TILES[index % TILES.length])} aria-hidden>
-          {emojiFor(a)}
+        <span
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+            urgent ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300' : TILES[index % TILES.length],
+          )}
+          aria-hidden
+        >
+          <Icon className="h-[18px] w-[18px]" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">

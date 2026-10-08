@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Bell, CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, Trash2, X } from 'lucide-react';
+import { Bell, CalendarDays, ChevronLeft, ChevronRight, Clock3, PartyPopper, Plus, Trash2, TreePalm, X } from 'lucide-react';
 import { Card } from '@/components/ui/display';
 import { useAttendanceList, useHolidays } from '@/features/attendance/api';
 import { dateKeyIn, formatKey, formatTimeIn, useOrgTimezone } from '@/features/attendance/lib';
@@ -9,6 +9,7 @@ import { useLeaves } from '@/features/leave/api';
 import { del, get, post, toApiError } from '@/lib/api';
 import { clock12, cn, minutesToHours } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
+import { TitleIcon } from './widget';
 
 type Kind = 'PRESENT' | 'LATE' | 'ABSENT' | 'HALF_DAY' | 'LEAVE' | 'HOLIDAY' | 'WEEK_OFF';
 
@@ -219,7 +220,7 @@ export const MyCalendar = ({ className }: { className?: string }) => {
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
         {/* Admin dashboard heading style: purple title box, black text. */}
         <h3 className="rounded-lg bg-purple-300 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">📅</span>
+          <TitleIcon icon={CalendarDays} />
           My Calendar
         </h3>
         <div className="flex items-center gap-1">
@@ -330,8 +331,18 @@ export const MyCalendar = ({ className }: { className?: string }) => {
             <p className="text-lg font-semibold text-fg">{formatKey(selected, 'dd MMMM yyyy')}</p>
           </div>
           <div className="space-y-2 text-sm">
-            {sel?.holiday ? <p className="font-medium text-sky-700 dark:text-sky-300">{`🎉 ${sel.holiday}`}</p> : null}
-            {sel?.leave ? <p className="font-medium text-purple-700 dark:text-purple-300">{`🌴 ${sel.leave}`}</p> : null}
+            {sel?.holiday ? (
+              <p className="flex items-center gap-1.5 font-medium text-sky-700 dark:text-sky-300">
+                <PartyPopper className="h-4 w-4 shrink-0" aria-hidden />
+                {sel.holiday}
+              </p>
+            ) : null}
+            {sel?.leave ? (
+              <p className="flex items-center gap-1.5 font-medium text-purple-700 dark:text-purple-300">
+                <TreePalm className="h-4 w-4 shrink-0" aria-hidden />
+                {sel.leave}
+              </p>
+            ) : null}
             {sel?.kind && !sel.holiday && !sel.leave ? (
               <p className="flex items-center gap-2">
                 <span className={cn('h-2.5 w-2.5 rounded-full', KIND[sel.kind].dot)} aria-hidden />

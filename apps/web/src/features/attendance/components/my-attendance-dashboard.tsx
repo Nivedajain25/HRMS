@@ -31,7 +31,9 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  History,
   LineChart as LineChartIcon,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, Skeleton } from '@/components/ui/display';
@@ -130,30 +132,31 @@ const SmallStat = ({ icon, tone, label, value }: { icon: ReactNode; tone: string
 const days = (n: number | undefined) => `${n ?? 0} day${n === 1 ? '' : 's'}`;
 
 /**
- * Card titles: the emoji on a small soft-blue tile (a different light blue per card) and a plain black title.
- * The month calendar's title changes, so it's matched by pattern.
+ * Card titles: the icon on a small soft-blue tile (a different light blue per card, the icon in a deeper shade of
+ * it) and a plain black title. The month calendar's title changes, so it's matched by pattern.
  */
-const TITLE_EMOJI: Record<string, { emoji: string; tile: string }> = {
-  "Today's Attendance": { emoji: '⏰', tile: 'bg-blue-200 dark:bg-blue-500/30' },
-  "Today's Timeline": { emoji: '🕒', tile: 'bg-sky-200 dark:bg-sky-500/30' },
-  'Attendance Verification': { emoji: '✅', tile: 'bg-indigo-200 dark:bg-indigo-500/30' },
-  Statistics: { emoji: '📊', tile: 'bg-sky-200 dark:bg-sky-500/30' },
-  "Today's Selfie": { emoji: '📸', tile: 'bg-indigo-200 dark:bg-indigo-500/30' },
-  'Attendance Trend': { emoji: '📈', tile: 'bg-blue-200 dark:bg-blue-500/30' },
-  'Recent Activity': { emoji: '🕒', tile: 'bg-cyan-200 dark:bg-cyan-500/30' },
+const TITLE_ICON: Record<string, { icon?: LucideIcon; tile: string }> = {
+  "Today's Attendance": { icon: AlarmClock, tile: 'bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-200' },
+  "Today's Timeline": { icon: Clock3, tile: 'bg-sky-200 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200' },
+  'Attendance Verification': { icon: BadgeCheck, tile: 'bg-indigo-200 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200' },
+  Statistics: { icon: BarChart3, tile: 'bg-sky-200 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200' },
+  "Today's Selfie": { icon: Camera, tile: 'bg-indigo-200 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200' },
+  'Attendance Trend': { icon: TrendingUp, tile: 'bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-200' },
+  'Recent Activity': { icon: History, tile: 'bg-cyan-200 text-cyan-700 dark:bg-cyan-500/30 dark:text-cyan-200' },
 };
-const CALENDAR_EMOJI = { emoji: '📅', tile: 'bg-blue-200 dark:bg-blue-500/30' };
+const CALENDAR_ICON = { icon: CalendarDays, tile: 'bg-blue-200 text-blue-700 dark:bg-blue-500/30 dark:text-blue-200' };
 
 const CardTitle = ({ title, right }: { icon?: ReactNode; title: string; right?: ReactNode }) => {
-  const style = TITLE_EMOJI[title] ?? (/\d{4}$/.test(title) ? CALENDAR_EMOJI : { emoji: '', tile: '' });
+  const style = TITLE_ICON[title] ?? (/\d{4}$/.test(title) ? CALENDAR_ICON : { tile: '' });
+  const Icon = style.icon;
   return (
     // Same header height as the dashboard cards (64px), with a line underneath.
     <div className="flex min-h-16 items-center justify-between gap-3 border-b border-line px-5 py-3.5">
-      {/* Emoji on a soft-blue tile + plain black title (no coloured pill behind the text). */}
+      {/* Icon on a soft-blue tile + plain black title (no coloured pill behind the text). */}
       <h3 className="flex min-w-0 items-center gap-2.5 text-base font-semibold text-black dark:text-fg">
-        {style.emoji ? (
-          <span aria-hidden className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base leading-none', style.tile)}>
-            {style.emoji}
+        {Icon ? (
+          <span aria-hidden className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', style.tile)}>
+            <Icon className="h-4 w-4" />
           </span>
         ) : null}
         <span className="truncate">{title}</span>
@@ -288,7 +291,7 @@ const TodayCard = ({ t, worked }: { t: TodayState; worked: number }) => {
           {/* No Check in button here — employees clock in from the Dashboard's Today card. */}
           {t.state === 'NOT_CHECKED_IN' && (
             <p className="rounded-xl bg-[#eff6ff] px-4 py-3 text-sm text-fg-2 dark:bg-[#1d4ed8]/15">
-              Clock in from your{' '}
+              Check in from your{' '}
               <Link to="/" className="font-semibold text-[#1d4ed8] hover:underline dark:text-[#dbeafe]">
                 Dashboard
               </Link>

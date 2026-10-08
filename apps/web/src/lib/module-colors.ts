@@ -42,6 +42,20 @@ export const TONE_SOLID: Record<ModuleTone, string> = {
   gray: 'bg-slate-500',
 };
 
+/** Coloured drop shadow for solid tiles (the sidebar's app-icon look). */
+export const TONE_SHADOW: Record<ModuleTone, string> = {
+  green: 'shadow-emerald-500/35',
+  red: 'shadow-rose-500/35',
+  amber: 'shadow-amber-500/35',
+  blue: 'shadow-sky-500/35',
+  purple: 'shadow-violet-500/35',
+  teal: 'shadow-teal-500/35',
+  orange: 'shadow-orange-500/35',
+  indigo: 'shadow-indigo-500/35',
+  pink: 'shadow-pink-500/35',
+  gray: 'shadow-slate-500/30',
+};
+
 /** Soft card background + border. */
 export const TONE_SOFT: Record<ModuleTone, string> = {
   green: 'border-emerald-100 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-500/5',

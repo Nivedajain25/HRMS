@@ -69,9 +69,12 @@ const DayRow = ({ d, divider, onSelfie }: { d: AttendanceDay; divider: boolean; 
         </Text>
       ) : null}
       {hasLoc && loc?.address ? (
-        <Text size="xs" color="fg2" numberOfLines={2}>
-          {`📍 ${loc.address}${typeof loc.accuracy === 'number' ? ` (±${Math.round(loc.accuracy)} m)` : ''}`}
-        </Text>
+        <View style={styles.address}>
+          <MapPin size={12} color={c.fg2} style={styles.addressIcon} />
+          <Text size="xs" color="fg2" numberOfLines={2} style={styles.flex}>
+            {`${loc.address}${typeof loc.accuracy === 'number' ? ` (±${Math.round(loc.accuracy)} m)` : ''}`}
+          </Text>
+        </View>
       ) : null}
       {d.checkInPhotoId || hasLoc ? (
         <View style={styles.proof}>
@@ -170,6 +173,8 @@ const styles = StyleSheet.create({
   tile: { flexGrow: 1, flexBasis: '30%', borderWidth: 1, borderRadius: radius.md, paddingVertical: space(2), paddingHorizontal: space(3) },
   day: { padding: space(3), gap: space(1.5) },
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: space(2) },
+  address: { flexDirection: 'row', alignItems: 'flex-start', gap: space(1) },
+  addressIcon: { marginTop: 3 },
   proof: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
   proofBtn: { flexDirection: 'row', alignItems: 'center', gap: space(1), borderRadius: radius.full, paddingHorizontal: space(2.5), paddingVertical: space(1) },
   selfie: { width: '100%', maxWidth: 360, alignSelf: 'center', aspectRatio: 3 / 4, borderRadius: radius.lg },

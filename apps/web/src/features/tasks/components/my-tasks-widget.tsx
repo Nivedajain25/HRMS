@@ -6,7 +6,7 @@ import { DueLabel, PriorityBadge } from './task-ui';
 
 /**
  * Dashboard card: the viewer's open tasks (newest first), linking to the Tasks page.
- * `boxed`: the employee dashboard style — emoji title in a blue box, a line under the header, blue border.
+ * `boxed`: the employee dashboard style — icon title in a blue box, a line under the header, blue border.
  */
 export const MyTasksWidget = ({ boxed = false, box }: { boxed?: boolean; /** Admin style: title-box bg classes. */ box?: string }) => {
   const list = useTasks({ scope: 'mine', state: 'open', page: 1, limit: 4 });
@@ -15,8 +15,9 @@ export const MyTasksWidget = ({ boxed = false, box }: { boxed?: boolean; /** Adm
 
   return (
     <Widget
-      title={box ? '📋 My tasks' : 'My tasks'}
+      title="My tasks"
       titleBox={box}
+      titleIcon={box ? ClipboardList : undefined}
       className={boxed ? 'bg-[#f8fbff] dark:bg-surface [&>header]:border-b [&>header]:border-line' : box ? 'border-violet-200 dark:border-violet-500/20 [&>header]:border-b [&>header]:border-line' : undefined}
       description={total ? `${total} open${overdue ? ` · ${overdue} overdue` : ''}` : 'All caught up'}
       icon={box ? undefined : <ClipboardList className="h-4 w-4" />}

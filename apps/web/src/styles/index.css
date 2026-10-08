@@ -282,6 +282,14 @@
 .chrome-wine nav a[aria-current='page'] .nav-icon {
   color: #ffffff;
 }
+/* App-icon tiles: on the current page's coloured pill the tile turns translucent white, so the pill reads as one. */
+.chrome-indigo nav a[aria-current='page'] .nav-tile,
+.chrome-mint nav a[aria-current='page'] .nav-tile,
+.chrome-wine nav a[aria-current='page'] .nav-tile {
+  background: rgb(255 255 255 / 0.22);
+  box-shadow: none;
+  --tw-ring-color: rgb(255 255 255 / 0.25);
+}
 
 @layer base {
   html,

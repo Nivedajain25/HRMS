@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus, UserX } from 'lucide-react-native';
+import { CalendarDays, CalendarPlus, Clock, PartyPopper, UserX } from 'lucide-react-native';
 import type { LeaveStatus } from '@stencil/shared';
-import { Button, Card, EmptyState, ErrorState, Header, IconButton, Screen, Segmented, SkeletonList, Text } from '@/components';
+import { Button, Card, EmptyState, ErrorState, Header, IconButton, RelatedLinks, Screen, Segmented, SkeletonList, Text } from '@/components';
 import { useAuth } from '@/lib/auth';
 import { label } from '@/lib/format';
 import { dateKeyIn } from '@/lib/time';
@@ -78,6 +78,14 @@ export const LeaveScreen = () => {
             </Button>
           </View>
           <BalanceStrip query={balances} year={year} onApply={openApply} />
+          {/* Related: what goes with leave. */}
+          <RelatedLinks
+            links={[
+              { label: 'Leave calendar', icon: CalendarDays, href: '/leave/calendar' },
+              { label: 'Holidays', icon: PartyPopper, href: '/more/holidays' },
+              { label: 'My attendance', icon: Clock, href: '/attendance' },
+            ]}
+          />
         </>
       ) : null}
       {scope ? (

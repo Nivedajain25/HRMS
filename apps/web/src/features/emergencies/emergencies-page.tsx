@@ -56,36 +56,39 @@ export const EmergenciesPage = () => {
         <EmptyState className="card" icon={<Siren className="h-5 w-5" />} title="No emergencies" description={status ? 'Nothing with this status.' : 'Nothing has been raised. Stay safe!'} />
       ) : (
         <ul className="space-y-3">
-          {rows.map((e) => (
-            <li key={e._id}>
-              <Link to={`/emergencies/${e._id}`} className="block">
-                <Card className="flex items-center gap-3 p-4 transition-shadow hover:shadow-pop">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-2xl dark:bg-red-500/15" aria-hidden>
-                    {CATEGORY_META[e.category].emoji}
-                  </span>
-                  {isHr && <Avatar name={personName(e)} src={e.employeeId?.profilePhoto} size="md" />}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-fg">
-                      {CATEGORY_META[e.category].title}
-                      {isHr ? ` · ${personName(e)}` : ''}
-                    </p>
-                    <p className="truncate text-sm text-muted">
-                      {e.needToLeave ? 'Needed to leave · ' : ''}
-                      {e.message || 'No details given'}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <Badge tone={STATUS_BADGE[e.status].tone} dot>
-                      {STATUS_BADGE[e.status].label}
-                    </Badge>
-                    <p className="mt-1 text-xs text-muted" title={formatDate(e.createdAt, 'dd MMM yyyy, HH:mm')}>
-                      {timeAgo(e.createdAt)}
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
+          {rows.map((e) => {
+            const CategoryIcon = CATEGORY_META[e.category].icon;
+            return (
+              <li key={e._id}>
+                <Link to={`/emergencies/${e._id}`} className="block">
+                  <Card className="flex items-center gap-3 p-4 transition-shadow hover:shadow-pop">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300" aria-hidden>
+                      <CategoryIcon className="h-5 w-5" />
+                    </span>
+                    {isHr && <Avatar name={personName(e)} src={e.employeeId?.profilePhoto} size="md" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-fg">
+                        {CATEGORY_META[e.category].title}
+                        {isHr ? ` · ${personName(e)}` : ''}
+                      </p>
+                      <p className="truncate text-sm text-muted">
+                        {e.needToLeave ? 'Needed to leave · ' : ''}
+                        {e.message || 'No details given'}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <Badge tone={STATUS_BADGE[e.status].tone} dot>
+                        {STATUS_BADGE[e.status].label}
+                      </Badge>
+                      <p className="mt-1 text-xs text-muted" title={formatDate(e.createdAt, 'dd MMM yyyy, HH:mm')}>
+                        {timeAgo(e.createdAt)}
+                      </p>
+                    </div>
+                  </Card>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

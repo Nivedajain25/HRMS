@@ -22,6 +22,7 @@ import {
   MapPin,
   MapPinOff,
   Navigation,
+  PartyPopper,
   Settings,
   ShieldCheck,
   TriangleAlert,
@@ -439,7 +440,10 @@ const LateCard = ({ month, loading }: { month: AttendanceRow[]; loading: boolean
           <Skeleton className="h-40" />
         </div>
       ) : !rows.length ? (
-        <p className="p-8 text-center text-sm text-muted">No late arrivals this month 🎉</p>
+        <p className="flex items-center justify-center gap-1.5 p-8 text-sm text-muted">
+          No late arrivals this month
+          <PartyPopper className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+        </p>
       ) : (
         <table className="w-full text-sm">
           <thead className="bg-surface-2 text-xs text-muted">
@@ -636,7 +640,7 @@ const LocationCard = ({ records, loading }: { records: AttendanceRow[]; loading:
                     </g>
                   ))}
                 </svg>
-                <span className="absolute right-1 bottom-0.5 text-[9px] text-slate-600">© OpenStreetMap</span>
+                <span className="absolute right-1 bottom-0.5 text-[9px] text-slate-600">&copy; OpenStreetMap</span>
               </>
             ) : (
               <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted">

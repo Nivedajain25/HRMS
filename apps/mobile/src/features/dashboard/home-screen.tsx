@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell } from 'lucide-react-native';
+import { Bell, Search } from 'lucide-react-native';
 import { Appear, Card, Screen, SectionHeader, Text, Wave } from '@/components';
 import { attendanceKeys } from '@/features/attendance/api';
 import { ClockCard } from '@/features/attendance/components/clock-card';
@@ -12,7 +12,7 @@ import { QuickActionsRow } from '@/features/quick-actions/quick-actions';
 import { dashboardKind, useAuth } from '@/lib/auth';
 import { fullName } from '@/lib/format';
 import { useNow } from '@/lib/time';
-import { radius, space, useTheme } from '@/theme';
+import { radius, space, toneColors, useTheme } from '@/theme';
 import { dashboardKeys, useEmployeeDashboard, useManagerDashboard } from './api';
 import { MyActivity } from './components/my-activity';
 import { MyTasks } from './components/my-tasks';
@@ -47,6 +47,7 @@ const UnreadBell = ({ count }: { count: number | undefined }) => {
 
 export const HomeScreen = () => {
   const { user, timeZone, hasEmployee, can, isApprover } = useAuth();
+  const { c } = useTheme();
   const qc = useQueryClient();
   const employee = useEmployeeDashboard();
   const showTeam = can('team:view');
@@ -63,6 +64,7 @@ export const HomeScreen = () => {
 
   const firstName = user?.firstName || (user ? fullName(user) : '');
   const greeting = greetingFor(timeZone, now);
+  const greetingTone = toneColors(greeting.tone, c);
   // Phones under 400 pt wide (most Android phones): a slightly smaller name and a short date beside the buttons.
   const narrow = useWindowDimensions().width < 400;
   // Super Admin / Admin don't clock in: their highlight card is the company today instead.
@@ -81,7 +83,7 @@ export const HomeScreen = () => {
                 {`Hi, ${firstName}`}
               </Text>
               <Wave>
-                <Text size={narrow ? 'lg' : 'xl'}>{greeting.emoji}</Text>
+                <greeting.icon size={narrow ? 20 : 22} color={c.scheme === 'dark' ? greetingTone.fg : greetingTone.solid} />
               </Wave>
             </View>
             {/* The date is on the Today's Overview card; wide screens show it here too. */}
@@ -94,6 +96,21 @@ export const HomeScreen = () => {
             <UnreadBell count={employee.data?.unreadNotifications} />
           </View>
         </View>
+      </Appear>
+
+      {/* Global search: pages ("payslips", "check in"…) and records (people, leave, announcements, documents). */}
+      <Appear index={0}>
+        <Pressable
+          onPress={() => router.push('/search')}
+          accessibilityRole="search"
+          accessibilityLabel="Search pages, people and leave"
+          style={({ pressed }) => [styles.search, { backgroundColor: c.surface, borderColor: c.line }, pressed && { opacity: 0.85 }]}
+        >
+          <Search size={18} color={c.muted} />
+          <Text size="sm" color="subtle" numberOfLines={1} style={styles.flex}>
+            Search pages, people, leave…
+          </Text>
+        </Pressable>
       </Appear>
 
       {/* HR / super admin: unresolved emergencies stay on top until handled. */}
@@ -201,6 +218,7 @@ const styles = StyleSheet.create({
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: space(1.5), flexShrink: 1 },
   // Emergency and the bell sit close together so the name keeps its room.
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: space(1) },
+  search: { flexDirection: 'row', alignItems: 'center', gap: space(2.5), minHeight: 48, borderRadius: radius.full, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: space(4) },
   shrink: { flexShrink: 1 },
   section: { gap: space(2) },
   bell: { width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },

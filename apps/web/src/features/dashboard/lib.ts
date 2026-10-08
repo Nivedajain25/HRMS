@@ -1,3 +1,4 @@
+import { CloudSun, Moon, Sun, type LucideIcon } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 /** `YYYY-MM-DD` calendar key as a UTC-midnight ISO string (safe for `formatDate`). */
@@ -20,15 +21,16 @@ const safeParts = (timeZone: string, opts: Intl.DateTimeFormatOptions, now: Date
   }
 };
 
-/** Greeting (and matching emoji) for the current hour in the organization's timezone. */
-export const greetingFor = (timeZone: string, now = new Date()) => {
+/** Greeting (and matching icon + its colour) for the current hour in the organization's timezone. */
+export const greetingFor = (timeZone: string, now = new Date()): { text: string; icon: LucideIcon; tone: string } => {
   const hour = Number(safeParts(timeZone, { hour: 'numeric', hourCycle: 'h23' }, now).find((p) => p.type === 'hour')?.value ?? 12) % 24;
-  // `scene`: the banner's big faded picture for the part of the day (morning sun, afternoon sun + cloud,
-  // evening moon — as on the mobile app; the sunset-city emoji looked poor on Windows).
-  if (hour < 5) return { text: 'Good Evening', emoji: '🌙', scene: '🌙' };
-  if (hour < 12) return { text: 'Good Morning', emoji: '☀️', scene: '☀️' };
-  if (hour < 17) return { text: 'Good Afternoon', emoji: '🌤️', scene: '🌤️' };
-  return { text: 'Good Evening', emoji: '🌙', scene: '🌙' };
+  // `icon` is also the banner's big faded picture for the part of the day (morning sun, afternoon sun + cloud,
+  // evening moon — as on the mobile app).
+  const evening = { text: 'Good Evening', icon: Moon, tone: 'text-indigo-500 dark:text-indigo-300' };
+  if (hour < 5) return evening;
+  if (hour < 12) return { text: 'Good Morning', icon: Sun, tone: 'text-amber-500 dark:text-amber-300' };
+  if (hour < 17) return { text: 'Good Afternoon', icon: CloudSun, tone: 'text-amber-500 dark:text-amber-300' };
+  return evening;
 };
 
 /** Long date ("Wednesday, 23 September 2026") in the organization's timezone. */

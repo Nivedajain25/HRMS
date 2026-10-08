@@ -110,8 +110,8 @@ export const AttendanceDrawer = ({ record, onClose, canEdit }: { record: Attenda
           </div>
           <DescriptionList
             items={[
-              { label: 'Clock in', value: formatDateTimeIn(record.checkIn, timeZone) },
-              { label: 'Clock out', value: formatDateTimeIn(record.checkOut, timeZone) },
+              { label: 'Check in', value: formatDateTimeIn(record.checkIn, timeZone) },
+              { label: 'Check out', value: formatDateTimeIn(record.checkOut, timeZone) },
               { label: 'Worked', value: minutesToHours(record.workingMinutes) },
               { label: 'Break', value: minutesToHours(record.breakMinutes) },
               { label: 'Overtime', value: minutesToHours(record.overtimeMinutes) },

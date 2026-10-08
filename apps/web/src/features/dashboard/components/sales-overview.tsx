@@ -2,13 +2,14 @@ import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from 'recharts';
 import { toast } from 'sonner';
-import { FileSpreadsheet, Loader2, TrendingDown, TrendingUp, Upload } from 'lucide-react';
+import { FileSpreadsheet, IndianRupee, Loader2, TrendingDown, TrendingUp, Upload } from 'lucide-react';
 import { ChartFrame, chartAxis, chartGrid, chartTooltip } from '@/components/charts/chart-kit';
 import { Card } from '@/components/ui/display';
 import { formatKey } from '@/features/attendance/lib';
 import { get, toApiError, upload } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
+import { TitleIcon } from './widget';
 
 interface SalesMonthly {
   months: { month: string; amount: number | null; target: number | null }[];
@@ -58,7 +59,7 @@ export const SalesOverview = ({ className }: { className?: string }) => {
     <Card className={cn('flex flex-col overflow-hidden motion-safe:animate-fade-up', className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 min-h-16 border-b border-line px-5 py-3.5">
         <h3 className="rounded-lg bg-indigo-200 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">💰</span>
+          <TitleIcon icon={IndianRupee} />
           Sales Overview
         </h3>
         <div className="flex items-center gap-2">

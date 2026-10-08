@@ -55,7 +55,7 @@ export const EmergencyAlerts = () => {
     let on = false;
     const id = window.setInterval(() => {
       on = !on;
-      document.title = on ? `🚨 EMERGENCY: ${personName(current)}` : (title.current ?? '');
+      document.title = on ? `EMERGENCY: ${personName(current)}` : (title.current ?? '');
     }, 1000);
     return () => {
       window.clearInterval(id);
@@ -84,6 +84,7 @@ export const EmergencyAlerts = () => {
 
   const open = list.filter((e) => e.status === 'OPEN').length;
   const first = list[0]!;
+  const CategoryIcon = current ? CATEGORY_META[current.category].icon : null;
 
   return (
     <>
@@ -142,7 +143,7 @@ export const EmergencyAlerts = () => {
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200 dark:bg-surface dark:text-red-300 dark:ring-red-500/30">
-                  {CATEGORY_META[current.category].emoji} {CATEGORY_META[current.category].title}
+                  {CategoryIcon ? <CategoryIcon className="h-3.5 w-3.5" aria-hidden /> : null} {CATEGORY_META[current.category].title}
                 </span>
                 {current.needToLeave && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">

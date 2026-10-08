@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, ClipboardCheck, Circle } from 'lucide-react-native';
+import { CheckCircle2, ClipboardCheck, Circle, PartyPopper } from 'lucide-react-native';
 import { Card, ListItem, ProgressBar, SectionHeader, Text, toast } from '@/components';
 import { getPaged, patch, toApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -61,9 +61,12 @@ export const MyOnboardingCard = () => {
       <SectionHeader title="My onboarding" icon={ClipboardCheck} tone="blue" />
       <Card padding={0}>
         <View style={styles.head}>
-          <Text size="sm" color="fg2">
-            {open.length ? `${open.length} task${open.length === 1 ? '' : 's'} left for you` : 'All your tasks are done 🎉'}
-          </Text>
+          <View style={styles.line}>
+            <Text size="sm" color="fg2" style={styles.shrink}>
+              {open.length ? `${open.length} task${open.length === 1 ? '' : 's'} left for you` : 'All your tasks are done'}
+            </Text>
+            {open.length ? null : <PartyPopper size={14} color={c.success} />}
+          </View>
           <ProgressBar value={o.progress} accessibilityLabel="Onboarding progress" />
         </View>
         {mine.map((t) => {
@@ -88,4 +91,6 @@ export const MyOnboardingCard = () => {
 const styles = StyleSheet.create({
   wrap: { gap: space(2) },
   head: { gap: space(2), padding: space(4) },
+  line: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
+  shrink: { flexShrink: 1 },
 });

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ambulance, CircleAlert, HeartPulse, House, School, Users, type LucideIcon } from 'lucide-react-native';
 import { get, getPaged, patch, post } from '@/lib/api';
 
 /* Same shapes as the web `features/emergencies/api.ts`. */
@@ -7,13 +8,13 @@ export type EmergencyCategory = 'FAMILY' | 'HEALTH' | 'HOME' | 'CHILD' | 'ACCIDE
 export type EmergencyStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
 export type EmergencyDecision = 'APPROVED' | 'DECLINED';
 
-export const CATEGORY_META: Record<EmergencyCategory, { label: string; emoji: string }> = {
-  FAMILY: { label: 'Family', emoji: '👨‍👩‍👧' },
-  HEALTH: { label: 'Unwell', emoji: '🤒' },
-  HOME: { label: 'At home', emoji: '🏠' },
-  CHILD: { label: 'Child / school', emoji: '🧒' },
-  ACCIDENT: { label: 'Accident', emoji: '🚑' },
-  OTHER: { label: 'Other', emoji: '❗' },
+export const CATEGORY_META: Record<EmergencyCategory, { label: string; icon: LucideIcon }> = {
+  FAMILY: { label: 'Family', icon: Users },
+  HEALTH: { label: 'Unwell', icon: HeartPulse },
+  HOME: { label: 'At home', icon: House },
+  CHILD: { label: 'Child / school', icon: School },
+  ACCIDENT: { label: 'Accident', icon: Ambulance },
+  OTHER: { label: 'Other', icon: CircleAlert },
 };
 
 export interface Emergency {

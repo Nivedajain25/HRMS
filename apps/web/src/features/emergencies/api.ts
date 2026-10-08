@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ambulance, Baby, CircleAlert, House, Thermometer, Users, type LucideIcon } from 'lucide-react';
 import type { EmergencyCategory, EmergencyRaiseInput, EmergencyStatus } from '@stencil/shared';
 import { get, getPaged, patch, post } from '@/lib/api';
 
@@ -39,14 +40,14 @@ export interface Emergency {
   createdAt: string;
 }
 
-/** `label`: short (picker chips); `title`: full phrase (alerts, lists). */
-export const CATEGORY_META: Record<EmergencyCategory, { label: string; title: string; emoji: string }> = {
-  FAMILY: { label: 'Family', title: 'Family emergency', emoji: '👨‍👩‍👧' },
-  HEALTH: { label: 'Unwell', title: 'Feeling unwell', emoji: '🤒' },
-  HOME: { label: 'At home', title: 'Emergency at home', emoji: '🏠' },
-  CHILD: { label: 'Child / school', title: 'Child / school emergency', emoji: '🧒' },
-  ACCIDENT: { label: 'Accident', title: 'Accident', emoji: '🚑' },
-  OTHER: { label: 'Other', title: 'Personal emergency', emoji: '❗' },
+/** `label`: short (picker chips); `title`: full phrase (alerts, lists); `icon`: the category's line icon. */
+export const CATEGORY_META: Record<EmergencyCategory, { label: string; title: string; icon: LucideIcon }> = {
+  FAMILY: { label: 'Family', title: 'Family emergency', icon: Users },
+  HEALTH: { label: 'Unwell', title: 'Feeling unwell', icon: Thermometer },
+  HOME: { label: 'At home', title: 'Emergency at home', icon: House },
+  CHILD: { label: 'Child / school', title: 'Child / school emergency', icon: Baby },
+  ACCIDENT: { label: 'Accident', title: 'Accident', icon: Ambulance },
+  OTHER: { label: 'Other', title: 'Personal emergency', icon: CircleAlert },
 };
 
 export const emergencyKeys = {

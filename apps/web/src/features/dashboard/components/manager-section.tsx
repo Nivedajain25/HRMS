@@ -20,7 +20,7 @@ const SEGMENTS: { key: keyof Pick<DaySummary, 'present' | 'onLeave' | 'absent' |
   { key: 'present', label: 'Present', color: 'bg-emerald-500' },
   { key: 'onLeave', label: 'On leave', color: 'bg-violet-500' },
   { key: 'absent', label: 'Absent', color: 'bg-red-500' },
-  { key: 'notCheckedIn', label: 'Not clocked in', color: 'bg-slate-400 dark:bg-slate-500' },
+  { key: 'notCheckedIn', label: 'Not checked in', color: 'bg-slate-400 dark:bg-slate-500' },
 ];
 
 const TeamAttendance = ({ data }: { data: ManagerDashboard }) => {

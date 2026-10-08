@@ -7,13 +7,13 @@ import { useClockAction, useToday, type LiveState, type TodayState } from '@/fea
 import { formatClock, formatTimeIn, useNow, useOrgTimezone } from '@/features/attendance/lib';
 import { useClockFlow } from '@/features/attendance/use-clock-flow';
 import { clock12, cn, minutesToHours } from '@/lib/utils';
-import { EmojiTitle, employeeTile, TitleBoxContext } from './widget';
+import { employeeTile, TileTitle, TitleBoxContext, TitleIcon } from './widget';
 
 const STATE_META: Record<LiveState, { label: string; tone: Tone }> = {
-  NOT_CHECKED_IN: { label: 'Not clocked in', tone: 'gray' },
+  NOT_CHECKED_IN: { label: 'Not checked in', tone: 'gray' },
   CHECKED_IN: { label: 'Working', tone: 'green' },
   ON_BREAK: { label: 'On break', tone: 'amber' },
-  CHECKED_OUT: { label: 'Clocked out', tone: 'blue' },
+  CHECKED_OUT: { label: 'Checked out', tone: 'blue' },
 };
 
 /** Live worked / break seconds from the record's instants. */
@@ -99,18 +99,31 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   const showBreakTime = t.allowBreaks || onBreak > 0;
   const graceEnd = new Date(t.shiftStart).getTime() + t.shift.gracePeriodMinutes * 60_000;
   const runningLate = t.state === 'NOT_CHECKED_IN' && t.dayKind === 'WORKING' && !t.shift.flexible && now.getTime() > graceEnd && now.getTime() < new Date(t.shiftEnd).getTime();
+  const shiftStartMs = new Date(t.shiftStart).getTime();
+  const shiftEndMs = new Date(t.shiftEnd).getTime();
+  const nowMs = now.getTime();
+  const countdown: { label: string; value: string; warn?: boolean } | null =
+    t.state === 'CHECKED_OUT'
+      ? null
+      : working
+        ? nowMs < shiftEndMs
+          ? { label: 'Check-out in', value: formatClock((shiftEndMs - nowMs) / 1000) }
+          : { label: 'Overtime', value: `+${formatClock((nowMs - shiftEndMs) / 1000)}`, warn: true }
+        : t.dayKind === 'WORKING' && nowMs < shiftStartMs
+          ? { label: 'Check-in in', value: formatClock((shiftStartMs - nowMs) / 1000) }
+          : null;
   const [time, ampm] = clockFmt.format(now).toUpperCase().split(/\s+/);
   const t12 = (v: string | null | undefined) => (v ? clock12(formatTimeIn(v, timeZone)) : '—');
 
-  const clockIn = () => flow.run('check-in', { workMode: 'OFFICE', success: 'Clocked in. Have a productive day!' });
+  const clockIn = () => flow.run('check-in', { workMode: 'OFFICE', success: 'Checked in. Have a productive day!' });
   const clockOut = async () => {
     const { confirmed } = await confirm({
-      title: 'Clock out for today?',
+      title: 'Check out for today?',
       message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won't be able to clock in again today; use regularization for corrections.`,
-      confirmLabel: 'Clock out',
+      confirmLabel: 'Check out',
       tone: 'primary',
     });
-    if (confirmed) await flow.run('check-out', { success: 'Clocked out. Have a good evening!' });
+    if (confirmed) await flow.run('check-out', { success: 'Checked out. Have a good evening!' });
   };
   const breakToggle = async () => {
     const key = t.state === 'ON_BREAK' ? 'break/end' : 'break/start';
@@ -162,12 +175,12 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
     >
       <div className={cn('flex min-h-16 items-center justify-between gap-3 border-b border-line px-5 py-3.5 dark:bg-surface', tone === 'pink' && !violet ? 'bg-[#f8fbff]' : 'bg-white')}>
         {employeeTitles ? (
-          // Employee dashboard: emoji on a soft-blue tile, plain black title.
-          <EmojiTitle title="Today" emoji="⏰" tile={employeeTile('Today')} />
+          // Employee dashboard: icon on a soft-blue tile, plain black title.
+          <TileTitle title="Today" icon={AlarmClock} tile={employeeTile('Today')} />
         ) : (
-          // HR (and the super admin's style): the "⏰ Today" blue pill.
+          // HR (and the super admin's style): the alarm-clock "Today" blue pill.
           <h3 className="rounded-lg bg-blue-400 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-            <span aria-hidden className="mr-1.5">⏰</span>
+            <TitleIcon icon={AlarmClock} />
             Today
           </h3>
         )}
@@ -211,7 +224,21 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
           {runningLate ? (
             <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
               <AlarmClock className="h-3.5 w-3.5" aria-hidden />
-              Shift started {t12(t.shiftStart)} — clocking in now counts as late
+              Shift started {t12(t.shiftStart)} — checking in now counts as late
+            </p>
+          ) : null}
+          {/* Live countdown (same as the mobile app): to the shift start before check-in, to check-out while working,
+              overtime after the shift ends. */}
+          {countdown ? (
+            <p
+              className={cn(
+                'mt-1.5 ml-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tabular-nums',
+                countdown.warn ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200' : 'bg-surface-2 text-fg dark:bg-surface-3',
+              )}
+              aria-live="off"
+            >
+              <Timer className="h-3.5 w-3.5" aria-hidden />
+              {countdown.label} <span className="font-bold">{countdown.value}</span>
             </p>
           ) : null}
           {t.dayKind !== 'WORKING' ? (
@@ -228,11 +255,11 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
             className={cn(bigBtn, clockedIn ? inDone : inTone)}
           >
             {flow.active === 'check-in' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LogIn className="h-4 w-4" aria-hidden />}
-            {r?.checkIn ? `In · ${t12(r.checkIn)}` : 'Clock in'}
+            {r?.checkIn ? `In · ${t12(r.checkIn)}` : 'Check in'}
           </button>
           <button type="button" onClick={() => void clockOut()} disabled={busy || !working} className={cn(bigBtn, clockedOut ? outDone : outTone)}>
             {flow.active === 'check-out' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LogOut className="h-4 w-4" aria-hidden />}
-            {r?.checkOut ? `Out · ${t12(r.checkOut)}` : 'Clock out'}
+            {r?.checkOut ? `Out · ${t12(r.checkOut)}` : 'Check out'}
           </button>
         </div>
 

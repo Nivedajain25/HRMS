@@ -53,7 +53,7 @@ const UpdateSheet = ({ goal, onClose }: { goal: Goal | null; onClose: () => void
   const save = async () => {
     try {
       await update.mutateAsync({ id: goal._id, progress, status: progress >= 100 ? 'COMPLETED' : 'IN_PROGRESS', note: note.trim() || undefined });
-      toast.success(progress >= 100 ? 'Goal completed 🎉' : 'Progress updated');
+      toast.success(progress >= 100 ? 'Goal completed' : 'Progress updated');
       onClose();
     } catch (err) {
       toast.error('Could not update the goal', toApiError(err).message);

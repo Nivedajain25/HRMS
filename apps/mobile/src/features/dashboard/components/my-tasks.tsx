@@ -20,7 +20,7 @@ const TaskRow = ({ t, divider }: { t: Task; divider: boolean }) => {
   const finish = async () => {
     try {
       await setStatus.mutateAsync({ id: t._id, status: 'DONE' });
-      toast.success('Task finished 🎉', 'It has moved to Finished tasks.');
+      toast.success('Task finished', 'It has moved to Finished tasks.');
     } catch (err) {
       toast.error('Could not update the task', toApiError(err).message);
     }

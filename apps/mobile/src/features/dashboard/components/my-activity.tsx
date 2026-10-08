@@ -2,11 +2,12 @@ import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Activity } from 'lucide-react-native';
-import { ListItem, Text } from '@/components';
+import { ListItem } from '@/components';
 import { get } from '@/lib/api';
 import { hrefForLink } from '@/lib/links';
 import { timeAgo } from '@/lib/time';
-import { radius, useTheme } from '@/theme';
+import { radius, toneColors, useTheme } from '@/theme';
+import { activityIcon } from '../lib';
 import { Widget } from './widgets';
 
 interface ActivityItem {
@@ -17,23 +18,6 @@ interface ActivityItem {
   detail?: string;
   link?: string;
 }
-
-const EMOJI: Record<string, string> = {
-  CLOCK_IN: '🟢',
-  CLOCK_OUT: '🔵',
-  LEAVE_APPLIED: '✈️',
-  LEAVE_APPROVED: '✅',
-  LEAVE_REJECTED: '❌',
-  REGULARIZATION_REQUESTED: '📝',
-  REGULARIZATION_APPROVED: '✅',
-  REGULARIZATION_REJECTED: '❌',
-  EXPENSE_SUBMITTED: '🧾',
-  EXPENSE_APPROVED: '✅',
-  EXPENSE_PAID: '💰',
-  GOAL_PROGRESS: '🎯',
-  GOAL_COMPLETED: '🏆',
-  TASK_DONE: '📋',
-};
 
 /** "You clocked in", "Your Casual Leave was approved"… from the web activity feed (own activity only). */
 const sentence = (a: ActivityItem) => (/ was (approved|rejected)$/.test(a.title) ? `Your ${a.title}` : `You ${a.title}`);
@@ -54,6 +38,8 @@ export const MyActivity = () => {
         <View>
           {d.map((a, i) => {
             const href = hrefForLink(a.link ?? null);
+            const kind = activityIcon(a.type);
+            const tone = toneColors(kind.tone, c);
             return (
               <ListItem
                 key={a.id}
@@ -62,8 +48,8 @@ export const MyActivity = () => {
                 subtitle={a.detail}
                 meta={timeAgo(a.at)}
                 left={
-                  <View style={[styles.icon, { backgroundColor: c.surface2 }]}>
-                    <Text size="md">{EMOJI[a.type] ?? '•'}</Text>
+                  <View style={[styles.icon, { backgroundColor: tone.bg }]}>
+                    <kind.icon size={18} color={c.scheme === 'dark' ? tone.fg : tone.solid} />
                   </View>
                 }
                 onPress={href ? () => router.push(href) : undefined}

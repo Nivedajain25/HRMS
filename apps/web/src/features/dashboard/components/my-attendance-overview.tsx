@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, Clock3, Hourglass, Plane, TrendingUp, UserCheck, Users } from 'lucide-react';
+import { BicepsFlexed, CalendarCheck, Clock3, Hourglass, Plane, TrendingUp, UserCheck, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/display';
 import { formatNumber, minutesToHours } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
@@ -246,7 +246,8 @@ const MyMonth = ({ counts, onTimeRate, row }: { counts: Record<SegmentKey, numbe
     </ul>
     {row.overtimeHours > 0 && (
       <p className="text-xs text-muted">
-        Including <span className="font-medium text-fg-2">{minutesToHours(Math.round(row.overtimeHours * 60))}</span> overtime 💪
+        Including <span className="font-medium text-fg-2">{minutesToHours(Math.round(row.overtimeHours * 60))}</span> overtime{' '}
+        <BicepsFlexed className="inline-block h-3.5 w-3.5 align-[-0.125em] text-emerald-600 dark:text-emerald-400" aria-hidden />
       </p>
     )}
   </>

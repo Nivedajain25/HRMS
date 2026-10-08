@@ -1,13 +1,14 @@
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarPlus, LayoutGrid, Megaphone, PartyPopper, Target, Users, Zap } from 'lucide-react';
+import { AllFeaturesModal } from './all-features';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { useOrgTimezone } from '@/features/attendance/lib';
 import { useTasks } from '@/features/tasks/api';
 import { useAdminDashboard, useEmployeeDashboard } from '../api';
 import { dashboardKind, greetingFor, inDaysLabel } from '../lib';
-import { adminTitleStyle, EmojiTitle, PlainTitlesContext, TitleBoxContext, titlePill } from './widget';
+import { adminTitleStyle, PlainTitlesContext, TileTitle, TitleBoxContext, TitleIcon, titlePill } from './widget';
 
 /** An underlined brand-coloured number that links to where those items are. */
 const Count = ({ to, value, loading }: { to: string; value: number | undefined; loading: boolean }) =>
@@ -41,12 +42,13 @@ const useQuickActions = () => {
 /** `warm`: employee dashboard heading format (light blue icon tile + plain black title). */
 export const QuickActionsCard = ({ compact = false, warm = false }: { compact?: boolean; warm?: boolean }) => {
   const actions = useQuickActions();
-  // HR: the admin-style boxed title ("⚡ Quick Actions" in a violet pill).
-  // Employee (tiles map in the context): emoji on a soft-blue tile, plain black title.
+  // HR: the admin-style boxed title (lightning icon + "Quick Actions" in a violet pill).
+  // Employee (tiles map in the context): icon on a soft-blue tile, plain black title.
   const dashboardStyle = useContext(TitleBoxContext);
   const employeeTiles = typeof dashboardStyle === 'object' ? dashboardStyle : null;
   const pill = dashboardStyle ? adminTitleStyle('Quick Actions') : null;
   const plainTitles = useContext(PlainTitlesContext);
+  const [allOpen, setAllOpen] = useState(false);
   if (!actions.length) return null;
   return (
     <section
@@ -58,11 +60,11 @@ export const QuickActionsCard = ({ compact = false, warm = false }: { compact?: 
     >
       {employeeTiles && pill ? (
         <div className="mb-3">
-          <EmojiTitle as="h2" id="quick-actions-title" title="Quick Actions" emoji={pill.emoji} tile={employeeTiles['Quick Actions']} />
+          <TileTitle as="h2" id="quick-actions-title" title="Quick Actions" icon={pill.icon} tile={employeeTiles['Quick Actions']} />
         </div>
       ) : pill ? (
         <h2 id="quick-actions-title" className={cn('mb-3 font-semibold', plainTitles.has('Quick Actions') ? 'text-base text-black dark:text-fg' : cn('inline-block', titlePill, pill.box))}>
-          <span aria-hidden className="mr-1.5">{pill.emoji}</span>
+          {pill.icon ? <TitleIcon icon={pill.icon} /> : null}
           Quick Actions
         </h2>
       ) : (
@@ -104,7 +106,34 @@ export const QuickActionsCard = ({ compact = false, warm = false }: { compact?: 
             </Link>
           </li>
         ))}
+        {/* More: every feature as app icons, grouped like the menu. */}
+        <li>
+          <button
+            type="button"
+            onClick={() => setAllOpen(true)}
+            className={cn(
+              'group flex w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-black transition-colors dark:text-fg',
+              warm
+                ? 'bg-[#eff6ff] hover:bg-[#dbeafe] dark:bg-[#1d4ed8]/15 dark:hover:bg-[#1d4ed8]/25'
+                : 'bg-violet-50 hover:bg-violet-100 dark:bg-violet-500/10 dark:hover:bg-violet-500/20',
+              compact ? 'py-1.5' : 'py-2.5',
+            )}
+          >
+            <span
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-lg shadow-sm',
+                warm ? 'bg-[#dbeafe] text-[#1d4ed8] dark:bg-[#1d4ed8]/25 dark:text-[#dbeafe]' : 'bg-white text-violet-600 dark:bg-violet-500/20 dark:text-violet-200',
+              )}
+              aria-hidden
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </span>
+            <span className="flex-1">More — all features</span>
+            <ArrowRight className={cn('h-4 w-4 transition-transform group-hover:translate-x-0.5', warm ? 'text-[#1d4ed8] dark:text-[#dbeafe]' : 'text-violet-500')} aria-hidden />
+          </button>
+        </li>
       </ul>
+      <AllFeaturesModal open={allOpen} onClose={() => setAllOpen(false)} />
     </section>
   );
 };
@@ -122,6 +151,7 @@ export const GreetingHero = () => {
   }, []);
 
   const greeting = greetingFor(timeZone, now);
+  const GreetingIcon = greeting.icon;
   const isEmployeeKind = dashboardKind(user?.roles) === 'employee';
   // Every role gets the same soft "aurora" hero; only the tint differs, matching its sidebar accent:
   // Super Admin and HR lavender, Employee blue.
@@ -146,10 +176,10 @@ export const GreetingHero = () => {
       <div className={cn('pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full blur-3xl', theme.glow)} aria-hidden />
       {/* Big faded picture for the part of the day: morning sun, afternoon sun + cloud, evening moon. */}
       <span
-        className="pointer-events-none absolute -right-2 -bottom-7 text-[7rem] leading-none opacity-15 select-none motion-safe:animate-[float_6s_ease-in-out_infinite] sm:right-6"
+        className={cn('pointer-events-none absolute -right-2 -bottom-7 leading-none opacity-15 select-none motion-safe:animate-[float_6s_ease-in-out_infinite] sm:right-6', greeting.tone)}
         aria-hidden
       >
-        {greeting.scene}
+        <GreetingIcon className="h-28 w-28" strokeWidth={1.5} />
       </span>
     </>
   );
@@ -158,8 +188,8 @@ export const GreetingHero = () => {
           {/* The greeting is the page's heading (no separate title above it). */}
           <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-fg sm:whitespace-nowrap">
             {greeting.text}{' '}
-            <span aria-hidden className="inline-block motion-safe:animate-[wave_2.2s_ease-in-out_1]">
-              {greeting.emoji}
+            <span aria-hidden className={cn('inline-block align-[-0.125em] motion-safe:animate-[wave_2.2s_ease-in-out_1]', greeting.tone)}>
+              <GreetingIcon className="h-7 w-7" />
             </span>
             {name && <> {name}</>}
           </h1>

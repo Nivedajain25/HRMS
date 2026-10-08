@@ -69,7 +69,7 @@ export const PressScale = ({
   );
 };
 
-/** A friendly one-off wave (for the greeting emoji). */
+/** A friendly one-off wave (for the greeting icon). */
 export const Wave = ({ children }: { children: ReactNode }) => {
   const r = useSharedValue(0);
   useEffect(() => {

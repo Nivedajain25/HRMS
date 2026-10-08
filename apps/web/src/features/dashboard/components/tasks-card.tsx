@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Plus } from 'lucide-react';
+import { ClipboardList, Plus, SquareCheckBig } from 'lucide-react';
 import { Avatar, Card } from '@/components/ui/display';
 import { useTasks, type Task } from '@/features/tasks/api';
 import { DueLabel, StatusBadge } from '@/features/tasks/components/task-ui';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
+import { TitleIcon } from './widget';
 
 type Tab = 'assigned' | 'mine';
 
@@ -25,7 +26,7 @@ export const TasksCard = ({ className }: { className?: string }) => {
     <Card className={cn('flex flex-col overflow-hidden motion-safe:animate-fade-up', className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 min-h-16 border-b border-line px-5 py-3.5">
         <h3 className="rounded-lg bg-violet-400 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">✅</span>
+          <TitleIcon icon={SquareCheckBig} />
           Tasks
         </h3>
         <div className="flex items-center gap-2">

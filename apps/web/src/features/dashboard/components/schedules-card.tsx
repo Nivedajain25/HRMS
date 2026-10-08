@@ -4,6 +4,7 @@ import { Avatar, Card } from '@/components/ui/display';
 import { dateKeyIn, formatKey, formatTimeIn, useOrgTimezone } from '@/features/attendance/lib';
 import { useInterviews, type Interview } from '@/features/recruitment/api';
 import { clock12, cn } from '@/lib/utils';
+import { TitleIcon } from './widget';
 
 /** Dark tag colours for the job badge; a job always gets the same one. */
 const TAGS = ['bg-teal-800', 'bg-slate-800', 'bg-indigo-700', 'bg-rose-700', 'bg-amber-700', 'bg-emerald-700', 'bg-sky-700', 'bg-fuchsia-700'];
@@ -48,7 +49,7 @@ export const SchedulesCard = ({ className }: { className?: string }) => {
     <Card className={cn('flex flex-col overflow-hidden motion-safe:animate-fade-up', className)}>
       <div className="flex items-center justify-between gap-3 min-h-16 border-b border-line px-5 py-3.5">
         <h3 className="rounded-lg bg-purple-300 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">🗓️</span>
+          <TitleIcon icon={CalendarDays} />
           Schedules
         </h3>
         <Link to="/recruitment/interviews" className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-300">

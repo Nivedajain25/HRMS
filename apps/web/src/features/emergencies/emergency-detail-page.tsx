@@ -26,6 +26,7 @@ export const EmergencyDetailPage = () => {
   if (q.error || !q.data) return <ErrorState className="card" message={q.error?.message} onRetry={() => q.refetch()} />;
   const e = q.data;
   const cat = CATEGORY_META[e.category];
+  const CategoryIcon = cat.icon;
   const who = (p?: { firstName: string; lastName: string } | null) => (p ? `${p.firstName} ${p.lastName}`.trim() : 'HR');
 
   const act = async (status: 'ACKNOWLEDGED' | 'RESOLVED') => {
@@ -55,7 +56,14 @@ export const EmergencyDetailPage = () => {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         breadcrumb={[{ label: 'Emergencies', to: '/emergencies' }, { label: `${cat.title} · ${personName(e)}` }]}
-        title={`${cat.emoji} ${cat.title}`}
+        title={
+          <span className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300" aria-hidden>
+              <CategoryIcon className="h-5 w-5" />
+            </span>
+            {cat.title}
+          </span>
+        }
         description={`Raised ${at(e.createdAt)}`}
         actions={
           e.decision ? (

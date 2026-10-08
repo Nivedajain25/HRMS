@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Clock3, LogOut, Timer } from 'lucide-react';
+import { CalendarDays, Clock, Clock3, LogOut, Timer } from 'lucide-react';
 import { Avatar, Card } from '@/components/ui/display';
 import { useAttendanceBoard, type BoardCard } from '@/features/attendance/api';
 import { dateKeyIn, formatKey, formatTimeIn, useOrgTimezone } from '@/features/attendance/lib';
 import { useAllOf } from '@/features/employees/api';
 import { clock12, cn } from '@/lib/utils';
+import { TitleIcon } from './widget';
 
 /** "30 Min" / "1h 5m" */
 const lateLabel = (min: number) => (min < 60 ? `${min} Min` : `${Math.floor(min / 60)}h ${min % 60}m`);
@@ -84,7 +85,7 @@ export const ClockInOutCard = ({ className }: { className?: string }) => {
     >
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-5 py-3.5 dark:bg-surface">
         <h3 className="rounded-lg bg-fuchsia-200 px-2.5 py-0.5 text-base font-semibold text-black shadow-sm">
-          <span aria-hidden className="mr-1.5">🕘</span>
+          <TitleIcon icon={Clock} />
           Clock-In/Out
         </h3>
         <div className="flex items-center gap-2">

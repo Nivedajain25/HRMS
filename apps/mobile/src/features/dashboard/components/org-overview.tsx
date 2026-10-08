@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { Activity, Building2, Cake, ClipboardCheck, ClipboardList, Coffee, LogIn, Plus, Radio, Users } from 'lucide-react-native';
+import { Activity, Award, Building2, Cake, ClipboardCheck, ClipboardList, Coffee, LogIn, Plus, Radio, Users } from 'lucide-react-native';
 import { Avatar, Badge, Button, Card, EmptyState, ErrorState, ListItem, ProgressBar, SectionHeader, Segmented, SkeletonList, Text } from '@/components';
 import { useTasks } from '@/features/tasks/api';
 import { useAuth } from '@/lib/auth';
 import { formatKey, formatTimeIn, timeAgo } from '@/lib/time';
 import { radius, space, toneColors, useTheme, type Tone } from '@/theme';
 import { useAdminDashboard, useAttendanceBoard, useOrgActivity, type BoardCard, type BoardColumn } from '../api';
+import { activityIcon } from '../lib';
 
 /* ------------------------------ Shared bits ----------------------------- */
 
@@ -271,23 +272,6 @@ export const Departments = () => {
 
 /* ---------------------------- Team activity ----------------------------- */
 
-const EMOJI: Record<string, string> = {
-  CLOCK_IN: '🟢',
-  CLOCK_OUT: '🔵',
-  LEAVE_APPLIED: '✈️',
-  LEAVE_APPROVED: '✅',
-  LEAVE_REJECTED: '❌',
-  REGULARIZATION_REQUESTED: '📝',
-  REGULARIZATION_APPROVED: '✅',
-  REGULARIZATION_REJECTED: '❌',
-  EXPENSE_SUBMITTED: '🧾',
-  EXPENSE_APPROVED: '✅',
-  EXPENSE_PAID: '💰',
-  GOAL_PROGRESS: '🎯',
-  GOAL_COMPLETED: '🏆',
-  TASK_DONE: '📋',
-};
-
 /** Everyone's latest actions (clock-ins, leave, expenses, tasks…). */
 export const TeamActivity = () => {
   const { c } = useTheme();
@@ -305,23 +289,26 @@ export const TeamActivity = () => {
         ) : !items.length ? (
           <EmptyState compact icon={Activity} title="No activity yet today" message="Clock-ins, leave and finished tasks show up here." />
         ) : (
-          items.map((a, i) => (
-            <ListItem
-              key={a.id}
-              divider={i > 0}
-              title={`${a.employee?.name ?? 'Someone'} ${a.title}`}
-              subtitle={a.detail}
-              meta={timeAgo(a.at)}
-              left={
-                <View>
-                  <Avatar name={a.employee?.name ?? '?'} uri={a.employee?.profilePhoto} size={36} />
-                  <View style={[styles.emoji, { backgroundColor: c.surface, borderColor: c.surface }]}>
-                    <Text size="xs">{EMOJI[a.type] ?? '•'}</Text>
+          items.map((a, i) => {
+            const kind = activityIcon(a.type);
+            return (
+              <ListItem
+                key={a.id}
+                divider={i > 0}
+                title={`${a.employee?.name ?? 'Someone'} ${a.title}`}
+                subtitle={a.detail}
+                meta={timeAgo(a.at)}
+                left={
+                  <View>
+                    <Avatar name={a.employee?.name ?? '?'} uri={a.employee?.profilePhoto} size={36} />
+                    <View style={[styles.badge, { backgroundColor: toneColors(kind.tone, c).solid, borderColor: c.surface }]}>
+                      <kind.icon size={11} color="#ffffff" strokeWidth={2.5} />
+                    </View>
                   </View>
-                </View>
-              }
-            />
-          ))
+                }
+              />
+            );
+          })
         )}
       </Card>
     </Section>
@@ -332,6 +319,7 @@ export const TeamActivity = () => {
 
 /** Birthdays and work anniversaries in the next 30 days (hidden when there are none). */
 export const Celebrations = () => {
+  const { c } = useTheme();
   const q = useAdminDashboard(true);
   const w = q.data?.widgets;
   const rows = [
@@ -349,9 +337,16 @@ export const Celebrations = () => {
             key={`${p.kind}-${p._id}`}
             divider={i > 0}
             title={p.name}
-            subtitle={p.kind === 'Birthday' ? `🎂 Birthday · ${formatKey(p.nextDate, 'dd MMM')}` : `🎉 ${p.years ?? ''} year${p.years === 1 ? '' : 's'} at work · ${formatKey(p.nextDate, 'dd MMM')}`}
+            subtitle={p.kind === 'Birthday' ? `Birthday · ${formatKey(p.nextDate, 'dd MMM')}` : `${p.years ?? ''} year${p.years === 1 ? '' : 's'} at work · ${formatKey(p.nextDate, 'dd MMM')}`}
             meta={p.inDays === 0 ? 'Today' : p.inDays === 1 ? 'Tomorrow' : `In ${p.inDays} days`}
-            left={<Avatar name={p.name} uri={p.profilePhoto} size={36} />}
+            left={
+              <View>
+                <Avatar name={p.name} uri={p.profilePhoto} size={36} />
+                <View style={[styles.badge, { backgroundColor: toneColors(p.kind === 'Birthday' ? 'red' : 'amber', c).solid, borderColor: c.surface }]}>
+                  {p.kind === 'Birthday' ? <Cake size={11} color="#ffffff" strokeWidth={2.5} /> : <Award size={11} color="#ffffff" strokeWidth={2.5} />}
+                </View>
+              </View>
+            }
           />
         ))}
       </Card>
@@ -374,5 +369,5 @@ const styles = StyleSheet.create({
   deptTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
   deptFill: { height: 10, borderRadius: 5 },
   deptCount: { width: 24, textAlign: 'right' },
-  emoji: { position: 'absolute', right: -4, bottom: -4, width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', right: -4, bottom: -4, width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 });

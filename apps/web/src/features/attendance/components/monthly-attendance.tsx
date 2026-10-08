@@ -43,8 +43,8 @@ const DayDetail = ({ dateKey, record, holiday, timeZone, allowCorrections }: { d
     {record ? (
       <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         {[
-          ['Clock in', formatTimeIn(record.checkIn, timeZone)],
-          ['Clock out', formatTimeIn(record.checkOut, timeZone)],
+          ['Check in', formatTimeIn(record.checkIn, timeZone)],
+          ['Check out', formatTimeIn(record.checkOut, timeZone)],
           ['Worked', minutesToHours(record.workingMinutes)],
           ['Break', minutesToHours(record.breakMinutes)],
           ['Overtime', minutesToHours(record.overtimeMinutes)],

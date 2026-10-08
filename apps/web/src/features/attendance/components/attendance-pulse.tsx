@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react';
-import { Clock3, Home, PartyPopper, Plane, Sunrise, Timer, TimerOff, UserCheck, UserX } from 'lucide-react';
+import { Clock3, Home, PartyPopper, Plane, Sunrise, Timer, TimerOff, Trophy, UserCheck, UserX } from 'lucide-react';
 import { Avatar } from '@/components/ui/display';
 import { clock12, cn, formatNumber } from '@/lib/utils';
 import type { AttendanceDashboard, BoardCard, TrendPoint } from '../api';
@@ -259,7 +259,7 @@ export const PulseHeader = ({
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               {firstIn ? (
                 <p className="flex items-center gap-2 text-fg-2">
-                  <span aria-hidden>🏆</span>
+                  <Trophy className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
                   First in:
                   <span className="font-semibold text-fg">{firstIn.employee.firstName}</span>
                   <span className="text-muted">{clock12(formatTimeIn(firstIn.checkIn, timeZone))}</span>

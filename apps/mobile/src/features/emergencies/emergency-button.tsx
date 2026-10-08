@@ -101,6 +101,7 @@ export const EmergencyButton = () => {
             <View style={styles.grid}>
               {(Object.keys(CATEGORY_META) as EmergencyCategory[]).map((k) => {
                 const selected = category === k;
+                const CategoryIcon = CATEGORY_META[k].icon;
                 return (
                   <Pressable
                     key={k}
@@ -113,7 +114,7 @@ export const EmergencyButton = () => {
                       selected ? { borderColor: '#ef4444', backgroundColor: '#fef2f2', borderWidth: 2 } : { borderColor: c.line, backgroundColor: c.surface },
                     ]}
                   >
-                    <Text size="xl">{CATEGORY_META[k].emoji}</Text>
+                    <CategoryIcon size={24} color={selected ? '#dc2626' : c.fg2} />
                     <Text size="xs" weight="medium" style={selected ? { color: '#b91c1c' } : undefined}>
                       {CATEGORY_META[k].label}
                     </Text>

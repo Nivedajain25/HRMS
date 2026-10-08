@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts';
+import { Target } from 'lucide-react';
 import { ChartDataTable, ChartFrame, chartAxis, chartGrid } from '@/components/charts/chart-kit';
 import { label } from '@/lib/i18n';
 import { cn, minutesToHours } from '@/lib/utils';
@@ -60,7 +61,12 @@ const WeekTooltip = ({ active, payload, timeZone, goalHours }: TooltipProps<numb
         <>
           <p className="mt-1 text-fg-2">
             Worked <span className="font-semibold text-fg">{minutesToHours(Math.round(row.hours * 60))}</span>
-            {row.hours >= goalHours && ' 🎯'}
+            {row.hours >= goalHours && (
+              <>
+                {' '}
+                <Target className="inline-block h-3.5 w-3.5 align-[-0.125em] text-emerald-600 dark:text-emerald-400" aria-hidden />
+              </>
+            )}
           </p>
           {row.checkIn && (
             <p className="text-muted">

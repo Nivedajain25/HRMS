@@ -170,9 +170,9 @@ export const CaptureDetails = ({ record, timeZone, className }: { record: Attend
   if (!record.checkIn) return null;
   return (
     <section aria-label="Clock-in verification" className={cn('grid gap-3 sm:grid-cols-2', className)}>
-      <CapturePanel title="Clock in" time={record.checkIn} photoId={record.checkInPhotoId} point={record.checkInLocation} timeZone={timeZone} />
+      <CapturePanel title="Check in" time={record.checkIn} photoId={record.checkInPhotoId} point={record.checkInLocation} timeZone={timeZone} />
       {record.checkOut ? (
-        <CapturePanel title="Clock out" time={record.checkOut} photoId={record.checkOutPhotoId} point={record.checkOutLocation} timeZone={timeZone} />
+        <CapturePanel title="Check out" time={record.checkOut} photoId={record.checkOutPhotoId} point={record.checkOutLocation} timeZone={timeZone} />
       ) : (
         <div className="flex items-center justify-center rounded-xl border border-dashed border-line p-3 text-sm text-muted">Not clocked out yet</div>
       )}

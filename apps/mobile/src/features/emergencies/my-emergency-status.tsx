@@ -79,7 +79,7 @@ export const MyEmergencyStatus = () => {
       ) : null}
 
       {decided && !seen.includes(e._id) ? (
-        <BottomSheet open onClose={markSeen} title={approved ? '✅ Approved — you can leave' : '❌ Request declined'}>
+        <BottomSheet open onClose={markSeen} title={approved ? 'Approved — you can leave' : 'Request declined'}>
           <View style={[styles.card, { backgroundColor: tone.bg, borderColor: tone.border }]}>
             <Text size="sm">
               <Text size="sm" weight="bold">

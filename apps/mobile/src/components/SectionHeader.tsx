@@ -10,7 +10,7 @@ export const SectionHeader = ({
   onAction,
   count,
   tone,
-  emoji,
+  tile,
 }: {
   title: string;
   icon?: IconComponent;
@@ -19,20 +19,18 @@ export const SectionHeader = ({
   count?: number;
   /** Colours the icon in a soft bubble (each home section gets its own colour). */
   tone?: Tone;
-  /** Employee dashboard (as on the web): an emoji on a soft tile of this colour, plain black title. */
-  emoji?: { emoji: string; tile: string };
+  /** Employee dashboard (as on the web): this icon on a soft tile (`bg`) in `color`, plain black title. */
+  tile?: { icon: IconComponent; bg: string; color: string };
 }) => {
   const { c } = useTheme();
   const t = tone ? toneColors(tone, c) : null;
-  const tiled = !!emoji?.emoji;
+  const tiled = !!tile;
   return (
     <View style={styles.row}>
       <View style={styles.title}>
-        {tiled ? (
-          <View style={[styles.tile, { backgroundColor: emoji!.tile }]}>
-            <Text size="md" accessibilityElementsHidden importantForAccessibility="no">
-              {emoji!.emoji}
-            </Text>
+        {tile ? (
+          <View style={[styles.tile, { backgroundColor: tile.bg }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <tile.icon size={18} color={tile.color} />
           </View>
         ) : Icon && t ? (
           <View style={[styles.bubble, { backgroundColor: t.bg }]}>

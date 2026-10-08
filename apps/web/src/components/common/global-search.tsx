@@ -7,6 +7,8 @@ import { get } from '@/lib/api';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { Modal } from '../ui/overlay';
+import { AppIcon } from './app-icon';
+import { usePageResults, type PageResult } from './page-search';
 
 const ICONS: Record<SearchResult['type'], typeof Search> = {
   employee: UserRound,
@@ -29,31 +31,38 @@ const GROUP_LABEL: Record<SearchResult['type'], string> = {
   announcement: 'Announcements',
 };
 
-/** Command-palette style global search (Ctrl/⌘ K). */
+type Item = { kind: 'page'; page: PageResult } | { kind: 'record'; record: SearchResult };
+
+/**
+ * Command-palette style global search (Ctrl/⌘ K): pages first ("payslips", "check in", "holidays" jump straight to
+ * that page), then matching records (people, documents, leave requests…).
+ */
 export const GlobalSearch = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
   const debounced = useDebounce(q.trim(), 250);
   const navigate = useNavigate();
+  const pages = usePageResults(q.trim());
   const results = useQuery({
     queryKey: ['search', debounced],
     queryFn: () => get<SearchResult[]>('/search', { q: debounced, limit: 6 }),
     enabled: open && debounced.length >= 2,
     staleTime: 15_000,
   });
-  const items = results.data ?? [];
+  const records = debounced.length >= 2 ? (results.data ?? []) : [];
+  const items: Item[] = [...pages.map((page) => ({ kind: 'page' as const, page })), ...records.map((record) => ({ kind: 'record' as const, record }))];
 
   useEffect(() => {
     if (!open) setQ('');
   }, [open]);
-  useEffect(() => setActive(0), [debounced]);
+  useEffect(() => setActive(0), [q]);
 
-  const go = (r: SearchResult) => {
+  const go = (item: Item) => {
     onClose();
-    navigate(r.url);
+    navigate(item.kind === 'page' ? item.page.to : item.record.url);
   };
 
-  let lastType: string | null = null;
+  let lastGroup: string | null = null;
   return (
     <Modal open={open} onClose={onClose} title="Search" size="lg">
       <div className="-mx-5 -mt-4 border-b border-line px-5 py-3">
@@ -63,7 +72,7 @@ export const GlobalSearch = ({ open, onClose }: { open: boolean; onClose: () => 
             data-autofocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Type at least 2 characters…"
+            placeholder="Search pages, people, documents…"
             aria-label="Search"
             className="w-full bg-transparent py-1 text-base outline-none placeholder:text-subtle"
             onKeyDown={(e) => {
@@ -79,33 +88,46 @@ export const GlobalSearch = ({ open, onClose }: { open: boolean; onClose: () => 
         </label>
       </div>
       <div className="-mx-5 min-h-40 px-2 py-2" role="listbox" aria-label="Search results">
-        {debounced.length < 2 && <p className="px-3 py-8 text-center text-sm text-muted">Search employees, candidates, departments, assets, documents, leave and announcements.</p>}
-        {debounced.length >= 2 && results.isFetching && !items.length && <p className="px-3 py-8 text-center text-sm text-muted">Searching…</p>}
-        {debounced.length >= 2 && !results.isFetching && !items.length && <p className="px-3 py-8 text-center text-sm text-muted">No results for “{debounced}”.</p>}
-        {items.map((r, i) => {
-          const Icon = ICONS[r.type] ?? Search;
-          const header = r.type !== lastType ? GROUP_LABEL[r.type] : null;
-          lastType = r.type;
+        {!q.trim() && (
+          <p className="px-3 py-8 text-center text-sm text-muted">Type a page (e.g. “payslips”, “check in”, “holidays”) or search people, documents, leave and announcements.</p>
+        )}
+        {q.trim() && !items.length && (debounced.length < 2 || !results.isFetching) && <p className="px-3 py-8 text-center text-sm text-muted">No results for “{q.trim()}”.</p>}
+        {items.map((item, i) => {
+          const group = item.kind === 'page' ? 'Pages' : GROUP_LABEL[item.record.type];
+          const header = group !== lastGroup ? group : null;
+          lastGroup = group;
           return (
-            <div key={`${r.type}-${r.id}`}>
+            <div key={item.kind === 'page' ? `page-${item.page.to}` : `${item.record.type}-${item.record.id}`}>
               {header && <p className="px-3 pt-3 pb-1 text-[11px] font-semibold tracking-wider text-subtle uppercase">{header}</p>}
               <button
                 type="button"
                 role="option"
                 aria-selected={i === active}
                 onMouseEnter={() => setActive(i)}
-                onClick={() => go(r)}
-                className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left', i === active && 'bg-surface-3')}
+                onClick={() => go(item)}
+                className={cn('group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left', i === active && 'bg-surface-3')}
               >
-                <Icon className="h-4 w-4 shrink-0 text-muted" />
+                {item.kind === 'page' ? (
+                  <AppIcon icon={item.page.icon} tone={item.page.tone} size="sm" />
+                ) : (
+                  (() => {
+                    const Icon = ICONS[item.record.type] ?? Search;
+                    return <Icon className="h-4 w-4 shrink-0 text-muted" />;
+                  })()
+                )}
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-fg">{r.title}</span>
-                  {r.subtitle && <span className="block truncate text-xs text-muted">{r.subtitle}</span>}
+                  <span className="block truncate text-sm font-medium text-fg">{item.kind === 'page' ? item.page.label : item.record.title}</span>
+                  {item.kind === 'page' ? (
+                    <span className="block truncate text-xs text-muted">{item.page.section === 'Menu' ? 'Page' : `${item.page.section} page`}</span>
+                  ) : item.record.subtitle ? (
+                    <span className="block truncate text-xs text-muted">{item.record.subtitle}</span>
+                  ) : null}
                 </span>
               </button>
             </div>
           );
         })}
+        {debounced.length >= 2 && results.isFetching && <p className="px-3 py-2 text-xs text-muted">Searching records…</p>}
       </div>
     </Modal>
   );

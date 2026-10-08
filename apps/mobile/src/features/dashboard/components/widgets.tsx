@@ -68,7 +68,7 @@ export const Widget = <T,>({ title, icon, query, isEmpty, empty, children, actio
   </View>
 );
 
-/** Employees: the web's emoji on a soft-blue tile + plain black title; everyone else: the coloured icon bubble. */
+/** Employees: an icon on the web's soft-blue tile + plain black title; everyone else: the coloured icon bubble. */
 const WidgetTitle = ({ title, icon, actionLabel, onAction }: { title: string; icon: IconComponent; actionLabel?: string; onAction?: () => void }) => {
   const { c } = useTheme();
   const employee = useEmployeeLook();
@@ -79,7 +79,7 @@ const WidgetTitle = ({ title, icon, actionLabel, onAction }: { title: string; ic
       actionLabel={actionLabel}
       onAction={onAction}
       tone={SECTION_TONE[title] ?? 'brand'}
-      emoji={employee ? employeeTitle(title, c.scheme === 'dark') : undefined}
+      tile={employee ? employeeTitle(title, c.scheme === 'dark') : undefined}
     />
   );
 };

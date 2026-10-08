@@ -63,7 +63,7 @@ export const EmergencyPopup = () => {
   const amber = toneColors('amber', c);
 
   return (
-    <BottomSheet open onClose={done} title="🚨 Emergency alert" description={`Raised ${timeAgo(e.createdAt)}`}>
+    <BottomSheet open onClose={done} title="Emergency alert" description={`Raised ${timeAgo(e.createdAt)}`}>
       {/* Who and what */}
       <View style={[styles.card, { backgroundColor: red.bg, borderColor: red.border }]}>
         <View style={styles.row}>
@@ -79,7 +79,10 @@ export const EmergencyPopup = () => {
         </View>
         <View style={styles.tags}>
           <View style={[styles.tag, { backgroundColor: c.surface, borderColor: red.border }]}>
-            <Text size="xs" weight="semibold" style={{ color: red.fg }}>{`${cat.emoji} ${cat.label}`}</Text>
+            <cat.icon size={13} color={red.fg} />
+            <Text size="xs" weight="semibold" style={{ color: red.fg }}>
+              {cat.label}
+            </Text>
           </View>
           {e.needToLeave ? (
             <View style={[styles.tag, { backgroundColor: amber.bg, borderColor: amber.border }]}>

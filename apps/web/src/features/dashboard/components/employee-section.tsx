@@ -24,8 +24,9 @@ import { ListSkeleton, ViewAllLink, Widget, WidgetBoundary, WidgetEmpty } from '
 /** `box`: admin "My day" style — title in a coloured box (these bg classes), black text. */
 const Holidays = ({ data, box }: { data: EmployeeDashboard; box?: string }) => (
   <Widget
-    title={box ? '🎉 Upcoming holidays' : 'Upcoming holidays'}
+    title="Upcoming holidays"
     titleBox={box}
+    titleIcon={box ? PartyPopper : undefined}
     className={box ? 'border-violet-200 dark:border-violet-500/20 [&>header]:border-b [&>header]:border-line' : undefined}
     icon={box ? undefined : <PartyPopper className="h-4 w-4" />}
     accent="teal"
@@ -60,8 +61,9 @@ const Holidays = ({ data, box }: { data: EmployeeDashboard; box?: string }) => (
 
 const Goals = ({ data, box }: { data: EmployeeDashboard; box?: string }) => (
   <Widget
-    title={box ? '🎯 My goals' : 'My goals'}
+    title="My goals"
     titleBox={box}
+    titleIcon={box ? Target : undefined}
     className={box ? 'border-violet-200 dark:border-violet-500/20 [&>header]:border-b [&>header]:border-line' : undefined}
     description={data.goals.length ? `${data.goals.length} active` : undefined}
     icon={box ? undefined : <Target className="h-4 w-4" />}
@@ -103,8 +105,9 @@ const NotificationsWidget = ({ unread, boxed = false, box }: { unread?: number; 
   const count = unread ?? list.data?.pagination.total ?? 0;
   return (
     <Widget
-      title={box ? '🔔 Notifications' : 'Notifications'}
+      title="Notifications"
       titleBox={box}
+      titleIcon={box ? Bell : undefined}
       className={boxed ? 'bg-[#f8fbff] dark:bg-surface [&>header]:border-b [&>header]:border-line' : box ? 'border-violet-200 dark:border-violet-500/20 [&>header]:border-b [&>header]:border-line' : undefined}
       description={count ? `${count} unread` : 'All caught up'}
       icon={box ? undefined : <Bell className="h-4 w-4" />}

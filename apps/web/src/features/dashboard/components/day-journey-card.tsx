@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlarmClock, ArrowRight, Building2, Clock, Coffee, Home, Hourglass, LogIn, LogOut, PartyPopper } from 'lucide-react';
+import {
+  AlarmClock,
+  ArrowRight,
+  BicepsFlexed,
+  Building2,
+  Clock,
+  Coffee,
+  Hand,
+  Home,
+  Hourglass,
+  LogIn,
+  LogOut,
+  PartyPopper,
+  Rocket,
+  Sparkles,
+  Target,
+  TreePalm,
+  type LucideIcon,
+} from 'lucide-react';
 import { StatusBadge } from '@/components/common/status-badge';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/overlay';
@@ -24,35 +42,35 @@ const dayState = (r: DashboardAttendance | null): DayState => {
 };
 
 const PILL: Record<Exclude<DayState, 'NO_CLOCK'>, { text: string; dot: string; ping: boolean }> = {
-  NOT_CHECKED_IN: { text: 'Not clocked in', dot: 'bg-slate-400', ping: false },
+  NOT_CHECKED_IN: { text: 'Not checked in', dot: 'bg-slate-400', ping: false },
   WORKING: { text: 'Working', dot: 'bg-emerald-500', ping: true },
   ON_BREAK: { text: 'On break', dot: 'bg-amber-500', ping: true },
-  DONE: { text: 'Clocked out', dot: 'bg-sky-500', ping: false },
+  DONE: { text: 'Checked out', dot: 'bg-sky-500', ping: false },
 };
 
-/** Friendly one-liner for the moment. */
-const moodLine = (state: DayState, hour: number, status?: string) => {
+/** Friendly one-liner for the moment (with a small icon after it). */
+const moodLine = (state: DayState, hour: number, status?: string): { text: string; icon?: LucideIcon } => {
   switch (state) {
     case 'NOT_CHECKED_IN':
-      return hour < 12 ? 'Ready to start your day? ☕' : 'Don’t forget to clock in 👋';
+      return hour < 12 ? { text: 'Ready to start your day?', icon: Coffee } : { text: 'Don’t forget to clock in', icon: Hand };
     case 'WORKING':
       return hour < 12
-        ? 'Great start — you’re on the clock! 🚀'
+        ? { text: 'Great start — you’re on the clock!', icon: Rocket }
         : hour < 17
-          ? 'You’re doing great, keep going! 💪'
-          : 'Almost there — wrap up strong! ✨';
+          ? { text: 'You’re doing great, keep going!', icon: BicepsFlexed }
+          : { text: 'Almost there — wrap up strong!', icon: Sparkles };
     case 'ON_BREAK':
-      return 'Enjoy your break, you’ve earned it ☕';
+      return { text: 'Enjoy your break, you’ve earned it', icon: Coffee };
     case 'DONE':
-      return 'Great work today! See you tomorrow 👋';
+      return { text: 'Great work today! See you tomorrow', icon: Hand };
     default:
       return status === 'HOLIDAY'
-        ? 'Happy holiday! 🎉'
+        ? { text: 'Happy holiday!', icon: PartyPopper }
         : status === 'WEEK_OFF'
-          ? 'It’s your day off — relax 🌴'
+          ? { text: 'It’s your day off — relax', icon: TreePalm }
           : status === 'LEAVE'
-            ? 'Enjoy your time off 🌴'
-            : 'No attendance needed today';
+            ? { text: 'Enjoy your time off', icon: TreePalm }
+            : { text: 'No attendance needed today' };
   }
 };
 
@@ -121,16 +139,18 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
   const hour = hourIn(timeZone, new Date(now));
   const pill = state === 'NO_CLOCK' ? null : PILL[state];
   const onBreakSince = state === 'ON_BREAK' ? r?.breaks[r.breaks.length - 1]?.start : null;
+  const mood = moodLine(state, hour, r?.status);
+  const MoodIcon = mood.icon;
 
-  const clockIn = () => flow.run('check-in', { workMode: 'OFFICE', success: 'Clocked in. Have a productive day!' });
+  const clockIn = () => flow.run('check-in', { workMode: 'OFFICE', success: 'Checked in. Have a productive day!' });
   const clockOut = async () => {
     const { confirmed } = await confirm({
-      title: 'Clock out for today?',
+      title: 'Check out for today?',
       message: `You have worked ${minutesToHours(workedMinutes)} so far. You won't be able to clock in again today; use regularization for corrections.`,
-      confirmLabel: 'Clock out',
+      confirmLabel: 'Check out',
       tone: 'primary',
     });
-    if (confirmed) await flow.run('check-out', { success: 'Clocked out. See you tomorrow!' });
+    if (confirmed) await flow.run('check-out', { success: 'Checked out. See you tomorrow!' });
   };
 
   // Three compact facts under the timer (replaces the chip boxes).
@@ -195,7 +215,13 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
           Ends <b className="font-semibold text-fg tabular-nums">{shiftEndText}</b>
           {(state === 'WORKING' || state === 'ON_BREAK') && (
             <span className="ml-1.5 font-medium text-violet-600 dark:text-violet-400">
-              {remaining > 0 ? `${minutesToHours(remaining)} to go` : 'hours done 🎉'}
+              {remaining > 0 ? (
+                `${minutesToHours(remaining)} to go`
+              ) : (
+                <>
+                  hours done <PartyPopper className="inline-block h-3.5 w-3.5 align-[-0.125em]" aria-hidden />
+                </>
+              )}
             </span>
           )}
         </>
@@ -260,7 +286,7 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
                   disabled={flow.busy}
                   onClick={clockIn}
                 >
-                  Clock in
+                  Check in
                 </Button>
               </span>
             )}
@@ -272,7 +298,7 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
                 disabled={flow.busy}
                 onClick={clockOut}
               >
-                Clock out
+                Check out
               </Button>
             )}
           </div>
@@ -307,7 +333,11 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
               </div>
               <p className="mt-1.5 flex justify-between text-xs text-muted">
                 <span>{state === 'NO_CLOCK' && r ? label(r.status) : `${Math.round(progress * 100)}% of ${minutesToHours(target)}`}</span>
-                {progress >= 1 && <span className="font-medium text-emerald-600 dark:text-emerald-400">Goal reached 🎯</span>}
+                {progress >= 1 && (
+                  <span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                    Goal reached <Target className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -342,7 +372,10 @@ export const TodayCard = ({ data }: { data: EmployeeDashboard }) => {
         )}
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-          <p className="text-sm font-medium text-fg-2">{moodLine(state, hour, r?.status)}</p>
+          <p className="inline-flex items-center gap-1.5 text-sm font-medium text-fg-2">
+            {mood.text}
+            {MoodIcon ? <MoodIcon className="h-4 w-4 text-brand-600 dark:text-brand-400" aria-hidden /> : null}
+          </p>
           {state === 'ON_BREAK' && (
             <p className="text-xs text-amber-700 dark:text-amber-300">End your break on the attendance page before clocking out.</p>
           )}

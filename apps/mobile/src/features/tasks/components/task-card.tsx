@@ -27,7 +27,7 @@ const DoneSheet = ({ task, onClose }: { task: Task; onClose: () => void }) => {
   const save = async () => {
     try {
       await setStatus.mutateAsync({ id: task._id, status: 'DONE', note: note.trim() || undefined });
-      toast.success('Task finished 🎉', 'It has moved to Finished tasks.');
+      toast.success('Task finished', 'It has moved to Finished tasks.');
       onClose();
     } catch (err) {
       toast.error('Could not update the task', toApiError(err).message);

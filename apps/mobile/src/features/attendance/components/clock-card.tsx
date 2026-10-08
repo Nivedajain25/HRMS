@@ -45,10 +45,10 @@ import { useClockAction, useToday, type LiveState, type TodayState, type WorkMod
 import { useClockFlow } from '../use-clock-flow';
 
 const STATE_META: Record<LiveState, { label: string; tone: Tone }> = {
-  NOT_CHECKED_IN: { label: 'Not clocked in', tone: 'gray' },
+  NOT_CHECKED_IN: { label: 'Not checked in', tone: 'gray' },
   CHECKED_IN: { label: 'Working', tone: 'green' },
   ON_BREAK: { label: 'On break', tone: 'amber' },
-  CHECKED_OUT: { label: 'Clocked out', tone: 'blue' },
+  CHECKED_OUT: { label: 'Checked out', tone: 'blue' },
 };
 
 /** Soft card background per status (white fading into the status colour). */
@@ -228,16 +228,16 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
   };
 
   const onClockIn = () =>
-    void flow.run('check-in', { workMode: t.allowRemoteClockIn ? mode : 'OFFICE', success: 'Clocked in. Have a productive day!' });
+    void flow.run('check-in', { workMode: t.allowRemoteClockIn ? mode : 'OFFICE', success: 'Checked in. Have a productive day!' });
 
   const onClockOut = async () => {
     const { confirmed } = await confirm({
-      title: 'Clock out for today?',
-      message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won’t be able to clock in again today; use a regularization request for changes.`,
-      confirmLabel: 'Clock out',
+      title: 'Check out for today?',
+      message: `You have worked ${minutesToHours(Math.floor(worked / 60))} today. You won’t be able to check in again today; use a regularization request for changes.`,
+      confirmLabel: 'Check out',
       tone: 'danger',
     });
-    if (confirmed) await flow.run('check-out', { success: 'Clocked out. Have a good evening!' });
+    if (confirmed) await flow.run('check-out', { success: 'Checked out. Have a good evening!' });
   };
 
   // Progress / errors from the clock flow (location, selfie, upload) — shown by both variants.
@@ -282,8 +282,34 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
     // on a gradient in the role's colour (employee navy / blue, HR & admin purple).
     const done = t.state === 'CHECKED_OUT';
     const working = t.state === 'CHECKED_IN' || t.state === 'ON_BREAK';
+    const start = new Date(t.shiftStart).getTime();
     const end = new Date(t.shiftEnd).getTime();
-    const left = Math.max(0, end - now.getTime());
+    const nowMs = now.getTime();
+    const secs = (ms: number) => Math.max(0, ms) / 1000;
+    const countdown: { label: string; value: string; icon: IconComponent; warn?: boolean }[] =
+      t.state === 'CHECKED_OUT'
+        ? [
+            { label: 'Worked today', value: formatClock(worked), icon: Timer },
+            { label: 'Checked out', value: r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—', icon: CheckCircle2 },
+          ]
+        : working
+          ? [
+              { label: 'Since check-in', value: formatClock(worked), icon: Timer },
+              nowMs < end
+                ? { label: 'Check-out in', value: formatClock(secs(end - nowMs)), icon: LogOut }
+                : { label: 'Overtime', value: `+${formatClock(secs(nowMs - end))}`, icon: AlarmClock, warn: true },
+            ]
+          : nowMs < start
+            ? [
+                { label: 'Check-in in', value: formatClock(secs(start - nowMs)), icon: LogIn },
+                { label: 'Shift length', value: formatClock(secs(end - start)), icon: Timer },
+              ]
+            : nowMs < end
+              ? [
+                  { label: 'Late by', value: formatClock(secs(nowMs - start)), icon: AlarmClock, warn: true },
+                  { label: 'Shift ends in', value: formatClock(secs(end - nowMs)), icon: LogOut },
+                ]
+              : [{ label: 'Shift ended', value: formatTimeIn(t.shiftEnd, timeZone), icon: LogOut }];
     const onHero = { color: '#ffffff' };
     const soft = { color: 'rgba(255,255,255,0.82)' };
     const glass = { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' };
@@ -345,25 +371,37 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
           </View>
 
           <View style={styles.heroBoxes}>
-            {timeBox('Clock In', r?.checkIn, LogIn)}
-            {timeBox('Clock Out', r?.checkOut, LogOut)}
+            {timeBox('Check In', r?.checkIn, LogIn)}
+            {timeBox('Check Out', r?.checkOut, LogOut)}
           </View>
 
-          <View style={styles.heroWorked}>
-            <Timer size={14} color="rgba(255,255,255,0.85)" />
-            <Text size="sm" style={soft}>
-              {'Worked '}
-              <Text size="sm" weight="bold" tabular style={onHero}>
-                {t.state === 'NOT_CHECKED_IN' ? '0h' : minutesToHours(Math.floor(worked / 60))}
-              </Text>
-              {working && left > 0 ? ` · ${minutesToHours(Math.ceil(left / 60_000))} left in shift` : ''}
-            </Text>
-          </View>
+          {/* Live countdown, ticking every second: to the shift start before check-in, time since check-in and
+              the countdown to check-out while working (overtime after the shift ends), the day's total once done. */}
+          {t.dayKind === 'WORKING' || t.state !== 'NOT_CHECKED_IN' ? (
+            <View style={styles.heroBoxes}>
+              {countdown.map((cd) => (
+                <View key={cd.label} style={[styles.heroCount, glass, cd.warn && styles.heroCountWarn]} accessible accessibilityLabel={`${cd.label}: ${cd.value}`}>
+                  <View style={styles.heroBoxLabel}>
+                    <cd.icon size={14} color={cd.warn ? '#fde68a' : 'rgba(255,255,255,0.85)'} />
+                    <Text size="xs" weight="medium" style={cd.warn ? { color: '#fde68a' } : soft}>
+                      {cd.label}
+                    </Text>
+                  </View>
+                  <Text size="xl" weight="bold" tabular style={cd.warn ? { color: '#fde68a' } : onHero}>
+                    {cd.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           {t.dayKind !== 'WORKING' ? (
-            <Text size="sm" weight="semibold" style={onHero}>
-              {t.dayKind === 'HOLIDAY' ? `🎉 Holiday${t.holiday ? `: ${t.holiday}` : ''}` : '🌴 Today is a week off'}
-            </Text>
+            <View style={styles.heroBoxLabel}>
+              {t.dayKind === 'HOLIDAY' ? <PartyPopper size={16} color="#ffffff" /> : <Sun size={16} color="#ffffff" />}
+              <Text size="sm" weight="semibold" style={[onHero, styles.flex]}>
+                {t.dayKind === 'HOLIDAY' ? `Holiday${t.holiday ? `: ${t.holiday}` : ''}` : 'Today is a week off'}
+              </Text>
+            </View>
           ) : null}
 
           {t.state === 'NOT_CHECKED_IN' && t.allowRemoteClockIn ? (
@@ -402,7 +440,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
               onPress={working ? () => void onClockOut() : onClockIn}
               disabled={busy || t.state === 'ON_BREAK'}
               accessibilityRole="button"
-              accessibilityLabel={working ? 'Clock out' : 'Clock in'}
+              accessibilityLabel={working ? 'Check out' : 'Check in'}
               style={({ pressed }) => [styles.heroAction, { backgroundColor: '#ffffff', opacity: pressed || busy ? 0.85 : 1 }]}
             >
               {flow.active ? (
@@ -413,7 +451,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
                 <LogIn size={20} color={c.hero[0]} />
               )}
               <Text size="lg" weight="bold" style={{ color: c.hero[0] }}>
-                {working ? 'Clock out' : 'Clock in'}
+                {working ? 'Check out' : 'Check in'}
               </Text>
             </Pressable>
           )}
@@ -604,7 +642,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
               onPress={onClockIn}
               style={styles.flex}
             >
-              {r?.checkIn ? `In · ${formatTimeIn(r.checkIn, timeZone)}` : 'Clock in'}
+              {r?.checkIn ? `In · ${formatTimeIn(r.checkIn, timeZone)}` : 'Check in'}
             </Button>
             <Button
               colors={r?.checkOut ? tones.outDone : tones.out}
@@ -614,7 +652,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
               onPress={() => void onClockOut()}
               style={styles.flex}
             >
-              {r?.checkOut ? `Out · ${formatTimeIn(r.checkOut, timeZone)}` : 'Clock out'}
+              {r?.checkOut ? `Out · ${formatTimeIn(r.checkOut, timeZone)}` : 'Check out'}
             </Button>
           </View>
 
@@ -749,8 +787,8 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
             color={t.state === 'CHECKED_IN' ? c.success : undefined}
           />
           {showBreakTime ? <Metric label="Break" icon={Coffee} value={formatClock(onBreak)} color={t.state === 'ON_BREAK' ? c.warning : undefined} /> : null}
-          <Metric label="Clock in" icon={LogIn} value={r?.checkIn ? formatTimeIn(r.checkIn, timeZone) : '—'} />
-          <Metric label="Clock out" icon={LogOut} value={r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—'} />
+          <Metric label="Check in" icon={LogIn} value={r?.checkIn ? formatTimeIn(r.checkIn, timeZone) : '—'} />
+          <Metric label="Check out" icon={LogOut} value={r?.checkOut ? formatTimeIn(r.checkOut, timeZone) : '—'} />
         </View>
       ) : null}
 
@@ -789,7 +827,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
             </View>
           ) : null}
           <Button colors={tones.in} size="lg" icon={LogIn} loading={flow.active === 'check-in'} disabled={busy} onPress={onClockIn} fullWidth>
-            Clock in
+            Check in
           </Button>
           <View style={styles.hint}>
             {t.requireSelfie ? <Camera size={14} color={c.muted} /> : <MapPin size={14} color={c.muted} />}
@@ -836,7 +874,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
             onPress={() => void onClockOut()}
             style={styles.action}
           >
-            Clock out
+            Check out
           </Button>
         </View>
       ) : null}
@@ -878,7 +916,8 @@ const styles = StyleSheet.create({
   heroBoxes: { flexDirection: 'row', gap: space(2.5) },
   heroBox: { flex: 1, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: space(3), paddingVertical: space(2.5), gap: space(1) },
   heroBoxLabel: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
-  heroWorked: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
+  heroCount: { flex: 1, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: space(3), paddingVertical: space(2.5), gap: space(1) },
+  heroCountWarn: { backgroundColor: 'rgba(251,191,36,0.18)', borderColor: 'rgba(251,191,36,0.45)' },
   heroModes: { flexDirection: 'row', gap: space(2) },
   heroMode: { flex: 1, minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(1.5), borderRadius: radius.full, borderWidth: 1 },
   heroAction: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(2), borderRadius: radius.lg, borderWidth: 0 },

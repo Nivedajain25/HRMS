@@ -18,6 +18,7 @@ export const EmergencyBanner = () => {
   const first = items[0]!;
   const name = first.employeeId ? fullName(first.employeeId) : 'An employee';
   const unseen = items.filter((e) => e.status === 'OPEN').length;
+  const CategoryIcon = CATEGORY_META[first.category].icon;
 
   return (
     <PressScale onPress={() => router.push('/more/emergencies')} accessibilityRole="button" accessibilityLabel={`${items.length} active emergencies. Open`}>
@@ -30,9 +31,12 @@ export const EmergencyBanner = () => {
           <Text weight="bold" style={styles.white} numberOfLines={1}>
             {items.length > 1 ? `${items.length} active emergencies` : `Emergency: ${name}`}
           </Text>
-          <Text size="sm" style={styles.dim} numberOfLines={2}>
-            {`${CATEGORY_META[first.category].emoji} ${CATEGORY_META[first.category].label}${first.needToLeave ? ' · needs to leave' : ''} · ${timeAgo(first.createdAt)}${unseen ? ' · not acknowledged' : ''}`}
-          </Text>
+          <View style={styles.line}>
+            <CategoryIcon size={14} color="rgba(255,255,255,0.9)" style={styles.lineIcon} />
+            <Text size="sm" style={[styles.dim, styles.flex]} numberOfLines={2}>
+              {`${CATEGORY_META[first.category].label}${first.needToLeave ? ' · needs to leave' : ''} · ${timeAgo(first.createdAt)}${unseen ? ' · not acknowledged' : ''}`}
+            </Text>
+          </View>
         </View>
         <ChevronRight size={22} color="#ffffff" />
       </View>
@@ -42,6 +46,8 @@ export const EmergencyBanner = () => {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  line: { flexDirection: 'row', alignItems: 'flex-start', gap: space(1.5) },
+  lineIcon: { marginTop: 3.5 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: space(3), padding: space(4), borderRadius: radius.lg },
   icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)' },
   white: { color: '#ffffff' },

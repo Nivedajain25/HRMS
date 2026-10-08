@@ -55,8 +55,8 @@ const DayDetail = ({
   if (!record) return null;
   const key = record.date.slice(0, 10);
   const rows: [string, string][] = [
-    ['Clock in', formatTimeIn(record.checkIn, timeZone)],
-    ['Clock out', formatTimeIn(record.checkOut, timeZone)],
+    ['Check in', formatTimeIn(record.checkIn, timeZone)],
+    ['Check out', formatTimeIn(record.checkOut, timeZone)],
     ['Worked', minutesToHours(record.workingMinutes)],
     ['Break', minutesToHours(record.breakMinutes)],
     ['Work mode', record.workMode === 'REMOTE' ? 'Remote' : 'Office'],

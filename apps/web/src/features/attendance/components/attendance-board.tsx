@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Coffee, Home, LogIn, LogOut, MapPin, Palmtree, Search, UserX } from 'lucide-react';
+import { Building2, Coffee, Home, LogIn, LogOut, MapPin, Palmtree, PartyPopper, Search, UserX } from 'lucide-react';
 import { Avatar, Badge, ErrorState, Skeleton, type Tone } from '@/components/ui/display';
 import { Input, Select } from '@/components/ui/input';
 import { cn, minutesToHours } from '@/lib/utils';
@@ -11,8 +11,18 @@ import { formatTimeIn, useOrgTimezone } from '../lib';
 
 /* ------------------------------ Columns ------------------------------ */
 
-const COLUMN_STYLE: Record<BoardColumnKey, { bar: string; dot: string; tint: string; icon: ReactNode; empty: string }> = {
-  NOT_IN: { bar: 'bg-slate-400', dot: 'bg-slate-400', tint: 'bg-slate-50/70 dark:bg-slate-500/5', icon: <UserX className="h-4 w-4" />, empty: 'Everyone’s in 🎉' },
+const COLUMN_STYLE: Record<BoardColumnKey, { bar: string; dot: string; tint: string; icon: ReactNode; empty: ReactNode }> = {
+  NOT_IN: {
+    bar: 'bg-slate-400',
+    dot: 'bg-slate-400',
+    tint: 'bg-slate-50/70 dark:bg-slate-500/5',
+    icon: <UserX className="h-4 w-4" />,
+    empty: (
+      <span className="inline-flex items-center gap-1">
+        Everyone’s in <PartyPopper className="h-3.5 w-3.5" aria-hidden />
+      </span>
+    ),
+  },
   WORKING: { bar: 'bg-emerald-500', dot: 'bg-emerald-500', tint: 'bg-emerald-50/60 dark:bg-emerald-500/5', icon: <LogIn className="h-4 w-4" />, empty: 'Nobody working yet' },
   ON_BREAK: { bar: 'bg-amber-500', dot: 'bg-amber-500', tint: 'bg-amber-50/60 dark:bg-amber-500/5', icon: <Coffee className="h-4 w-4" />, empty: 'No one on a break' },
   DONE: { bar: 'bg-sky-500', dot: 'bg-sky-500', tint: 'bg-sky-50/60 dark:bg-sky-500/5', icon: <LogOut className="h-4 w-4" />, empty: 'Nobody has left yet' },

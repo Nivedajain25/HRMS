@@ -79,22 +79,22 @@ test.describe.serial('Stencil HRMS core journey', () => {
   test('employee clocks in and out', async ({ browser, request }) => {
     const page = await signIn(browser, USERS.employee);
     await page.goto('/attendance');
-    const clockIn = page.getByRole('button', { name: 'Clock in', exact: true });
+    const clockIn = page.getByRole('button', { name: 'Check in', exact: true });
     // Wait for the clock widget to settle in whichever state today's record is in.
-    await expect(page.getByRole('button', { name: /^Clock (in|out)$/ }).or(page.getByText(/day complete|clocked out/i)).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: /^Check (in|out)$/ }).or(page.getByText(/day complete|checked out/i)).first()).toBeVisible({ timeout: 30_000 });
     if (await clockIn.isVisible()) {
       await clockIn.click();
-      await confirmIfAsked(page, /clock in/i);
+      await confirmIfAsked(page, /check in/i);
     }
     // The seeded day may already be clocked in (or finished by an earlier run on a reused server).
-    const clockOut = page.getByRole('button', { name: 'Clock out', exact: true });
+    const clockOut = page.getByRole('button', { name: 'Check out', exact: true });
     const canClockOut = await clockOut
       .waitFor({ state: 'visible', timeout: 5_000 })
       .then(() => true)
       .catch(() => false);
     if (canClockOut) {
       await clockOut.click();
-      await confirmIfAsked(page, /clock out/i);
+      await confirmIfAsked(page, /check out/i);
     }
     const token = await apiToken(request, USERS.employee);
     type Today = { record: { checkIn: string | null; checkOut: string | null; workingMinutes: number } | null };

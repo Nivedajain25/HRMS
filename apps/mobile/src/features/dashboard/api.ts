@@ -161,10 +161,40 @@ export const dashboardKeys = {
   admin: ['dashboard', 'admin'] as const,
   board: ['dashboard', 'board'] as const,
   orgActivity: ['dashboard', 'activity', 'all'] as const,
+  referrals: ['dashboard', 'referrals'] as const,
 };
 
 export const useAdminDashboard = (enabled: boolean) =>
   useQuery({ queryKey: dashboardKeys.admin, queryFn: () => get<AdminDashboard>('/dashboard/admin'), enabled, refetchInterval: 60_000 });
+
+interface ReferralPerson {
+  _id: string;
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  profilePhoto?: string | null;
+}
+
+/** Candidates referred by employees (web dashboard "Referrals" card): totals, the latest few and the top referrer. */
+export interface ReferralSummary {
+  total: number;
+  inProcess: number;
+  hired: number;
+  recent: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    stage: string;
+    createdAt: string;
+    jobId: { _id: string; code?: string; title: string } | null;
+    referredBy: ReferralPerson | null;
+  }[];
+  topReferrer: (ReferralPerson & { count: number }) | null;
+}
+
+/** Needs `recruitment:read` (Super Admin, Admin, HR). Under the dashboard root, so pull-to-refresh updates it. */
+export const useReferralSummary = (enabled: boolean) =>
+  useQuery({ queryKey: dashboardKeys.referrals, queryFn: () => get<ReferralSummary>('/recruitment/referrals/summary'), enabled, refetchInterval: 120_000 });
 
 /** Live board for today, or any `date` (YYYY-MM-DD), optionally one department. */
 export const useAttendanceBoard = (enabled: boolean, opts: { date?: string; departmentId?: string | null } = {}) =>

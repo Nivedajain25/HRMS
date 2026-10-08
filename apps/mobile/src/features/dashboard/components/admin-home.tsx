@@ -10,23 +10,25 @@ import {
   CalendarPlus,
   ChevronRight,
   FileWarning,
+  Handshake,
   Hourglass,
   House,
   LayoutGrid,
   Megaphone,
   Plane,
   Target,
+  Trophy,
   UserCheck,
   UserPlus,
   Users,
   UserX,
   Zap,
 } from 'lucide-react-native';
-import { Avatar, Card, SkeletonList, Text } from '@/components';
+import { Avatar, Card, SkeletonList, StatusBadge, Text } from '@/components';
 import { useAuth } from '@/lib/auth';
 import { formatKey } from '@/lib/time';
 import { radius, space, toneColors, useTheme, type Tone } from '@/theme';
-import { useAdminDashboard, useAttendanceBoard } from '../api';
+import { useAdminDashboard, useAttendanceBoard, useReferralSummary } from '../api';
 
 /* Super admin Home: the same blocks as the web admin dashboard (stat cards, Quick Actions, New Joiners, Employee Alerts). */
 
@@ -269,7 +271,96 @@ export const EmployeeAlerts = () => {
   );
 };
 
+/* ------------------------------- Referrals ------------------------------ */
+
+/**
+ * Candidates referred by employees (as on the web dashboard): totals, the latest few — who referred them and where
+ * they are — and the top referrer. Super Admin, Admin and HR (anyone with recruitment:read).
+ */
+export const Referrals = () => {
+  const { c } = useTheme();
+  const { can } = useAuth();
+  const allowed = can('recruitment:read');
+  const q = useReferralSummary(allowed);
+  if (!allowed) return null;
+  const d = q.data;
+  const dark = c.scheme === 'dark';
+  const accent = dark ? '#ddd6fe' : '#6d28d9';
+  const name = (p: { firstName: string; lastName: string }) => `${p.firstName} ${p.lastName}`.trim();
+  return (
+    <Card style={styles.gap}>
+      <Title icon={Handshake} title="Referrals" />
+      {q.isLoading ? (
+        <SkeletonList rows={3} />
+      ) : q.isError || !d ? (
+        <Text size="sm" color="muted">
+          Couldn’t load referrals.
+        </Text>
+      ) : d.total ? (
+        <>
+          <View style={styles.refStats}>
+            {[
+              { label: 'Referred', value: d.total },
+              { label: 'In process', value: d.inProcess },
+              { label: 'Hired', value: d.hired },
+            ].map((s) => (
+              <View key={s.label} style={[styles.refStat, { backgroundColor: dark ? 'rgba(139,92,246,0.12)' : VIOLET.bg }]} accessible accessibilityLabel={`${s.label}: ${s.value}`}>
+                <Text size="lg" weight="bold" tabular style={{ color: accent }}>
+                  {s.value}
+                </Text>
+                <Text size="xs" color="muted">
+                  {s.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+          {d.recent.slice(0, 4).map((r) => (
+            <View key={r._id} style={styles.person}>
+              <View style={styles.flex}>
+                <Text size="sm" weight="semibold" numberOfLines={1}>
+                  {name(r)}
+                </Text>
+                <Text size="xs" color="muted" numberOfLines={1}>
+                  {[r.jobId?.title, r.referredBy ? `by ${name(r.referredBy)}` : null].filter(Boolean).join(' · ') || 'Referral'}
+                </Text>
+              </View>
+              <StatusBadge status={r.stage} />
+            </View>
+          ))}
+          {d.topReferrer ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/more/team/[id]', params: { id: d.topReferrer!._id } })}
+              accessibilityRole="button"
+              accessibilityLabel={`Top referrer: ${name(d.topReferrer)}, ${d.topReferrer.count} referrals`}
+              style={[styles.person, styles.topRef, { borderTopColor: dark ? 'rgba(139,92,246,0.2)' : VIOLET.soft }]}
+            >
+              <Trophy size={16} color="#f59e0b" />
+              <Avatar name={name(d.topReferrer)} uri={d.topReferrer.profilePhoto} size={24} />
+              <Text size="xs" color="fg2" numberOfLines={1} style={styles.flex}>
+                {'Top referrer: '}
+                <Text size="xs" weight="semibold">
+                  {name(d.topReferrer)}
+                </Text>
+              </Text>
+              <Text size="xs" weight="semibold" tabular>
+                {d.topReferrer.count}
+              </Text>
+            </Pressable>
+          ) : null}
+        </>
+      ) : (
+        <Text size="sm" color="muted">
+          No referrals yet. HR adds them as candidates with source “Referral” (on the web, under Recruitment).
+        </Text>
+      )}
+    </Card>
+  );
+};
+
 const styles = StyleSheet.create({
+  refStats: { flexDirection: 'row', gap: space(2) },
+  refStat: { flex: 1, alignItems: 'center', borderRadius: radius.md, paddingVertical: space(1.5) },
+  topRef: { borderTopWidth: 1, paddingTop: space(2.5), gap: space(2) },
   flex: { flex: 1 },
   gap: { gap: space(2.5) },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

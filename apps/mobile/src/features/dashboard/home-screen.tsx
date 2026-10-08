@@ -15,7 +15,7 @@ import { radius, space, useTheme } from '@/theme';
 import { dashboardKeys, useEmployeeDashboard, useManagerDashboard } from './api';
 import { MyActivity } from './components/my-activity';
 import { MyTasks } from './components/my-tasks';
-import { AdminKpis, EmployeeAlerts, NewJoiners, QuickActions } from './components/admin-home';
+import { AdminKpis, EmployeeAlerts, NewJoiners, QuickActions, Referrals } from './components/admin-home';
 import { Celebrations, Departments, OrgToday, TasksOverview, TeamActivity, WhosIn } from './components/org-overview';
 import { Announcements, TeamSummary, UpcomingHolidays } from './components/widgets';
 import { EMPLOYEE_BANNER, employeeTitle, useEmployeeLook } from './employee-look';
@@ -171,13 +171,22 @@ export const HomeScreen = () => {
                 <NewJoiners />
               </Appear>
               <Appear index={2}>
+                <Referrals />
+              </Appear>
+              <Appear index={2}>
                 <EmployeeAlerts />
               </Appear>
             </>
           ) : (
-            <Appear index={2}>
-              <OrgToday />
-            </Appear>
+            <>
+              <Appear index={2}>
+                <OrgToday />
+              </Appear>
+              {/* HR: the same Referrals card as on the web HR dashboard. */}
+              <Appear index={2}>
+                <Referrals />
+              </Appear>
+            </>
           )}
           <Appear index={3}>
             <WhosIn />

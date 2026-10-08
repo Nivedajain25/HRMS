@@ -25,6 +25,7 @@ import {
   Card,
   ErrorState,
   GradientCard,
+  HalfMoonGauge,
   Notice,
   PopIn,
   PulseRing,
@@ -286,6 +287,7 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
     const end = new Date(t.shiftEnd).getTime();
     const nowMs = now.getTime();
     const secs = (ms: number) => Math.max(0, ms) / 1000;
+    // The first entry is the big one in the middle of the half-moon; the second sits under it.
     const countdown: { label: string; value: string; icon: IconComponent; warn?: boolean }[] =
       t.state === 'CHECKED_OUT'
         ? [
@@ -294,10 +296,10 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
           ]
         : working
           ? [
-              { label: 'Since check-in', value: formatClock(worked), icon: Timer },
               nowMs < end
                 ? { label: 'Check-out in', value: formatClock(secs(end - nowMs)), icon: LogOut }
                 : { label: 'Overtime', value: `+${formatClock(secs(nowMs - end))}`, icon: AlarmClock, warn: true },
+              { label: 'Since check-in', value: formatClock(worked), icon: Timer },
             ]
           : nowMs < start
             ? [
@@ -310,6 +312,8 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
                   { label: 'Shift ends in', value: formatClock(secs(end - nowMs)), icon: LogOut },
                 ]
               : [{ label: 'Shift ended', value: formatTimeIn(t.shiftEnd, timeZone), icon: LogOut }];
+    const [main, side] = countdown as [(typeof countdown)[number], (typeof countdown)[number] | undefined];
+    const shiftPct = Math.max(0, Math.min(100, progress));
     const onHero = { color: '#ffffff' };
     const soft = { color: 'rgba(255,255,255,0.82)' };
     const glass = { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' };
@@ -370,30 +374,42 @@ export const ClockCard = ({ compact, hero }: { compact?: boolean; /** Home: the 
             ) : null}
           </View>
 
+          {/* Half-moon: how much of the shift is worked, with the live countdown (ticking every second) in the middle —
+              to the shift start before check-in, to check-out while working (overtime after the shift ends), the day's
+              total once done — and the other figure under it. */}
+          {t.dayKind === 'WORKING' || t.state !== 'NOT_CHECKED_IN' ? (
+            <View style={styles.heroGauge}>
+              <HalfMoonGauge
+                value={shiftPct}
+                width={230}
+                color={main.warn ? '#fde68a' : '#ffffff'}
+                startLabel={formatTimeIn(t.shiftStart, timeZone)}
+                endLabel={formatTimeIn(t.shiftEnd, timeZone)}
+                accessibilityLabel={`${main.label}: ${main.value}. ${Math.round(shiftPct)}% of the shift worked`}
+              >
+                <View style={styles.heroBoxLabel}>
+                  <main.icon size={14} color={main.warn ? '#fde68a' : 'rgba(255,255,255,0.85)'} />
+                  <Text size="xs" weight="medium" style={main.warn ? { color: '#fde68a' } : soft}>
+                    {main.label}
+                  </Text>
+                </View>
+                <Text size="3xl" weight="bold" tabular style={main.warn ? { color: '#fde68a' } : onHero}>
+                  {main.value}
+                </Text>
+              </HalfMoonGauge>
+              {side ? (
+                <View style={[styles.heroPill, side.warn ? styles.heroCountWarn : glass]} accessible accessibilityLabel={`${side.label}: ${side.value}`}>
+                  <side.icon size={12} color="#ffffff" />
+                  <Text size="xs" weight="semibold" tabular style={onHero}>{`${side.label} · ${side.value}`}</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
           <View style={styles.heroBoxes}>
             {timeBox('Check In', r?.checkIn, LogIn)}
             {timeBox('Check Out', r?.checkOut, LogOut)}
           </View>
-
-          {/* Live countdown, ticking every second: to the shift start before check-in, time since check-in and
-              the countdown to check-out while working (overtime after the shift ends), the day's total once done. */}
-          {t.dayKind === 'WORKING' || t.state !== 'NOT_CHECKED_IN' ? (
-            <View style={styles.heroBoxes}>
-              {countdown.map((cd) => (
-                <View key={cd.label} style={[styles.heroCount, glass, cd.warn && styles.heroCountWarn]} accessible accessibilityLabel={`${cd.label}: ${cd.value}`}>
-                  <View style={styles.heroBoxLabel}>
-                    <cd.icon size={14} color={cd.warn ? '#fde68a' : 'rgba(255,255,255,0.85)'} />
-                    <Text size="xs" weight="medium" style={cd.warn ? { color: '#fde68a' } : soft}>
-                      {cd.label}
-                    </Text>
-                  </View>
-                  <Text size="xl" weight="bold" tabular style={cd.warn ? { color: '#fde68a' } : onHero}>
-                    {cd.value}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
 
           {t.dayKind !== 'WORKING' ? (
             <View style={styles.heroBoxLabel}>
@@ -918,6 +934,7 @@ const styles = StyleSheet.create({
   heroBoxLabel: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
   heroCount: { flex: 1, borderRadius: radius.lg, borderWidth: 1, paddingHorizontal: space(3), paddingVertical: space(2.5), gap: space(1) },
   heroCountWarn: { backgroundColor: 'rgba(251,191,36,0.18)', borderColor: 'rgba(251,191,36,0.45)' },
+  heroGauge: { alignItems: 'center', gap: space(2) },
   heroModes: { flexDirection: 'row', gap: space(2) },
   heroMode: { flex: 1, minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(1.5), borderRadius: radius.full, borderWidth: 1 },
   heroAction: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space(2), borderRadius: radius.lg, borderWidth: 0 },

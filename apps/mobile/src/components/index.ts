@@ -8,6 +8,7 @@ export * from './ConfirmSheet';
 export * from './DateField';
 export * from './Field';
 export * from './GradientCard';
+export * from './HalfMoonGauge';
 export * from './Header';
 export * from './ListItem';
 export * from './Logo';

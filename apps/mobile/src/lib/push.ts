@@ -39,7 +39,27 @@ const loadNotifications = (): typeof NotificationsModule | null => {
 };
 
 /**
- * Asks for notification permission, obtains the Expo push token and registers
+ * Android: the phone's own Firebase (FCM) token, which the server sends to through Firebase directly (needs
+ * google-services.json in the build). Otherwise, or if that fails, the Expo push token (needs the EAS project id).
+ */
+const pushToken = async (Notifications: typeof NotificationsModule): Promise<string | null> => {
+  if (Platform.OS === 'android') {
+    try {
+      const { data } = await Notifications.getDevicePushTokenAsync();
+      if (typeof data === 'string' && data) return data;
+    } catch (err) {
+      console.warn('[push] Firebase token unavailable, trying the Expo token', err);
+    }
+  }
+  if (!EAS_PROJECT_ID) {
+    console.warn('[push] EAS project id is not configured (EAS_PROJECT_ID); push notifications are disabled.');
+    return null;
+  }
+  return (await Notifications.getExpoPushTokenAsync({ projectId: EAS_PROJECT_ID })).data;
+};
+
+/**
+ * Asks for notification permission, obtains the push token (Firebase on Android) and registers
  * it with `POST /devices`. Returns the token, or `null` when push is not
  * available (Expo Go, simulator, permission denied, no EAS project id).
  */
@@ -57,11 +77,8 @@ export const registerForPush = async (): Promise<string | null> => {
   let granted = current.granted;
   if (!granted && current.canAskAgain) granted = (await Notifications.requestPermissionsAsync()).granted;
   if (!granted) return null;
-  if (!EAS_PROJECT_ID) {
-    console.warn('[push] EAS project id is not configured (EAS_PROJECT_ID); push notifications are disabled.');
-    return null;
-  }
-  const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId: EAS_PROJECT_ID });
+  const token = await pushToken(Notifications);
+  if (!token) return null;
   await post('/devices', {
     token,
     platform: Platform.OS === 'ios' ? 'ios' : 'android',

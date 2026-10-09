@@ -65,6 +65,8 @@ const schema = z.object({
   PUSH_ENABLED: z.string().optional(),
   /** Optional Expo access token (required only when "enhanced push security" is enabled in Expo). */
   EXPO_ACCESS_TOKEN: z.string().optional(),
+  /** Firebase service account key (the JSON file's contents, or base64 of it): sends push to phones through FCM. */
+  FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Encryption key for sensitive fields at rest (32+ chars). */
   FIELD_ENCRYPTION_KEY: z.string().min(32, 'FIELD_ENCRYPTION_KEY must be at least 32 characters'),

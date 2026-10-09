@@ -10,6 +10,13 @@ import { withAndroidManifest, type ConfigPlugin } from 'expo/config-plugins';
  *  - `EAS_PROJECT_ID`       EAS project id (from `eas init`); required for Expo push tokens.
  *  - `ANDROID_VERSION_CODE` Android version code for builds outside EAS (GitHub Actions passes its run number).
  */
+/** Whether a file exists next to this config (read at build time, in Node). */
+const hasFile = (root: string, name: string): boolean => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fsModule = require('fs') as { existsSync: (p: string) => boolean };
+  return fsModule.existsSync(`${root}/${name}`);
+};
+
 const BRAND = '#4f46e5';
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
 const projectId = process.env.EAS_PROJECT_ID;
@@ -27,7 +34,7 @@ const withCleartextForHttpApi: ConfigPlugin = (cfg) =>
       })
     : cfg;
 
-export default ({ config }: ConfigContext): ExpoConfig => withCleartextForHttpApi({
+export default ({ config, projectRoot }: ConfigContext): ExpoConfig => withCleartextForHttpApi({
   ...config,
   name: 'Stencil HRMS',
   slug: 'stencil-hrms',
@@ -51,6 +58,8 @@ export default ({ config }: ConfigContext): ExpoConfig => withCleartextForHttpAp
   },
   android: {
     package: 'com.stencilindia.hrms',
+    // Firebase project (push notifications through FCM); builds without the file simply have no Firebase push.
+    ...(hasFile(projectRoot, 'google-services.json') ? { googleServicesFile: './google-services.json' } : {}),
     // GitHub Actions builds pass their run number, so each new APK installs as an update of the last.
     ...(Number(process.env.ANDROID_VERSION_CODE) > 0 ? { versionCode: Number(process.env.ANDROID_VERSION_CODE) } : {}),
     adaptiveIcon: {

@@ -68,14 +68,20 @@ export type DevicePlatform = (typeof DEVICE_PLATFORMS)[number];
 
 /** Expo push token: `ExponentPushToken[xxxx]` or `ExpoPushToken[xxxx]`. */
 export const EXPO_PUSH_TOKEN_REGEX = /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{8,200}\]$/;
-const expoPushToken = z.string().trim().max(250).regex(EXPO_PUSH_TOKEN_REGEX, 'Invalid Expo push token');
+/** Firebase Cloud Messaging registration token (the phone's own token, sent to FCM directly). */
+export const FCM_TOKEN_REGEX = /^[A-Za-z0-9_:-]{100,500}$/;
+const pushToken = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((t) => EXPO_PUSH_TOKEN_REGEX.test(t) || FCM_TOKEN_REGEX.test(t), 'Invalid push token');
 
 export const registerDeviceSchema = z.object({
-  token: expoPushToken,
+  token: pushToken,
   platform: z.enum(DEVICE_PLATFORMS),
   appVersion: z.string().trim().max(40).optional(),
   deviceName: z.string().trim().max(120).optional(),
 });
 export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>;
 
-export const deviceTokenParam = z.object({ token: expoPushToken });
+export const deviceTokenParam = z.object({ token: pushToken });

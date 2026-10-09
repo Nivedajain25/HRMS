@@ -334,6 +334,16 @@ describe('Attendance, shifts, holidays & regularization', () => {
 
       // Terminal: cannot approve again.
       expect((await as(hr.token).post(`/api/v1/attendance/regularizations/${id}/approve`, {})).status).toBe(422);
+
+      // Each approver keeps a record of what they decided ("Reviewed by me"); it's gone from their queue.
+      const ids = (res: { body: { data: { _id: string }[] } }) => res.body.data.map((r) => r._id);
+      expect(ids(await as(hr.token).get('/api/v1/attendance/regularizations?scope=reviewed'))).toContain(id);
+      expect(ids(await as(manager.token).get('/api/v1/attendance/regularizations?scope=reviewed'))).toContain(id);
+      expect(ids(await as(hr.token).get('/api/v1/attendance/regularizations?scope=approvals'))).not.toContain(id);
+      expect(ids(await as(hr.token).get('/api/v1/attendance/regularizations?scope=reviewed&status=REJECTED'))).not.toContain(id);
+      // Not someone else's record.
+      expect(ids(await as(outsider.token).get('/api/v1/attendance/regularizations?scope=reviewed'))).not.toContain(id);
+      expect(ids(await as(report.token).get('/api/v1/attendance/regularizations?scope=reviewed'))).not.toContain(id);
     });
 
     it('supports rejection and cancellation', async () => {

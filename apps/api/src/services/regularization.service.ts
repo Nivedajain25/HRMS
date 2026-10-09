@@ -147,6 +147,11 @@ export const listRegularizations = async (ctx: RequestContext, q: ListQuery) => 
     if (!queue) return { items: [], pagination: buildPagination(q.page, q.limit, 0) };
     filter = { ...filter, ...queue, status: q.status ?? { $in: PENDING } };
     if (q.employeeId) filter.employeeId = new Types.ObjectId(q.employeeId);
+  } else if (q.scope === 'reviewed') {
+    // The approver's record: every request they approved or rejected at their step, whatever happened next.
+    filter = { ...filter, approvalSteps: { $elemMatch: { actedBy: ctx.userId, status: { $in: ['APPROVED', 'REJECTED'] } } } };
+    if (q.status) filter.status = q.status;
+    if (q.employeeId) filter.employeeId = new Types.ObjectId(q.employeeId);
   } else {
     const scope = await resolveEmployeeScope(ctx, 'attendance:read', q.scope);
     if (q.status) filter.status = q.status;

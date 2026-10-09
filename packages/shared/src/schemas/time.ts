@@ -94,7 +94,8 @@ export const attendanceBoardQuery = attendanceDashboardQuery.extend({
 export const regularizationListQuery = z.object({
   status: z.enum(LEAVE_STATUS).optional(),
   employeeId: optionalObjectId,
-  scope: z.enum(['me', 'team', 'all', 'approvals']).optional(),
+  /** `reviewed`: requests the signed-in approver has approved or rejected (kept as their record). */
+  scope: z.enum(['me', 'team', 'all', 'approvals', 'reviewed']).optional(),
 });
 
 export const regularizationSchema = z

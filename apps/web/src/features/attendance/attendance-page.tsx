@@ -11,7 +11,6 @@ import { ClockWidget } from './components/clock-widget';
 import { MyAttendanceDashboard } from './components/my-attendance-dashboard';
 import { AdminAttendanceBreakdown, AdminAttendanceControls, AdminAttendanceKpis } from './components/admin-attendance-kpis';
 import { AdminAttendanceInsights } from './components/admin-attendance-insights';
-import { AdminClockCard } from '@/features/dashboard/components/admin-clock-card';
 import { dashboardKind } from '@/features/dashboard/lib';
 import { MonthlyAttendance } from './components/monthly-attendance';
 
@@ -20,7 +19,6 @@ export const AttendancePage = () => {
   const isEmployeeKind = dashboardKind(user?.roles) === 'employee';
   // HR gets exactly the super admin's attendance page (KPIs, overview, insights, Live Board, Records).
   const isAdmin = ['head', 'hr'].includes(dashboardKind(user?.roles));
-  const isHr = dashboardKind(user?.roles) === 'hr';
   const [params, setParams] = useSearchParams();
   const canTeam = can('attendance:read') || isManager;
   const tabs = [
@@ -141,8 +139,7 @@ export const AttendancePage = () => {
         />
       ) : (
         <div className="space-y-6">
-          {/* HR still checks in: the same Today card the admin dashboard uses heads their Attendance view. */}
-          {isHr && hasEmployee && !boardOnly && <AdminClockCard tone="pink" />}
+          {/* HR and the super admin see the same organization view here; both check in from the dashboard's Today card. */}
           {/* Super admin / HR: the day's headline numbers across the organization. */}
           {isAdmin && !boardOnly && <AdminAttendanceKpis date={params.get('date') ?? undefined} />}
           {isAdmin && !boardOnly && <AdminAttendanceBreakdown date={params.get('date') ?? undefined} />}

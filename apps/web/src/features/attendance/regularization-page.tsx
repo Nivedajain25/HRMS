@@ -22,8 +22,11 @@ import { formatKey, useOrgTimezone } from './lib';
 const PENDING = ['SUBMITTED', 'PENDING_APPROVAL'];
 const statusOptions = LEAVE_STATUS.filter((s) => s !== 'DRAFT').map((s) => ({ value: s, label: label(s) }));
 
-const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; onOpen: (id: string) => void; onCreate?: () => void }) => {
+type Mode = 'me' | 'approvals' | 'reviewed';
+
+const RequestsTable = ({ mode, onOpen, onCreate }: { mode: Mode; onOpen: (id: string) => void; onCreate?: () => void }) => {
   const { params, query, set, clear, hasFilters } = useListParams({ sortBy: 'createdAt', sortOrder: 'desc' });
+  const { user } = usePermissions();
   const timeZone = useOrgTimezone();
   const actions = useRegularizationActions();
   const apiQuery = useMemo(() => {
@@ -40,7 +43,7 @@ const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; o
 
   const columns = useMemo<ColumnDef<Regularization, unknown>[]>(() => {
     const cols: ColumnDef<Regularization, unknown>[] = [];
-    if (mode === 'approvals') {
+    if (mode !== 'me') {
       cols.push({
         id: 'employee',
         header: 'Employee',
@@ -78,13 +81,33 @@ const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; o
         ),
       },
       { id: 'createdAt', header: 'Submitted', enableSorting: true, cell: ({ row }) => <span title={formatDateTime(row.original.createdAt)}>{timeAgo(row.original.createdAt)}</span> },
+      ...(mode === 'reviewed'
+        ? [
+            {
+              id: 'decision',
+              header: 'Your decision',
+              cell: ({ row }) => {
+                // The step this approver acted on (the last one, if they acted at more than one step).
+                const mine = [...row.original.approvalSteps].reverse().find((s) => s.actedBy === user?._id && (s.status === 'APPROVED' || s.status === 'REJECTED'));
+                if (!mine) return '—';
+                return (
+                  <span className="inline-flex items-center gap-1.5" title={mine.actedAt ? formatDateTime(mine.actedAt) : undefined}>
+                    <StatusBadge status={mine.status} />
+                    {mine.actedAt ? <span className="text-xs text-muted">{timeAgo(mine.actedAt)}</span> : null}
+                  </span>
+                );
+              },
+            } satisfies ColumnDef<Regularization, unknown>,
+          ]
+        : []),
       {
         id: 'actions',
         header: '',
         enableHiding: false,
         cell: ({ row }) => {
           const r = row.original;
-          if (!PENDING.includes(r.status)) return null;
+          // Reviewed requests are a record: nothing to do on them here.
+          if (mode === 'reviewed' || !PENDING.includes(r.status)) return null;
           return (
             <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
               {mode === 'approvals' ? (
@@ -108,12 +131,12 @@ const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; o
     );
     return cols;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, timeZone, actions.pending]);
+  }, [mode, timeZone, actions.pending, user?._id]);
 
   const filterKeys = ['status', 'employeeId'];
   return (
     <DataTable
-      caption={mode === 'me' ? 'My correction requests' : 'Correction requests awaiting approval'}
+      caption={mode === 'me' ? 'My correction requests' : mode === 'reviewed' ? 'Correction requests you approved or rejected' : 'Correction requests awaiting approval'}
       storageKey={`regularizations-${mode}`}
       columns={columns}
       data={list.data?.data}
@@ -126,9 +149,15 @@ const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; o
       sorting={{ sortBy: params.sortBy, sortOrder: params.sortOrder }}
       onSortingChange={(s) => set({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
       onRowClick={(r) => onOpen(r._id)}
-      emptyTitle={mode === 'me' ? 'No correction requests' : 'Nothing awaiting your approval'}
+      emptyTitle={mode === 'me' ? 'No correction requests' : mode === 'reviewed' ? 'Nothing reviewed yet' : 'Nothing awaiting your approval'}
       emptyDescription={
-        hasFilters(filterKeys) ? 'Try changing your filters.' : mode === 'me' ? 'Missed a check-in or check-out? Request a correction.' : 'New requests show up here when they reach your step.'
+        hasFilters(filterKeys)
+          ? 'Try changing your filters.'
+          : mode === 'me'
+            ? 'Missed a check-in or check-out? Request a correction.'
+            : mode === 'reviewed'
+              ? 'Requests you approve or reject are kept here as your record.'
+              : 'New requests show up here when they reach your step.'
       }
       emptyAction={
         mode === 'me' && onCreate && !hasFilters(filterKeys) ? (
@@ -147,7 +176,7 @@ const RequestsTable = ({ mode, onOpen, onCreate }: { mode: 'me' | 'approvals'; o
             options={statusOptions}
             placeholder={mode === 'approvals' ? 'Pending' : 'All statuses'}
           />
-          {mode === 'approvals' && (
+          {mode !== 'me' && (
             <div className="w-full sm:w-56">
               <EmployeePicker value={(params.employeeId as string | undefined) ?? null} onChange={(v) => set({ employeeId: (v as string | null) ?? undefined })} placeholder="All employees" />
             </div>
@@ -165,9 +194,10 @@ export const RegularizationPage = () => {
   const tabs = [
     { key: 'me', label: 'My requests', hidden: !hasEmployee },
     { key: 'approvals', label: 'Approvals', hidden: !canApprove },
+    { key: 'reviewed', label: 'Reviewed by me', hidden: !canApprove },
   ];
   const visible = tabs.filter((t) => !t.hidden);
-  const active = (visible.find((t) => t.key === params.get('tab')) ?? visible[0])?.key as 'me' | 'approvals' | undefined;
+  const active = (visible.find((t) => t.key === params.get('tab')) ?? visible[0])?.key as Mode | undefined;
   const prefillDate = params.get('date') ?? undefined;
   const [creating, setCreating] = useState(false);
   const openId = params.get('request');

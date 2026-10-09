@@ -175,6 +175,8 @@ export interface AttendanceDashboard {
 export interface ApprovalStep {
   approverType: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SKIPPED';
+  /** User id of whoever approved / rejected this step. */
+  actedBy?: string | null;
   actedByName?: string | null;
   actedAt?: string | null;
   comment?: string | null;

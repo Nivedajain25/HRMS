@@ -11,6 +11,7 @@ import { ClockWidget } from './components/clock-widget';
 import { MyAttendanceDashboard } from './components/my-attendance-dashboard';
 import { AdminAttendanceBreakdown, AdminAttendanceControls, AdminAttendanceKpis } from './components/admin-attendance-kpis';
 import { AdminAttendanceInsights } from './components/admin-attendance-insights';
+import { AdminClockCard } from '@/features/dashboard/components/admin-clock-card';
 import { dashboardKind } from '@/features/dashboard/lib';
 import { MonthlyAttendance } from './components/monthly-attendance';
 
@@ -140,8 +141,8 @@ export const AttendancePage = () => {
         />
       ) : (
         <div className="space-y-6">
-          {/* HR (unlike the super admin) still clocks in: their clock card heads the Attendance view. */}
-          {isHr && hasEmployee && !boardOnly && <ClockWidget />}
+          {/* HR still checks in: the same Today card the admin dashboard uses heads their Attendance view. */}
+          {isHr && hasEmployee && !boardOnly && <AdminClockCard tone="pink" />}
           {/* Super admin / HR: the day's headline numbers across the organization. */}
           {isAdmin && !boardOnly && <AdminAttendanceKpis date={params.get('date') ?? undefined} />}
           {isAdmin && !boardOnly && <AdminAttendanceBreakdown date={params.get('date') ?? undefined} />}

@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { AlarmClock, Coffee, CupSoda, DoorClosed, DoorOpen, Loader2,LogIn, LogOut, MapPinOff, Play, Timer } from 'lucide-react';
+import { AlarmClock, Building2, Coffee, CupSoda, DoorClosed, DoorOpen, House, Loader2, LogIn, LogOut, MapPinOff, Play, Timer } from 'lucide-react';
 import { Badge, Card, ErrorState, Skeleton, type Tone } from '@/components/ui/display';
 import { useConfirm } from '@/components/ui/overlay';
 import { useClockAction, useToday, type LiveState, type TodayState } from '@/features/attendance/api';
@@ -63,6 +63,8 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   const timeZone = useOrgTimezone();
   const now = useNow(1000);
   const [pending, setPending] = useState<string | null>(null);
+  // Where they work today, when the organization allows remote check-in.
+  const [mode, setMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
   // Employee dashboard titles (tiles map in the context) vs HR / admin pills. Read before the early returns below.
   const employeeTitles = typeof useContext(TitleBoxContext) === 'object';
 
@@ -115,7 +117,7 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
   const [time, ampm] = clockFmt.format(now).toUpperCase().split(/\s+/);
   const t12 = (v: string | null | undefined) => (v ? clock12(formatTimeIn(v, timeZone)) : '—');
 
-  const clockIn = () => flow.run('check-in', { workMode: 'OFFICE', success: 'Checked in. Have a productive day!' });
+  const clockIn = () => flow.run('check-in', { workMode: t.allowRemoteClockIn ? mode : 'OFFICE', success: 'Checked in. Have a productive day!' });
   const clockOut = async () => {
     const { confirmed } = await confirm({
       title: 'Check out for today?',
@@ -245,6 +247,29 @@ export const AdminClockCard = ({ className, tone = 'blue' }: { className?: strin
             <p className="mt-2 text-xs font-medium text-violet-700 dark:text-violet-300">{t.dayKind === 'HOLIDAY' ? `Holiday${t.holiday ? `: ${t.holiday}` : ''}` : 'Today is a week off'}</p>
           ) : null}
         </div>
+
+        {/* Office / Remote, before checking in (only when remote check-in is allowed). */}
+        {t.state === 'NOT_CHECKED_IN' && t.allowRemoteClockIn ? (
+          <div role="radiogroup" aria-label="Where are you working today?" className="mx-auto grid w-full max-w-xs grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1">
+            {(['OFFICE', 'REMOTE'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={mode === m}
+                onClick={() => setMode(m)}
+                disabled={busy}
+                className={cn(
+                  'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors',
+                  mode === m ? 'bg-surface text-fg shadow-sm ring-1 ring-line' : 'text-muted hover:text-fg',
+                )}
+              >
+                {m === 'OFFICE' ? <Building2 className="h-4 w-4" aria-hidden /> : <House className="h-4 w-4" aria-hidden />}
+                {m === 'OFFICE' ? 'Office' : 'Remote'}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {/* Two big buttons */}
         <div className="mx-auto flex w-full max-w-xs gap-2">

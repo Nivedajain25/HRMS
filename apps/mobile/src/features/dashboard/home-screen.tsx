@@ -18,7 +18,7 @@ import { dashboardKeys, useEmployeeDashboard, useManagerDashboard } from './api'
 import { MyActivity } from './components/my-activity';
 import { MyTasks } from './components/my-tasks';
 import { EmployeeAlerts, NewJoiners, Referrals } from './components/admin-home';
-import { ApprovalsHighlight, CompanyTodayHero, MonthStats } from './components/home-hero';
+import { ApprovalsHighlight, CompanyToday, MonthStats } from './components/home-hero';
 import { Celebrations, Departments, OrgToday, TasksOverview, TeamActivity, WhosIn } from './components/org-overview';
 import { Announcements, TeamSummary, UpcomingHolidays } from './components/widgets';
 import { greetingFor, longDateIn } from './lib';
@@ -70,7 +70,7 @@ export const HomeScreen = () => {
   const greetingTone = toneColors(greeting.tone, c);
   // Phones under 400 pt wide (most Android phones): a slightly smaller name and a short date beside the buttons.
   const narrow = useWindowDimensions().width < 400;
-  // Super Admin / Admin don't clock in: their highlight card is the company today instead.
+  // Super Admin / Admin also get the company today (half-moon) under their own check-in card.
   const isAdmin = (user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
   const employeeKind = dashboardKind(user?.roles) === 'employee';
 
@@ -119,8 +119,18 @@ export const HomeScreen = () => {
       {/* HR / super admin: unresolved emergencies stay on top until handled. */}
       <EmergencyBanner />
 
-      {/* Today's Overview: clock in / out for everyone who clocks in; the company today for the boss. */}
-      <Appear index={1}>{isAdmin ? <CompanyTodayHero /> : hasEmployee ? <ClockCard hero /> : null}</Appear>
+      {/* Today's Overview: check in / out for everyone with an employee profile (Super Admin / Admin included). */}
+      {hasEmployee ? (
+        <Appear index={1}>
+          <ClockCard hero />
+        </Appear>
+      ) : null}
+      {/* Super Admin / Admin: the whole company today (who is in, late, on leave, absent, not in yet). */}
+      {isAdmin ? (
+        <Appear index={1}>
+          <CompanyToday />
+        </Appear>
+      ) : null}
 
       {/* What needs you: requests waiting for your approval. */}
       <ApprovalsHighlight />

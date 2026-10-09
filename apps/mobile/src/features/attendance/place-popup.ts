@@ -60,11 +60,11 @@ const describe = (office: TodayState['office'], point: { latitude: number; longi
 /**
  * On Home and Attendance: a pop-up saying where the employee is — at their office, or outside the office area and how
  * far away. Uses the phone's location only when it's already allowed (never asks here) and sends it nowhere; the
- * location is only recorded when they check in or out. Not shown to the Super Admin / Admin (they don't check in).
+ * location is only recorded when they check in or out. Shown to everyone with an employee profile.
  */
 export const usePlacePopup = (screen: 'home' | 'attendance') => {
-  const { user, hasEmployee } = useAuth();
-  const clocksIn = hasEmployee && !(user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
+  const { hasEmployee } = useAuth();
+  const clocksIn = hasEmployee;
   const today = useToday();
   const loaded = clocksIn && !!today.data;
   const office = today.data?.office;

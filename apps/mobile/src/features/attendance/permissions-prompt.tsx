@@ -49,8 +49,8 @@ const Row = ({ icon: Icon, title, text, status }: { icon: IconComponent; title: 
  */
 export const PermissionsPrompt = () => {
   const { hasEmployee, user } = useAuth();
-  // The Super Admin / Admin don't clock in, so they're never asked for location and camera.
-  const clocksIn = hasEmployee && !(user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
+  // Everyone with an employee profile checks in (Super Admin / Admin included), so they're asked once.
+  const clocksIn = hasEmployee;
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<{ location: Status; camera: Status }>({ location: 'ask', camera: 'ask' });
   const [busy, setBusy] = useState(false);

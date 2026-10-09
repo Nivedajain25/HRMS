@@ -12,7 +12,7 @@ import { fonts, fontSize, radius, space, toneColors, useTheme } from '@/theme';
 /** Other words people type for a feature (so "salary slip" finds Payslips, "check in" finds Attendance). */
 const KEYWORDS: Record<string, string> = {
   attendance: 'check in check out clock punch present late today',
-  regularize: 'fix correction missed punch regularize regularise',
+  regularize: 'regularization fix attendance correction missed punch regularize regularise',
   regularizations: 'regularization requests correction',
   holidays: 'holiday festival day off',
   apply: 'apply leave request vacation time off sick casual',

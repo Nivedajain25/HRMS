@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Activity, Award, Building2, Cake, ClipboardCheck, ClipboardList, Coffee, LogIn, Plus, Radio, Users } from 'lucide-react-native';
-import { Avatar, Badge, Button, Card, EmptyState, ErrorState, ListItem, ProgressBar, SectionHeader, Segmented, SkeletonList, Text } from '@/components';
+import { Avatar, Badge, Button, Card, EmptyState, ErrorState, ListItem, ProgressBar, SectionHeader, SkeletonList, Text } from '@/components';
 import { useTasks } from '@/features/tasks/api';
 import { useAuth } from '@/lib/auth';
 import { formatKey, formatTimeIn, timeAgo } from '@/lib/time';
@@ -107,12 +107,50 @@ export const OrgToday = () => {
 
 /* ------------------------------ Who's in now ----------------------------- */
 
-const COLUMN_META: Record<BoardColumn, { label: string; short: string }> = {
-  WORKING: { label: 'Working', short: 'In' },
-  ON_BREAK: { label: 'On break', short: 'Break' },
-  NOT_IN: { label: 'Not in yet', short: 'Not in' },
-  DONE: { label: 'Gone home', short: 'Left' },
-  AWAY: { label: 'Away', short: 'Away' },
+const COLUMN_META: Record<BoardColumn, { label: string; short: string; tone: Tone }> = {
+  WORKING: { label: 'Working', short: 'In', tone: 'green' },
+  ON_BREAK: { label: 'On break', short: 'Break', tone: 'amber' },
+  NOT_IN: { label: 'Not in yet', short: 'Not in', tone: 'gray' },
+  DONE: { label: 'Gone home', short: 'Left', tone: 'blue' },
+  AWAY: { label: 'Away', short: 'Away', tone: 'purple' },
+};
+
+/** The five statuses as equal tiles (count over label, status dot); the selected one is tinted in its colour. */
+const StatusTiles = ({ value, onChange, counts }: { value: BoardColumn; onChange: (v: BoardColumn) => void; counts: Record<BoardColumn, number> }) => {
+  const { c } = useTheme();
+  return (
+    <View style={styles.statusRow} accessibilityRole="radiogroup" accessibilityLabel="Show people who are">
+      {COLUMN_ORDER.map((key) => {
+        const meta = COLUMN_META[key];
+        const t = toneColors(meta.tone, c);
+        const selected = value === key;
+        return (
+          <Pressable
+            key={key}
+            onPress={() => onChange(key)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: selected }}
+            accessibilityLabel={`${meta.label}: ${counts[key]}`}
+            style={({ pressed }) => [
+              styles.statusTile,
+              { borderColor: selected ? t.border : c.line, backgroundColor: selected ? t.bg : c.surface },
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            <Text size="lg" weight="bold" style={{ color: selected ? t.fg : c.fg }}>
+              {counts[key]}
+            </Text>
+            <View style={styles.statusLabel}>
+              <View style={[styles.statusDot, { backgroundColor: t.solid }]} />
+              <Text size="xs" weight={selected ? 'semibold' : 'medium'} numberOfLines={1} style={{ color: selected ? t.fg : c.muted }}>
+                {meta.short}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 };
 const COLUMN_ORDER: BoardColumn[] = ['WORKING', 'ON_BREAK', 'NOT_IN', 'DONE', 'AWAY'];
 
@@ -170,16 +208,13 @@ export const WhosIn = () => {
         ) : (
           <>
             <View style={styles.pad}>
-              <Segmented<BoardColumn>
+              <StatusTiles
                 value={column}
                 onChange={(v) => {
                   setColumn(v);
                   setAll(false);
                 }}
-                accessibilityLabel="Show people who are"
-                options={COLUMN_ORDER.map((key) => ({ key, count: cols.find((x) => x.key === key)?.count ?? 0 }))
-                  .filter((x) => x.key !== 'AWAY' || x.count)
-                  .map((x) => ({ value: x.key, label: `${COLUMN_META[x.key].short} ${x.count}` }))}
+                counts={Object.fromEntries(COLUMN_ORDER.map((key) => [key, cols.find((x) => x.key === key)?.count ?? 0])) as Record<BoardColumn, number>}
               />
             </View>
             {shown.length ? (
@@ -358,6 +393,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   gap: { gap: space(3) },
   pad: { padding: space(3) },
+  // Who's In Now: five equal status tiles.
+  statusRow: { flexDirection: 'row', gap: space(1.5) },
+  statusTile: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: space(2), borderRadius: radius.md, borderWidth: 1 },
+  statusLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%' },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
   section: { gap: space(2) },
   headline: { flexDirection: 'row', alignItems: 'baseline', gap: space(2) },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },

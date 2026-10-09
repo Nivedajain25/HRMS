@@ -13,6 +13,7 @@ import { apiLimiter, sanitizeInput } from './middleware/security';
 import { mountRoutes } from './routes';
 import { buildOpenApiDocument } from './routes/registry';
 import { usingRedis } from './jobs/queue';
+import { storageStatus } from './storage/storage.service';
 
 export const createApp = () => {
   const app = express();
@@ -66,6 +67,8 @@ export const createApp = () => {
         api: 'up',
         database: db,
         jobs: usingRedis() ? 'redis' : 'in-process',
+        // Where uploads are kept (cloudinary / mongo / s3 / local) — the name only.
+        storage: storageStatus(),
         uptimeSeconds: Math.round(process.uptime()),
         timestamp: new Date().toISOString(),
       },

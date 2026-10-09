@@ -57,7 +57,7 @@ export const useQuickActions = (): QuickAction[] => {
   const a = {
     approvals: { key: 'approvals', label: 'Approvals', icon: ClipboardCheck, href: '/approvals', tone: 'amber', badge: pending.data?.total },
     leave: { key: 'leave', label: 'Apply leave', icon: PlaneTakeoff, href: '/leave/apply', tone: 'teal' },
-    regularize: { key: 'regularize', label: 'Fix attendance', icon: FilePenLine, href: '/attendance/regularizations/new', tone: 'green' },
+    regularize: { key: 'regularize', label: 'Regularization', icon: FilePenLine, href: '/attendance/regularizations/new', tone: 'green' },
     payslips: { key: 'payslips', label: 'Payslips', icon: Wallet, href: '/more/payslips', tone: 'blue' },
     holidays: { key: 'holidays', label: 'Holidays', icon: PartyPopper, href: '/more/holidays', tone: 'purple' },
     expense: { key: 'expense', label: 'Claim expense', icon: Receipt, href: '/more/expenses/new', tone: 'amber' },
@@ -102,6 +102,7 @@ const Tile = ({ action, onPress }: { action: QuickAction; onPress: () => void })
   const { c } = useTheme();
   const t = toneColors(action.tone, c);
   const Icon = action.icon;
+  const oneWord = !action.label.includes(' ') && action.label.length > 11;
   return (
     <Pressable
       onPress={onPress}
@@ -119,7 +120,16 @@ const Tile = ({ action, onPress }: { action: QuickAction; onPress: () => void })
           </View>
         ) : null}
       </View>
-      <Text size="xs" weight="medium" align="center" numberOfLines={2} style={styles.label}>
+      {/* One long word ("Regularization") gets slightly tighter text on one line, shrinking on narrow phones, instead of breaking. */}
+      <Text
+        size="xs"
+        weight="medium"
+        align="center"
+        numberOfLines={oneWord ? 1 : 2}
+        adjustsFontSizeToFit={oneWord}
+        minimumFontScale={0.8}
+        style={[styles.label, oneWord && styles.labelTight]}
+      >
         {action.label}
       </Text>
     </Pressable>
@@ -139,7 +149,7 @@ export const useAllFeatures = (): { title: string; items: QuickAction[] }[] => {
       title: 'Time & attendance',
       items: [
         { key: 'attendance', label: 'Attendance', icon: Clock, href: '/attendance', tone: 'green' },
-        hasEmployee && { key: 'regularize', label: 'Fix attendance', icon: FilePenLine, href: '/attendance/regularizations/new', tone: 'green' },
+        hasEmployee && { key: 'regularize', label: 'Regularization', icon: FilePenLine, href: '/attendance/regularizations/new', tone: 'green' },
         hasEmployee && { key: 'regularizations', label: 'My requests', icon: FileClock, href: '/attendance/regularizations', tone: 'teal' },
         { key: 'holidays', label: 'Holidays', icon: PartyPopper, href: '/more/holidays', tone: 'purple' },
       ],
@@ -279,4 +289,5 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: '#ffffff', fontSize: 10, lineHeight: 12 },
   label: { lineHeight: 15 },
+  labelTight: { fontSize: 11, letterSpacing: -0.2 },
 });

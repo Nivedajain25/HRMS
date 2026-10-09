@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { AlarmClock, CalendarX2, ChevronRight, ClipboardCheck, Plane, UserCheck, UserX, Users } from 'lucide-react-native';
-import { GradientCard, HalfMoonGauge, Skeleton, Text, type IconComponent } from '@/components';
+import { AlarmClock, Building2, CalendarX2, ChevronRight, ClipboardCheck, Clock3, Plane, UserCheck, UserX } from 'lucide-react-native';
+import { Card, Skeleton, Text, type IconComponent } from '@/components';
 import { useAttendanceSummary } from '@/features/attendance/api';
 import { usePendingApprovals } from '@/features/approvals/api';
 import { useAuth } from '@/lib/auth';
@@ -79,78 +79,84 @@ export const MonthStats = () => {
   );
 };
 
-/** Colours of the company half-moon's parts (on the purple / navy hero), shared with the legend tiles. */
-const PART = { onTime: '#ffffff', late: '#fbbf24', leave: '#7dd3fc', absent: '#fb7185', notIn: 'rgba(255,255,255,0.5)' } as const;
-
-/** Super Admin / Admin (who don't clock in): the company today as a half-moon — on time, late, on leave, absent, not in yet. */
-export const CompanyTodayHero = () => {
+/** Super Admin / Admin: the whole company today on a white card — one bar split by status, then each status with its count. */
+export const CompanyToday = () => {
   const { c } = useTheme();
   const { timeZone } = useAuth();
   const q = useAdminDashboard(true);
   const k = q.data?.cards;
-  if (q.isLoading || !k) return <Skeleton height={190} style={{ borderRadius: radius.xl }} />;
+  if (q.isLoading || !k) return <Skeleton height={300} style={{ borderRadius: radius.xl }} />;
   const total = k.totalEmployees || 0;
-  const pct = total ? Math.min(100, Math.round((k.presentToday / total) * 100)) : 0;
-  const share = (n: number) => (total ? (n / total) * 100 : 0);
-  // Late people are among the present: the arc shows on time and late side by side, then leave, absent, not in yet.
-  const onTime = Math.max(0, k.presentToday - k.lateToday);
-  const white = { color: '#ffffff' };
-  const soft = { color: 'rgba(255,255,255,0.82)' };
-  const glass = { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' };
-  const mini = (label: string, value: number, Icon: IconComponent, color: string) => (
-    <View style={[styles.mini, glass]} accessible accessibilityLabel={`${label}: ${value}`}>
-      <Icon size={14} color={color} />
-      <Text size="lg" weight="bold" tabular style={white}>
-        {value}
-      </Text>
-      <View style={styles.legend}>
-        <View style={[styles.legendDot, { backgroundColor: color }]} />
-        <Text size="xs" style={soft} numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
-    </View>
-  );
+  const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0);
+  // Late people are among the present: the bar shows on time and late side by side, then leave, absent, not in yet.
+  const parts: { label: string; value: number; tone: Tone; icon: IconComponent }[] = [
+    { label: 'On time', value: Math.max(0, k.presentToday - k.lateToday), tone: 'green', icon: UserCheck },
+    { label: 'Late', value: k.lateToday, tone: 'amber', icon: AlarmClock },
+    { label: 'On leave', value: k.onLeaveToday, tone: 'blue', icon: Plane },
+    { label: 'Absent', value: k.absentToday, tone: 'red', icon: UserX },
+    { label: 'Not in yet', value: k.notCheckedInToday, tone: 'gray', icon: Clock3 },
+  ];
+  const counted = parts.reduce((n, p) => n + p.value, 0);
+  const green = toneColors('green', c);
   return (
-    <Pressable onPress={() => router.push('/attendance')} accessibilityRole="button" accessibilityLabel={`Today: ${k.presentToday} of ${total} present`}>
-      <GradientCard colors={c.hero} radius={radius.xl} style={styles.hero}>
-        <View style={styles.heroTop}>
-          <Text size="sm" weight="semibold" style={soft}>
-            Today’s Overview
-          </Text>
-          <View style={[styles.pill, glass]}>
-            <Text size="xs" weight="semibold" style={white}>
-              {formatKey(dateKeyIn(timeZone), 'd MMM yyyy')}
-            </Text>
-          </View>
+    <Card
+      onPress={() => router.push('/attendance')}
+      accessibilityLabel={`Company today: ${k.presentToday} of ${total} present. ${parts.map((p) => `${p.label} ${p.value}`).join(', ')}`}
+      style={styles.company}
+    >
+      <View style={styles.companyTop}>
+        <View style={[styles.companyIcon, { backgroundColor: c.accentSoft }]}>
+          <Building2 size={18} color={c.accent} />
         </View>
-        {/* The whole day in one half-moon; the tiles below are its legend. */}
-        <HalfMoonGauge
-          width={240}
-          segments={[
-            { value: share(onTime), color: PART.onTime },
-            { value: share(k.lateToday), color: PART.late },
-            { value: share(k.onLeaveToday), color: PART.leave },
-            { value: share(k.absentToday), color: PART.absent },
-            { value: share(k.notCheckedInToday), color: PART.notIn },
-          ]}
-          startLabel="0"
-          endLabel={String(total)}
-          accessibilityLabel={`${k.presentToday} of ${total} present (${k.lateToday} late), ${k.onLeaveToday} on leave, ${k.absentToday} absent, ${k.notCheckedInToday} not in yet`}
-        >
-          <Text size="display" weight="bold" tabular style={white}>
-            {k.presentToday}
+        <View style={styles.flex}>
+          <Text weight="bold">Company Today</Text>
+          <Text size="xs" color="muted">
+            {formatKey(dateKeyIn(timeZone), 'EEE, d MMM yyyy')}
           </Text>
-          <Text size="sm" style={soft}>{`of ${total} present · ${pct}%`}</Text>
-        </HalfMoonGauge>
-        <View style={styles.minis}>
-          {mini('Late', k.lateToday, AlarmClock, PART.late)}
-          {mini('On leave', k.onLeaveToday, Plane, PART.leave)}
-          {mini('Absent', k.absentToday, UserX, PART.absent)}
-          {mini('Not in yet', k.notCheckedInToday, Users, PART.notIn)}
         </View>
-      </GradientCard>
-    </Pressable>
+        <ChevronRight size={18} color={c.subtle} />
+      </View>
+
+      <View style={styles.companyBig}>
+        <Text size="3xl" weight="bold">
+          {k.presentToday}
+        </Text>
+        <Text size="sm" color="muted" style={styles.flex}>{`of ${total} present`}</Text>
+        <View style={[styles.companyPct, { backgroundColor: green.bg, borderColor: green.border }]}>
+          <Text size="xs" weight="bold" style={{ color: green.fg }}>{`${pct(k.presentToday)}%`}</Text>
+        </View>
+      </View>
+
+      {/* One bar, split by status (2 pt gaps between parts); anyone not counted (e.g. week off) stays as track. */}
+      <View style={[styles.companyBar, { backgroundColor: c.surface3 }]}>
+        {parts.map((p) =>
+          p.value > 0 ? <View key={p.label} style={{ flex: p.value, backgroundColor: toneColors(p.tone, c).solid }} /> : null,
+        )}
+        {total > counted ? <View style={{ flex: total - counted }} /> : null}
+      </View>
+
+      <View style={styles.companyRows}>
+        {parts.map((p) => {
+          const t = toneColors(p.tone, c);
+          return (
+            <View key={p.label} style={styles.companyRow}>
+              <View style={[styles.companyRowIcon, { backgroundColor: t.bg }]}>
+                <p.icon size={14} color={t.solid} />
+              </View>
+              <Text size="sm" style={styles.flex}>
+                {p.label}
+              </Text>
+              <Text size="sm" weight="bold" tabular>
+                {p.value}
+              </Text>
+              <Text size="xs" color="muted" tabular style={styles.companyRowPct}>
+                {`${pct(p.value)}%`}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </Card>
   );
 };
 
@@ -197,13 +203,17 @@ const styles = StyleSheet.create({
   tile: { flexDirection: 'row', alignItems: 'center', gap: space(3), borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, padding: space(3) },
   tileIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   shadow: { shadowColor: '#1e1b4b', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
-  hero: { padding: space(4), gap: space(3) },
-  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pill: { borderRadius: radius.full, borderWidth: 1, paddingHorizontal: space(2.5), paddingVertical: space(1) },
-  minis: { flexDirection: 'row', gap: space(2) },
-  mini: { flex: 1, borderRadius: radius.md, borderWidth: 1, paddingVertical: space(2), alignItems: 'center', gap: 2 },
-  legend: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%', paddingHorizontal: 2 },
-  legendDot: { width: 7, height: 7, borderRadius: 4 },
+  // Company Today (white card).
+  company: { gap: space(3) },
+  companyTop: { flexDirection: 'row', alignItems: 'center', gap: space(3) },
+  companyIcon: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  companyBig: { flexDirection: 'row', alignItems: 'baseline', gap: space(2) },
+  companyPct: { borderRadius: radius.full, borderWidth: 1, paddingHorizontal: space(2.5), paddingVertical: 2, alignSelf: 'center' },
+  companyBar: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2 },
+  companyRows: { gap: space(2) },
+  companyRow: { flexDirection: 'row', alignItems: 'center', gap: space(2.5) },
+  companyRowIcon: { width: 26, height: 26, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  companyRowPct: { width: 38, textAlign: 'right' },
   alert: { flexDirection: 'row', alignItems: 'center', gap: space(3), borderRadius: radius.xl, borderWidth: 1, padding: space(3.5) },
   alertIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
 });

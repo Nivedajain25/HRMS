@@ -11,7 +11,7 @@ export interface RelatedLink {
 }
 
 /**
- * "Related" shortcuts at the top of a section (e.g. Attendance → Fix attendance · Apply leave · Holidays), so the
+ * "Related" shortcuts at the top of a section (e.g. Attendance → Regularization · Apply leave · Holidays), so the
  * sections that go together are one tap apart. Pills in the role's colour; scrolls sideways on narrow phones.
  */
 export const RelatedLinks = ({ links }: { links: RelatedLink[] }) => {

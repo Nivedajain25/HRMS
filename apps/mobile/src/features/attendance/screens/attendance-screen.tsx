@@ -6,7 +6,6 @@ import { Card, EmptyState, Header, IconButton, ListItem, RelatedLinks, Screen, S
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/theme';
 import { attendanceKeys, regularizationKeys } from '../api';
-import { ClockCard } from '../components/clock-card';
 import { EveryoneAttendance } from '../components/everyone-attendance';
 import { MonthAttendance } from '../components/month-attendance';
 import { usePlacePopup } from '../place-popup';
@@ -15,9 +14,7 @@ type View_ = 'mine' | 'everyone';
 
 export const AttendanceScreen = () => {
   const { c } = useTheme();
-  const { hasEmployee, can, user } = useAuth();
-  // Everyone with an employee profile checks in, except the Super Admin / Admin.
-  const clocksIn = hasEmployee && !(user?.roles ?? []).some((r) => r.key === 'super_admin' || r.key === 'admin');
+  const { hasEmployee, can } = useAuth();
   const qc = useQueryClient();
   // Pop-up: at the office, or outside the office area and how far.
   usePlacePopup('attendance');
@@ -69,13 +66,11 @@ export const AttendanceScreen = () => {
         <EveryoneAttendance />
       ) : hasEmployee ? (
         <>
-          {/* Today first: check in / check out with the live countdown (same card as Home). The Super Admin / Admin
-              don't check in, so they start at the month. */}
-          {clocksIn ? <ClockCard hero /> : null}
+          {/* Check in / check out lives on Home (Today's Overview); this page starts with related links and the month. */}
           {/* Related: jump to what goes with attendance. */}
           <RelatedLinks
             links={[
-              { label: 'Fix attendance', icon: FilePenLine, href: '/attendance/regularizations/new' },
+              { label: 'Regularization', icon: FilePenLine, href: '/attendance/regularizations/new' },
               { label: 'Apply leave', icon: PlaneTakeoff, href: '/leave/apply' },
               { label: 'Holidays', icon: PartyPopper, href: '/more/holidays' },
             ]}

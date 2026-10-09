@@ -8,6 +8,7 @@ import { withAndroidManifest, type ConfigPlugin } from 'expo/config-plugins';
  *  - `EXPO_PUBLIC_API_URL`  Origin of the Stencil deployment, e.g. `https://hr.example.com`
  *                           (the API is served under `/api/v1`). Must be public HTTPS for phones.
  *  - `EAS_PROJECT_ID`       EAS project id (from `eas init`); required for Expo push tokens.
+ *  - `ANDROID_VERSION_CODE` Android version code for builds outside EAS (GitHub Actions passes its run number).
  */
 const BRAND = '#4f46e5';
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
@@ -50,6 +51,8 @@ export default ({ config }: ConfigContext): ExpoConfig => withCleartextForHttpAp
   },
   android: {
     package: 'com.stencilindia.hrms',
+    // GitHub Actions builds pass their run number, so each new APK installs as an update of the last.
+    ...(Number(process.env.ANDROID_VERSION_CODE) > 0 ? { versionCode: Number(process.env.ANDROID_VERSION_CODE) } : {}),
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
       monochromeImage: './assets/images/adaptive-icon-monochrome.png',

@@ -1,0 +1,118 @@
+name: Android APK
+
+# Builds the installable APK entirely on GitHub's machines — no Expo account or EAS: the native Android project is
+# generated from app.config.ts, then compiled with Gradle — and then installs it on an Android emulator to check the
+# app opens without crashing. No secrets needed.
+# Signing: Android's standard test (debug) key, the same on every run, so each new APK installs over the previous one
+# (an APK from EAS uses a different key: uninstall that app once first). For internal testing, not the Play Store.
+# Run it from GitHub → Actions → "Android APK" → Run workflow; it also runs when main changes the mobile app.
+# Download: open the run → Artifacts → stencil-hrms-apk.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/android-apk.yml'
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Baked into the app at build time: the live API (same as the EAS "preview" profile).
+      EXPO_PUBLIC_API_URL: https://hrms-production-c889.up.railway.app
+      # Every run is newer than the last, so the APK installs as an update.
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # The committed .npmrc pins the pnpm store to a local Windows path used on the primary dev workstation.
+      - name: Drop workstation-specific pnpm config
+        run: rm -f .npmrc
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate the native Android project
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile/app.config.ts') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # Phones (arm64) and the test emulator (x86_64) only — skipping old 32-bit CPUs roughly halves the build.
+      - name: Build the release APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
+
+      - name: Name the APK
+        run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk stencil-hrms.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stencil-hrms-apk
+          path: stencil-hrms.apk
+          retention-days: 14
+
+  emulator:
+    name: Install and open on an emulator
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: apps/mobile/scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: stencil-hrms-apk
+
+      # Hardware acceleration for the Android emulator on GitHub's Linux machines.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install, open and check the app stays up
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash apps/mobile/scripts/emulator-smoke-test.sh stencil-hrms.apk
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-screenshot-and-log
+          path: |
+            emulator-screenshot.png
+            logcat.txt
+          retention-days: 14
+          if-no-files-found: ignore

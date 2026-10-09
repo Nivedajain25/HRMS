@@ -117,7 +117,10 @@ const CalendarCard = ({ day, today, onDate }: { day: string; today: string; onDa
       if (st === 'HALF_DAY') t.HALF++;
       else if (st === 'ABSENT') t.ABSENT++;
       else if (st === 'LEAVE' || st === 'ON_LEAVE') t.LEAVE++;
-      else if (r.checkIn) r.isLate ? t.LATE++ : t.PRESENT++;
+      else if (r.checkIn) {
+        if (r.isLate) t.LATE++;
+        else t.PRESENT++;
+      }
       tally.set(k, t);
     }
     const out = new Map<string, DayKind>();

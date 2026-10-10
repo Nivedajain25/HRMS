@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Application from 'expo-application';
-import { KeyRound, LogOut, Monitor, Moon, Save, Smartphone, Sun } from 'lucide-react-native';
+import { Download, KeyRound, LogOut, Monitor, Moon, RefreshCw, Save, Smartphone, Sun } from 'lucide-react-native';
 import { Button, Card, ErrorState, Header, ListItem, Screen, SectionHeader, Segmented, Skeleton, Text, toast, useConfirm } from '@/components';
 import { useNotificationPreferences, useSaveNotificationPreferences, type NotificationPreference } from '@/features/notifications/api';
 import { DetailList } from '@/features/profile/kit/detail-list';
 import { toApiError } from '@/lib/api';
+import { checkForUpdate, CURRENT_BUILD, isNewer, useAppUpdateStore, useLatestRelease } from '@/lib/app-update';
 import { API_ORIGIN, APP_VERSION } from '@/lib/config';
 import { label } from '@/lib/format';
 import { space, TOUCH_TARGET, useTheme, type ThemePreference } from '@/theme';
@@ -103,6 +104,37 @@ const NotificationPreferences = () => {
   );
 };
 
+/** Android: "Check for updates", or "Update to build N" (opens the update sheet) when a newer version is out. */
+const AppUpdateButton = () => {
+  const latest = useLatestRelease();
+  const [checking, setChecking] = useState(false);
+  if (CURRENT_BUILD === null) return null;
+  const available = isNewer(latest.data) ? latest.data : null;
+
+  const onPress = async () => {
+    if (available) {
+      useAppUpdateStore.getState().request();
+      return;
+    }
+    setChecking(true);
+    try {
+      const release = await checkForUpdate();
+      if (isNewer(release)) useAppUpdateStore.getState().request();
+      else toast.success("You're up to date", 'This is the latest version of Stencil HRMS.');
+    } catch (err) {
+      toast.error('Could not check for updates', toApiError(err).message);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <Button variant={available ? 'primary' : 'outline'} icon={available ? Download : RefreshCw} loading={checking} onPress={() => void onPress()}>
+      {available ? `Update to build ${available.build}` : 'Check for updates'}
+    </Button>
+  );
+};
+
 export const SettingsScreen = () => {
   const { c, preference, setPreference } = useTheme();
   const confirm = useConfirm();
@@ -184,6 +216,7 @@ export const SettingsScreen = () => {
           ]}
         />
       </Card>
+      <AppUpdateButton />
     </Screen>
   );
 };

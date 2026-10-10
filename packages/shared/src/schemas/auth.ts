@@ -80,6 +80,8 @@ export const registerDeviceSchema = z.object({
   token: pushToken,
   platform: z.enum(DEVICE_PLATFORMS),
   appVersion: z.string().trim().max(40).optional(),
+  /** Android version code of the installed app (its build number): update reminders go to phones behind the latest release. */
+  appBuild: z.number().int().positive().optional(),
   deviceName: z.string().trim().max(120).optional(),
 });
 export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>;

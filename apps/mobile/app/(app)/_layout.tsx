@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { AnnouncementPopup } from '@/features/announcements/components/announcement-popup';
+import { UpdatePrompt } from '@/features/app-update/update-prompt';
 import { PermissionsPrompt } from '@/features/attendance/permissions-prompt';
 import { EmergencyPopup } from '@/features/emergencies/emergency-popup';
 import { MyEmergencyStatus } from '@/features/emergencies/my-emergency-status';
@@ -18,6 +19,7 @@ export default function AppLayout() {
       <PermissionsPrompt />
       <AnnouncementPopup />
       <TaskPopup />
+      <UpdatePrompt />
       <EmergencyPopup />
       <MyEmergencyStatus />
     </>

@@ -38,7 +38,9 @@ export const AnnouncementPopup = () => {
   const current = queue[0];
   // A new-task pop-up already on screen finishes first.
   const taskOpen = useOverlayStore((s) => s.taskOpen);
-  if (!current || permissionsOpen || !permissionsSettled || taskOpen) return null;
+  // So does the "update available" sheet.
+  const updateOpen = useOverlayStore((s) => s.updateOpen);
+  if (!current || permissionsOpen || !permissionsSettled || taskOpen || updateOpen) return null;
 
   const done = (read: boolean) => {
     if (read) markRead.mutate(current._id);

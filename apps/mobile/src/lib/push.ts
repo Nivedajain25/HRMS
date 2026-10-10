@@ -5,6 +5,7 @@ import type * as NotificationsModule from 'expo-notifications';
 import { router } from 'expo-router';
 import { brand } from '@/theme/tokens';
 import { post } from './api';
+import { appReleaseKey, CURRENT_BUILD, openUpdateSheet } from './app-update';
 import { APP_VERSION, EAS_PROJECT_ID, IN_EXPO_GO } from './config';
 import { hrefForLink } from './links';
 import { queryClient } from './query-client';
@@ -83,6 +84,8 @@ export const registerForPush = async (): Promise<string | null> => {
     token,
     platform: Platform.OS === 'ios' ? 'ios' : 'android',
     appVersion: APP_VERSION,
+    // Lets the server remind phones still on an older build to update.
+    ...(CURRENT_BUILD ? { appBuild: CURRENT_BUILD } : {}),
     deviceName: (Device.deviceName ?? Device.modelName ?? undefined)?.slice(0, 120),
   });
   await storage.set(StorageKeys.pushToken, token);
@@ -90,6 +93,11 @@ export const registerForPush = async (): Promise<string | null> => {
 };
 
 const openFromNotification = (response: NotificationsModule.NotificationResponse) => {
+  // "Update available" / "please update": open the update sheet.
+  if (response.notification.request.content.data?.type === 'APP_UPDATE') {
+    openUpdateSheet();
+    return;
+  }
   const link = response.notification.request.content.data?.link;
   const href = hrefForLink(typeof link === 'string' ? link : null);
   if (href) router.push(href);
@@ -124,7 +132,8 @@ export const usePushNotifications = (userId: string | null) => {
       if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) openFromNotification(response);
     });
     // Keep unread counts and lists fresh while the app is open.
-    const received = Notifications.addNotificationReceivedListener(() => {
+    const received = Notifications.addNotificationReceivedListener((notification) => {
+      if (notification.request.content.data?.type === 'APP_UPDATE') void queryClient.invalidateQueries({ queryKey: appReleaseKey });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });

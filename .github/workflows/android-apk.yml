@@ -7,6 +7,9 @@ name: Android APK
 # (an APK from EAS uses a different key: uninstall that app once first). For internal testing, not the Play Store.
 # Run it from GitHub → Actions → "Android APK" → Run workflow; it also runs when main changes the mobile app.
 # Download: open the run → Artifacts → stencil-hrms-apk.
+# In-app updates: once the emulator check passes, the APK is published as a GitHub release `android-v<run number>`
+# (public link: https://github.com/Nivedajain25/HRMS/releases/latest/download/stencil-hrms.apk). The API notices it
+# within ~10 minutes, pushes "Update available" to every phone on an older build, and the app offers to install it.
 on:
   workflow_dispatch:
   push:
@@ -116,3 +119,41 @@ jobs:
             logcat.txt
           retention-days: 14
           if-no-files-found: ignore
+
+  release:
+    name: Publish the update to phones
+    runs-on: ubuntu-latest
+    needs: [build, emulator]
+    # Only builds of main reach users' phones.
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: stencil-hrms-apk
+
+      # The release's description is the "What's new" text in the app: the mobile-related commits since the last one.
+      # (It can be edited afterwards on GitHub → Releases.)
+      - name: Publish as a GitHub release (picked up by the in-app updater)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD: ${{ github.run_number }}
+        run: |
+          tag="android-v$BUILD"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag is already published"
+            exit 0
+          fi
+          version=$(grep -oP "^\s*version: '\K[^']+" apps/mobile/app.config.ts | head -n 1)
+          prev=$(git tag --list 'android-v*' --sort=-v:refname | head -n 1)
+          notes=$(git log --no-merges --format='- %s' ${prev:+$prev..}HEAD -- apps/mobile packages | head -n 15)
+          [ -n "$notes" ] || notes='- Improvements and fixes'
+          gh release create "$tag" stencil-hrms.apk \
+            --target "$GITHUB_SHA" \
+            --title "Stencil HRMS ${version:-1.0.0} (build $BUILD)" \
+            --notes "$notes" \
+            --latest

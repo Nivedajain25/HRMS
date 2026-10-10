@@ -4,7 +4,7 @@ import { DeviceModel } from '../models';
 import type { RequestContext } from '../types/context';
 import { notFound } from '../utils/errors';
 
-const PUBLIC_FIELDS = 'token platform appVersion deviceName lastSeenAt disabledAt createdAt';
+const PUBLIC_FIELDS = 'token platform appVersion appBuild deviceName lastSeenAt disabledAt createdAt';
 
 /**
  * Registers (or refreshes) the caller's push token. Tokens are unique: an
@@ -20,6 +20,7 @@ export const registerDevice = async (ctx: RequestContext, input: RegisterDeviceI
         userId: ctx.userId,
         platform: input.platform,
         appVersion: input.appVersion ?? null,
+        appBuild: input.appBuild ?? null,
         deviceName: input.deviceName ?? null,
         lastSeenAt: new Date(),
         disabledAt: null,

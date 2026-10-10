@@ -14,6 +14,8 @@ const deviceSchema = new Schema(
     token: { type: String, required: true, unique: true },
     platform: { type: String, enum: ['android', 'ios'], required: true },
     appVersion: { type: String, default: null },
+    /** Android version code (build number) of the installed app; update reminders go to devices behind the latest release. */
+    appBuild: { type: Number, default: null },
     deviceName: { type: String, default: null },
     lastSeenAt: { type: Date, default: Date.now },
     /** Set when Expo reports `DeviceNotRegistered`; cleared on re-registration. */

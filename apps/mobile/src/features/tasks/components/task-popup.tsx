@@ -33,8 +33,10 @@ export const TaskPopup = () => {
   const current = queue[0];
   // Announcements pop up first; a task waits until they're all dealt with.
   const announcementPending = !announcements.isFetched || pendingPopupAnnouncements(announcements.data?.popup).length > 0;
+  // An "update available" sheet already on screen finishes first.
+  const updateOpen = useOverlayStore((s) => s.updateOpen);
   const [open, setOpen] = useState(false);
-  const showing = !!current && !permissionsOpen && permissionsSettled && (open || !announcementPending);
+  const showing = !!current && !permissionsOpen && permissionsSettled && (open || (!announcementPending && !updateOpen));
   useEffect(() => setOpen(showing), [showing]);
   useEffect(() => setTaskOpen(showing), [showing, setTaskOpen]);
   if (!showing || !current) return null;

@@ -67,6 +67,10 @@ const schema = z.object({
   EXPO_ACCESS_TOKEN: z.string().optional(),
   /** Firebase service account key (the JSON file's contents, or base64 of it): sends push to phones through FCM. */
   FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+  /** Public GitHub repository (owner/name) whose releases carry the Android APK offered by the in-app updater. */
+  APP_RELEASES_REPO: z.string().default('Nivedajain25/HRMS'),
+  /** Optional GitHub token: only raises GitHub's rate limit for the release checks. */
+  GITHUB_TOKEN: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Encryption key for sensitive fields at rest (32+ chars). */
   FIELD_ENCRYPTION_KEY: z.string().min(32, 'FIELD_ENCRYPTION_KEY must be at least 32 characters'),

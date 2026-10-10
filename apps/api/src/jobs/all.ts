@@ -1,3 +1,4 @@
+import { registerAppUpdateJobs } from '../services/app-update.service';
 import { registerAttendanceJobs } from '../services/attendance.service';
 import { registerDocumentJobs } from '../services/document.service';
 import { registerLeaveJobs } from '../services/leave.service';
@@ -20,5 +21,6 @@ export const registerAllJobs = () => {
   registerLeaveJobs();
   registerDocumentJobs();
   registerReminderJobs();
+  registerAppUpdateJobs();
   registerJobs();
 };

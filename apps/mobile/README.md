@@ -43,6 +43,22 @@ Phones cannot reach `localhost` or a LAN-only server: the API must be reachable 
 **public HTTPS** (valid certificate). For local development create `apps/mobile/.env`
 with `EXPO_PUBLIC_API_URL=https://<your-tunnel-or-server>`.
 
+## In-app updates (Android)
+
+Every push to `main` that touches the mobile app runs **GitHub Actions → Android APK**: it builds the APK,
+checks it opens on an emulator, then publishes it as the GitHub release `android-v<build>`
+(always available at `https://github.com/Nivedajain25/HRMS/releases/latest/download/stencil-hrms.apk`).
+
+- The API (`GET /api/v1/app/latest`) checks GitHub every 10 minutes. A new release is pushed once as
+  "Update available" to every phone on an older build, and phones still behind get a reminder at 10:00 each day.
+- The app shows an **Update available** sheet whenever it is opened on an older build ("Later" hides it for
+  4 hours), and Settings → About has **Check for updates**. "Update now" downloads the APK and opens Android's
+  installer; the first time, Android asks to allow "Install unknown apps" for Stencil HRMS.
+- Only APKs from this workflow can update each other (same signing key). A phone with an EAS-built app, or an
+  APK from before in-app updates existed, needs the latest APK installed by hand once (uninstall first if it was
+  an EAS build).
+- The release description is the "What's new" text in the app; edit it on GitHub → Releases if needed.
+
 ## Building APKs with EAS (cloud)
 
 No Android SDK / Java is needed locally.

@@ -72,6 +72,8 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => withClear
       'android.permission.ACCESS_FINE_LOCATION',
       'android.permission.ACCESS_COARSE_LOCATION',
       'android.permission.POST_NOTIFICATIONS',
+      // In-app updates: hand a downloaded APK to Android's installer.
+      'android.permission.REQUEST_INSTALL_PACKAGES',
     ],
     blockedPermissions: ['android.permission.RECORD_AUDIO', 'android.permission.ACCESS_BACKGROUND_LOCATION'],
   },

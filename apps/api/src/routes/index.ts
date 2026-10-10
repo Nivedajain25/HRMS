@@ -14,6 +14,7 @@ import { payrollModule, payslipModule, salaryComponentModule, salaryModule } fro
 import { announcementModule, notificationModule } from './communication.routes';
 import { auditLogModule, dashboardModule, reportModule, searchModule } from './insights.routes';
 import { deviceModule } from './devices.routes';
+import { appModule } from './app.routes';
 import { emergencyModule } from './emergency.routes';
 import { taskModule } from './task.routes';
 import { todoModule } from './todo.routes';
@@ -53,6 +54,7 @@ export const modules = [
   announcementModule,
   notificationModule,
   deviceModule,
+  appModule,
   emergencyModule,
   taskModule,
   todoModule,

@@ -51,8 +51,9 @@ checks it opens on an emulator, then publishes it as the GitHub release `android
 
 - The API (`GET /api/v1/app/latest`) checks GitHub every 10 minutes. A new release is pushed once as
   "Update available" to every phone on an older build, and phones still behind get a reminder at 10:00 each day.
-- The app shows an **Update available** sheet whenever it is opened on an older build ("Later" hides it for
-  4 hours), and Settings → About has **Check for updates**. "Update now" downloads the APK and opens Android's
+- On an older build the app pops up **Update available** once a day — the first time the user opens the app or
+  signs in that day — until they update ("Remind me tomorrow" closes it for the day). Tapping the notification or
+  Settings → About → **Check for updates** opens it any time. "Update now" downloads the APK and opens Android's
   installer; the first time, Android asks to allow "Install unknown apps" for Stencil HRMS.
 - Only APKs from this workflow can update each other (same signing key). A phone with an EAS-built app, or an
   APK from before in-app updates existed, needs the latest APK installed by hand once (uninstall first if it was

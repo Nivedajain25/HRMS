@@ -7,7 +7,6 @@ import { Avatar, Breadcrumb, EmptyState, ErrorState, Skeleton } from '@/componen
 import { useConfirm } from '@/components/ui/overlay';
 import { ApiError, openFile } from '@/lib/api';
 import { formatBytes, formatDateTime, fullName, timeAgo } from '@/lib/utils';
-import { usePermissions } from '@/store/auth';
 import { attachmentName, useAnnouncement, useDeleteAnnouncement, useMarkAnnouncementRead, type AnnouncementAttachment } from './api';
 import { AnnouncementFormDrawer } from './components/announcement-form';
 import { AnnouncementStatusBadge, audienceLabel, PinnedBadge, PriorityBadge, ReadsDialog } from './components/announcement-ui';
@@ -42,8 +41,6 @@ const AttachmentItem = ({ a }: { a: AnnouncementAttachment }) => {
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { can } = usePermissions();
-  const canManage = can('announcement:manage');
   const q = useAnnouncement(id);
   const markRead = useMarkAnnouncementRead();
   const remove = useDeleteAnnouncement();
@@ -53,6 +50,8 @@ export const AnnouncementDetailPage = () => {
   const [readsOpen, setReadsOpen] = useState(false);
   const marked = useRef<string | null>(null);
   const a = q.data;
+  // The author, or HR: edit, delete and read tracking.
+  const canManage = !!a?.canEdit;
 
   // Record the read once per announcement (only for published ones the viewer hasn't read).
   useEffect(() => {

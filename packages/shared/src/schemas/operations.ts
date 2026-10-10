@@ -165,7 +165,7 @@ export const announcementListQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().max(100).optional(),
-  /** `all` (requires announcement:manage) includes scheduled and expired announcements. */
+  /** `all` includes scheduled and expired announcements: every one for announcement:manage, otherwise the caller's own. */
   scope: z.enum(['mine', 'all']).optional(),
   priority: z.enum(ANNOUNCEMENT_PRIORITY).optional(),
 });

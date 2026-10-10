@@ -182,8 +182,8 @@ export const NAVIGATION: NavGroup[] = [
     ],
   },
   { label: 'Documents', icon: FileText, tone: 'gray', to: '/documents', everyone: true },
-  // Assignees need an employee profile; HR / admins without one can still assign.
-  { label: 'Tasks', icon: ClipboardList, tone: 'gray', to: '/tasks', employee: true, manager: true, any: ['employee:read'] },
+  // Everyone: anyone can assign a task to anyone.
+  { label: 'Tasks', icon: ClipboardList, tone: 'gray', to: '/tasks', everyone: true },
   { label: 'Announcements', icon: Megaphone, tone: 'purple', to: '/announcements', everyone: true },
   { label: 'Emergencies', icon: Siren, tone: 'red', to: '/emergencies', employee: true, any: ['emergency:manage'] },
   // Same access as the sales figures (GET /sales/monthly).

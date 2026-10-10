@@ -27,6 +27,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  SquarePen,
 } from 'lucide-react-native';
 import { BottomSheet, Text, type IconComponent } from '@/components';
 import { usePendingApprovals } from '@/features/approvals/api';
@@ -62,6 +63,7 @@ export const useQuickActions = (): QuickAction[] => {
     holidays: { key: 'holidays', label: 'Holidays', icon: PartyPopper, href: '/more/holidays', tone: 'purple' },
     expense: { key: 'expense', label: 'Claim expense', icon: Receipt, href: '/more/expenses/new', tone: 'amber' },
     task: { key: 'task', label: 'Assign task', icon: ListPlus, href: '/more/tasks/new', tone: 'brand' },
+    announce: { key: 'announce', label: 'Announce', icon: SquarePen, href: '/more/announcements/new', tone: 'purple' },
     document: { key: 'document', label: 'Upload document', icon: FileUp, href: '/more/documents/upload', tone: 'blue' },
     employees: { key: 'employees', label: can('employee:read') ? 'Employees' : 'My team', icon: Users, href: '/more/team', tone: 'blue' },
     announcements: { key: 'announcements', label: 'Notices', icon: Megaphone, href: '/more/announcements', tone: 'amber' },
@@ -77,6 +79,7 @@ export const useQuickActions = (): QuickAction[] => {
         a.announcements,
         can('emergency:manage') && a.emergencies,
         canAssign && a.task,
+        a.announce,
         hasEmployee && a.regularize,
         hasEmployee && a.payslips,
         hasEmployee && a.expense,
@@ -90,6 +93,7 @@ export const useQuickActions = (): QuickAction[] => {
         a.holidays,
         isApprover && a.approvals,
         canAssign && a.task,
+        a.announce,
         hasEmployee && a.expense,
         hasEmployee && a.document,
         hasEmployee && a.employees,
@@ -183,6 +187,8 @@ export const useAllFeatures = (): { title: string; items: QuickAction[] }[] => {
       title: 'Company',
       items: [
         { key: 'announcements', label: 'Notices', icon: Megaphone, href: '/more/announcements', tone: 'amber' },
+        // Anyone can post an announcement.
+        { key: 'announce', label: 'Announce', icon: SquarePen, href: '/more/announcements/new', tone: 'purple' },
         { key: 'notifications', label: 'Notifications', icon: Bell, href: '/more/notifications', tone: 'red' },
         { key: 'team', label: can('employee:read') ? 'Employees' : 'My team', icon: Users, href: '/more/team', tone: 'blue' },
         can('emergency:manage') && { key: 'emergencies', label: 'Emergencies', icon: Siren, href: '/more/emergencies', tone: 'red' },

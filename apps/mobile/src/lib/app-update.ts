@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { get } from './api';
 import { IN_EXPO_GO } from './config';
 import { queryClient } from './query-client';
+import { storage, StorageKeys } from './storage';
 
 /**
  * In-app updates (Android). Every APK that GitHub Actions builds is published as a GitHub release; the API's
@@ -54,27 +55,45 @@ export const checkForUpdate = async () => {
 
 type Phase = 'idle' | 'downloading' | 'installing' | 'error';
 
-/** "Later" hides the sheet for this long; it comes back when the app is opened again after that. */
-const SNOOZE_MS = 4 * 60 * 60_000;
+/** Today on the phone's calendar (YYYY-MM-DD). */
+export const todayKey = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+/**
+ * The "Update available" pop-up shows once a day until the app is updated: the day it was last shown is kept on
+ * the phone, so closing and reopening the app (or signing in again) the same day doesn't bring it back.
+ */
 export const useAppUpdateStore = create<{
   phase: Phase;
   /** Download progress 0–1 (null when the size is unknown). */
   progress: number | null;
   error: string | null;
-  snoozedUntil: number;
-  /** Opened on purpose (notification tap, Settings): shows even while snoozed. */
+  /** Day the pop-up was last shown; `undefined` until read from storage. */
+  shownOn: string | null | undefined;
+  /** Opened on purpose (notification tap, Settings): shows even if it was already shown today. */
   requested: boolean;
-  snooze: () => void;
+  loadShownOn: () => Promise<void>;
+  markShown: () => void;
+  dismiss: () => void;
   request: () => void;
-}>((set) => ({
+}>((set, getState) => ({
   phase: 'idle',
   progress: null,
   error: null,
-  snoozedUntil: 0,
+  shownOn: undefined,
   requested: false,
-  snooze: () => set({ snoozedUntil: Date.now() + SNOOZE_MS, requested: false }),
-  request: () => set({ requested: true, snoozedUntil: 0 }),
+  loadShownOn: async () => {
+    if (getState().shownOn !== undefined) return;
+    set({ shownOn: await storage.get(StorageKeys.updatePromptShownOn) });
+  },
+  markShown: () => {
+    const today = todayKey();
+    if (getState().shownOn === today) return;
+    set({ shownOn: today });
+    void storage.set(StorageKeys.updatePromptShownOn, today);
+  },
+  dismiss: () => set({ requested: false }),
+  request: () => set({ requested: true }),
 }));
 
 /** Opens the update sheet (after checking for the newest release), e.g. from an "update available" notification. */

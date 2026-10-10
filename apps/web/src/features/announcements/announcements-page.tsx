@@ -229,16 +229,19 @@ const ManageTable = ({
 
 export const AnnouncementsPage = () => {
   const { can } = usePermissions();
+  // Anyone can post; HR manages every announcement, everyone else their own ("My announcements").
   const canManage = can('announcement:manage');
   const { params, query, set, clear, hasFilters } = useListParams({ limit: 10 });
-  const tab = canManage && params.tab === 'all' ? 'all' : 'feed';
+  const tab = params.tab === 'all' ? 'all' : 'feed';
   const [editing, setEditing] = useState<Announcement | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creatingState, setCreating] = useState(false);
+  // Dashboard "Announce" quick action: /announcements?new=1 opens the form straight away.
+  const creating = creatingState || params.new === '1';
   const [reads, setReads] = useState<Announcement | null>(null);
   const navigate = useNavigate();
 
   const apiQuery = useMemo(() => {
-    const rest = Object.fromEntries(Object.entries(query).filter(([k]) => k !== 'tab' && k !== 'sortOrder' && k !== 'sortBy'));
+    const rest = Object.fromEntries(Object.entries(query).filter(([k]) => k !== 'tab' && k !== 'new' && k !== 'sortOrder' && k !== 'sortBy'));
     return tab === 'all' ? { ...rest, scope: 'all' } : rest;
   }, [query, tab]);
 
@@ -262,31 +265,27 @@ export const AnnouncementsPage = () => {
         title="Announcements"
         description="Company news, policies and updates"
         actions={
-          canManage && (
-            <Button icon={<Plus className="h-4 w-4" />} onClick={() => setCreating(true)} className="w-full sm:w-auto">
-              New announcement
-            </Button>
-          )
+          <Button icon={<Plus className="h-4 w-4" />} onClick={() => setCreating(true)} className="w-full sm:w-auto">
+            New announcement
+          </Button>
         }
       />
-      {canManage && (
-        <Tabs
-          className="mb-5"
-          tabs={[
-            { key: 'feed', label: 'Feed' },
-            { key: 'all', label: 'Manage all' },
-          ]}
-          active={tab}
-          onChange={(key) => set({ tab: key === 'all' ? 'all' : undefined })}
-        />
-      )}
-      <div role={canManage ? 'tabpanel' : undefined} aria-labelledby={canManage ? `tab-${tab}` : undefined}>
+      <Tabs
+        className="mb-5"
+        tabs={[
+          { key: 'feed', label: 'Feed' },
+          { key: 'all', label: canManage ? 'Manage all' : 'My announcements' },
+        ]}
+        active={tab}
+        onChange={(key) => set({ tab: key === 'all' ? 'all' : undefined })}
+      />
+      <div role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === 'all' ? (
           <ManageTable query={apiQuery} onPage={(page) => set({ page })} onLimit={(limit) => set({ limit })} toolbar={toolbar} onEdit={setEditing} onReads={setReads} />
         ) : (
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="card px-4 py-3">{toolbar}</div>
-            <Feed query={apiQuery} onPage={(page) => set({ page })} onLimit={(limit) => set({ limit })} hasFilters={hasFilters(FILTER_KEYS)} canManage={canManage} onCreate={() => setCreating(true)} />
+            <Feed query={apiQuery} onPage={(page) => set({ page })} onLimit={(limit) => set({ limit })} hasFilters={hasFilters(FILTER_KEYS)} canManage onCreate={() => setCreating(true)} />
           </div>
         )}
       </div>
@@ -296,6 +295,7 @@ export const AnnouncementsPage = () => {
         onClose={(saved) => {
           const wasCreating = creating;
           setCreating(false);
+          if (params.new) set({ new: undefined });
           setEditing(null);
           if (saved && wasCreating) navigate(`/announcements/${saved._id}`);
         }}

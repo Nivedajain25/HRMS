@@ -20,7 +20,7 @@ announcementModule.route(
     path: '/',
     summary: 'List announcements',
     description:
-      'Default: published, non-expired announcements targeted at the caller (ALL / their department / them), pinned first, each with `read`. `scope=all` (requires `announcement:manage`) includes scheduled/expired ones with `status` and `readCount`.',
+      'Default: published, non-expired announcements targeted at the caller (ALL / their department / them), pinned first, each with `read` and `canEdit`. `scope=all` includes scheduled/expired ones with `status` and `readCount`: every announcement for `announcement:manage`, otherwise the caller’s own.',
     query: announcementListQuery,
   },
   ann.list,
@@ -42,20 +42,20 @@ announcementModule.route(
     method: 'post',
     path: '/',
     summary: 'Create an announcement',
-    description: 'HTML content is sanitized server-side (allowlist). Published immediately unless `publishAt` is in the future; the audience is notified on publish (and emailed when `sendEmail`).',
-    permissions: ['announcement:manage'],
+    description:
+      'Anyone signed in can post. HTML content is sanitized server-side (allowlist). Published immediately unless `publishAt` is in the future; the audience is notified on publish (in-app and push, and emailed when `sendEmail`).',
     body: announcementSchema,
   },
   ann.create,
 );
 announcementModule.route(
-  { method: 'patch', path: '/:id', summary: 'Update an announcement', permissions: ['announcement:manage'], params: idParam, body: announcementUpdateSchema },
+  { method: 'patch', path: '/:id', summary: 'Update an announcement (its author, or `announcement:manage`)', params: idParam, body: announcementUpdateSchema },
   ann.update,
 );
-announcementModule.route({ method: 'delete', path: '/:id', summary: 'Delete an announcement', permissions: ['announcement:manage'], params: idParam }, ann.remove);
+announcementModule.route({ method: 'delete', path: '/:id', summary: 'Delete an announcement (its author, or `announcement:manage`)', params: idParam }, ann.remove);
 announcementModule.route({ method: 'post', path: '/:id/read', summary: 'Mark an announcement as read (idempotent)', params: idParam }, ann.read);
 announcementModule.route(
-  { method: 'get', path: '/:id/reads', summary: 'Read tracking (read / targeted users)', permissions: ['announcement:manage'], params: idParam },
+  { method: 'get', path: '/:id/reads', summary: 'Read tracking (read / targeted users): the author, or `announcement:manage`', params: idParam },
   ann.reads,
 );
 

@@ -115,9 +115,7 @@ describe('Announcements & notifications', () => {
     expect(salesNotifs.map((n) => n.title)).not.toContain('Engineering only');
   });
 
-  it('validates targets and requires announcement:manage', async () => {
-    expect((await as(eng.token).post('/api/v1/announcements', { title: 'x', content: '<p>x</p>' })).status).toBe(403);
-    expect((await as(eng.token).get('/api/v1/announcements?scope=all')).status).toBe(403);
+  it('validates targets', async () => {
     const bad = await as(admin.token).post('/api/v1/announcements', {
       title: 'Bad',
       content: '<p>x</p>',
@@ -145,6 +143,7 @@ describe('Announcements & notifications', () => {
     const stats = await as(admin.token).get(`/api/v1/announcements/${id}/reads`);
     expect(stats.status).toBe(200);
     expect(stats.body.data).toMatchObject({ total: 2, read: 1, unread: 1, readPercent: 50 });
+    // Read tracking is for HR and the author only.
     expect((await as(eng.token).get(`/api/v1/announcements/${id}/reads`)).status).toBe(403);
 
     const managed = await as(admin.token).get('/api/v1/announcements?scope=all');

@@ -9,7 +9,7 @@ taskModule.route(
     path: '/',
     summary: 'Assign a task to one or more employees',
     description:
-      'HR / admins (`employee:read`) can assign to anyone; managers to their direct and indirect reports; department heads to anyone in their departments. One task is created per assignee and each is notified.',
+      'Anyone signed in can assign a task to anyone else in the organization. One task is created per assignee and each is notified (in-app, push and the new-task pop-up).',
     body: taskCreateSchema,
   },
   t.create,

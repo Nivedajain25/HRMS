@@ -59,7 +59,7 @@ export const TasksScreen = () => {
       header={
         <Header
           title="Tasks"
-          subtitle={view === 'assigned' ? 'Tasks you gave your team' : 'Work assigned to you'}
+          subtitle={view === 'assigned' ? 'Tasks you gave others' : 'Work assigned to you'}
           back
           backTo="/more"
           right={canAssign ? <IconButton icon={Plus} color={c.fg} onPress={() => router.push('/more/tasks/new')} accessibilityLabel="Assign a task" /> : undefined}

@@ -82,6 +82,15 @@ const readSet = async (ctx: RequestContext, ids: Types.ObjectId[]) => {
   return new Set(reads.map((r) => String(r.announcementId)));
 };
 
+/** HR (announcement:manage) can manage every announcement; anyone else only the ones they posted. */
+const canManageAll = (ctx: RequestContext) => can(ctx, 'announcement:manage');
+const isAuthor = (ctx: RequestContext, a: { createdBy?: unknown }) =>
+  String((a.createdBy as { _id?: Types.ObjectId } | null)?._id ?? a.createdBy) === String(ctx.userId);
+const canEdit = (ctx: RequestContext, a: { createdBy?: unknown }) => canManageAll(ctx) || isAuthor(ctx, a);
+const assertCanEdit = (ctx: RequestContext, a: { createdBy?: unknown }) => {
+  if (!canEdit(ctx, a)) throw forbidden('Only the person who posted this announcement (or HR) can change it');
+};
+
 const validateRefs = async (
   ctx: RequestContext,
   input: { departmentIds?: string[]; employeeIds?: string[]; attachmentIds?: string[] },
@@ -190,9 +199,11 @@ export const publishDueAnnouncements = async () => {
 /* ------------------------------- Queries ------------------------------ */
 
 export const listAnnouncements = async (ctx: RequestContext, q: AnnouncementListQuery) => {
+  // `scope=all`: every announcement for HR; for everyone else, all of their own (scheduled and expired included).
   const manage = q.scope === 'all';
-  if (manage && !can(ctx, 'announcement:manage')) throw forbidden();
-  const filter: FilterQuery<Announcement> = manage ? { organizationId: ctx.organizationId, deletedAt: null } : await visibleFilter(ctx);
+  const filter: FilterQuery<Announcement> = manage
+    ? { organizationId: ctx.organizationId, deletedAt: null, ...(canManageAll(ctx) ? {} : { createdBy: ctx.userId }) }
+    : await visibleFilter(ctx);
   if (q.search) filter.title = new RegExp(escapeRegex(q.search), 'i');
   if (q.priority) filter.priority = q.priority;
 
@@ -222,6 +233,7 @@ export const listAnnouncements = async (ctx: RequestContext, q: AnnouncementList
       expiresAt: endOf(a, timeZone),
       status: statusOf(a, timeZone),
       read: read.has(String(a._id)),
+      canEdit: canEdit(ctx, a),
       ...(manage ? { readCount: readCounts.get(String(a._id)) ?? 0 } : {}),
     })),
     pagination: buildPagination(q.page, q.limit, total),
@@ -288,9 +300,10 @@ export const announcementHighlights = async (ctx: RequestContext) => {
 };
 
 const loadForViewer = async (ctx: RequestContext, id: string) => {
-  const filter = can(ctx, 'announcement:manage')
+  // HR sees every announcement; others the ones addressed to them plus their own (even scheduled or expired).
+  const filter: FilterQuery<Announcement> = canManageAll(ctx)
     ? { _id: id, organizationId: ctx.organizationId, deletedAt: null }
-    : { ...(await visibleFilter(ctx)), _id: new Types.ObjectId(id) };
+    : { _id: new Types.ObjectId(id), $or: [await visibleFilter(ctx), { organizationId: ctx.organizationId, deletedAt: null, createdBy: ctx.userId }] };
   const a = await AnnouncementModel.findOne(filter).populate(AUTHOR_POPULATE).populate(ATTACHMENT_POPULATE).lean();
   if (!a) throw notFound('Announcement');
   return a;
@@ -299,9 +312,9 @@ const loadForViewer = async (ctx: RequestContext, id: string) => {
 export const getAnnouncement = async (ctx: RequestContext, id: string) => {
   const a = await loadForViewer(ctx, id);
   const [read, timeZone] = await Promise.all([readSet(ctx, [a._id]), orgTimeZone(ctx.organizationId)]);
-  const base = { ...a, expiresAt: endOf(a, timeZone), status: statusOf(a, timeZone), read: read.has(String(a._id)) };
-  if (!can(ctx, 'announcement:manage')) return base;
-  // Managers editing the announcement get audience names alongside the ids.
+  const base = { ...a, expiresAt: endOf(a, timeZone), status: statusOf(a, timeZone), read: read.has(String(a._id)), canEdit: canEdit(ctx, a) };
+  if (!base.canEdit) return base;
+  // HR and the author editing the announcement get audience names alongside the ids.
   const [departments, employees] = await Promise.all([
     a.departmentIds?.length
       ? DepartmentModel.find({ organizationId: ctx.organizationId, _id: { $in: a.departmentIds } }).select('name code').lean()
@@ -356,6 +369,7 @@ export const createAnnouncement = async (ctx: RequestContext, input: CreateInput
 export const updateAnnouncement = async (ctx: RequestContext, id: string, input: AnnouncementUpdateInput) => {
   const doc = await AnnouncementModel.findOne({ _id: id, organizationId: ctx.organizationId, deletedAt: null });
   if (!doc) throw notFound('Announcement');
+  assertCanEdit(ctx, doc);
   const before = doc.toObject() as unknown as Record<string, unknown>;
 
   const audience = input.audience ?? doc.audience;
@@ -407,6 +421,9 @@ export const updateAnnouncement = async (ctx: RequestContext, id: string, input:
 };
 
 export const deleteAnnouncement = async (ctx: RequestContext, id: string) => {
+  const existing = await AnnouncementModel.findOne({ _id: id, organizationId: ctx.organizationId, deletedAt: null }).select('createdBy').lean();
+  if (!existing) throw notFound('Announcement');
+  assertCanEdit(ctx, existing);
   const doc = await AnnouncementModel.findOneAndUpdate(
     { _id: id, organizationId: ctx.organizationId, deletedAt: null },
     { deletedAt: new Date() },
@@ -427,10 +444,11 @@ export const markAnnouncementRead = async (ctx: RequestContext, id: string) => {
   return { read: true };
 };
 
-/** Read-tracking statistics for managers. */
+/** Read-tracking statistics (HR and the author). */
 export const announcementReads = async (ctx: RequestContext, id: string) => {
   const a = await AnnouncementModel.findOne({ _id: id, organizationId: ctx.organizationId, deletedAt: null }).lean();
   if (!a) throw notFound('Announcement');
+  assertCanEdit(ctx, a);
   const targeted = await targetedUserIds(a);
   const targetedSet = new Set(targeted.map(String));
   const reads = await AnnouncementReadModel.find({ organizationId: ctx.organizationId, announcementId: a._id })

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { get, post } from '@/lib/api';
+import { del, get, post } from '@/lib/api';
 import { useInfiniteList } from '@/features/profile/kit/infinite';
 
 /* Same shapes as the web `features/announcements/api.ts`. */
@@ -29,6 +29,21 @@ export interface Announcement {
   createdAt: string;
   status?: 'PUBLISHED' | 'SCHEDULED' | 'EXPIRED';
   read: boolean;
+  /** The caller posted it, or is HR: may delete it. */
+  canEdit?: boolean;
+}
+
+export type AnnouncementAudience = Announcement['audience'];
+
+export interface NewAnnouncement {
+  title: string;
+  /** HTML (the server sanitizes it). */
+  content: string;
+  priority: AnnouncementPriority;
+  audience: AnnouncementAudience;
+  departmentIds?: string[];
+  employeeIds?: string[];
+  pinned?: boolean;
 }
 
 export const announcementKeys = {
@@ -93,3 +108,34 @@ export const useMarkAnnouncementRead = () => {
 };
 
 export const attachmentName = (a: AnnouncementAttachment) => a.title || a.originalName || 'Attachment';
+
+/** Departments for the announcement audience picker. */
+export const useDepartments = (enabled = true) =>
+  useQuery({ queryKey: ['departments', 'all'], queryFn: () => get<{ _id: string; name: string }[]>('/departments/all'), enabled, staleTime: 5 * 60_000 });
+
+const useInvalidateAnnouncements = () => {
+  const qc = useQueryClient();
+  return () => Promise.all([qc.invalidateQueries({ queryKey: announcementKeys.all }), qc.invalidateQueries({ queryKey: ['dashboard'] })]);
+};
+
+/** Anyone can post an announcement; the audience gets a push notification and the pop-up. */
+export const useCreateAnnouncement = () => {
+  const invalidate = useInvalidateAnnouncements();
+  return useMutation({ mutationFn: async (body: NewAnnouncement) => (await post<Announcement>('/announcements', body)).data, onSuccess: () => invalidate() });
+};
+
+/** The author (or HR) can delete an announcement. */
+export const useDeleteAnnouncement = () => {
+  const invalidate = useInvalidateAnnouncements();
+  return useMutation({ mutationFn: (id: string) => del<null>(`/announcements/${id}`), onSuccess: () => invalidate() });
+};
+
+const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Plain text typed on the phone → simple HTML: a blank line starts a new paragraph, single line breaks are kept. */
+export const textToHtml = (text: string) =>
+  text
+    .trim()
+    .split(/\n\s*\n/)
+    .map((para) => `<p>${escapeHtml(para.trim()).replace(/\n/g, '<br>')}</p>`)
+    .join('');

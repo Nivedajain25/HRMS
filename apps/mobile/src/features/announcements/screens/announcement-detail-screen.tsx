@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { FileText, Megaphone, Paperclip, Pin } from 'lucide-react-native';
-import { Avatar, Badge, Card, EmptyState, ErrorState, Header, ListItem, Screen, SectionHeader, Skeleton, StatusBadge, Text } from '@/components';
+import { router, useLocalSearchParams } from 'expo-router';
+import { FileText, Megaphone, Paperclip, Pin, Trash2 } from 'lucide-react-native';
+import { Avatar, Badge, Button, Card, EmptyState, ErrorState, Header, ListItem, Screen, SectionHeader, Skeleton, StatusBadge, Text, toast, useConfirm } from '@/components';
 import { formatBytes, openProtectedFile } from '@/features/profile/kit/files';
-import { ApiError } from '@/lib/api';
+import { ApiError, toApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { fullName } from '@/lib/format';
 import { formatDateTimeIn } from '@/lib/time';
 import { space, useTheme } from '@/theme';
-import { attachmentName, useAnnouncement, useMarkAnnouncementRead, type AnnouncementAttachment } from '../api';
+import { attachmentName, useAnnouncement, useDeleteAnnouncement, useMarkAnnouncementRead, type AnnouncementAttachment } from '../api';
 import { RichText } from '../components/rich-text';
 
 const AttachmentRow = ({ a, divider }: { a: AnnouncementAttachment; divider: boolean }) => {
@@ -54,6 +54,22 @@ export const AnnouncementDetailScreen = () => {
   }, [a, markRead]);
 
   const author = a?.createdBy ? fullName(a.createdBy) : null;
+  const confirm = useConfirm();
+  const remove = useDeleteAnnouncement();
+
+  // The author (or HR) can take it down.
+  const onDelete = async () => {
+    if (!a) return;
+    const { confirmed } = await confirm({ title: 'Delete announcement?', message: 'It will be removed for everyone.', confirmLabel: 'Delete', tone: 'danger' });
+    if (!confirmed) return;
+    try {
+      await remove.mutateAsync(a._id);
+      toast.success('Announcement deleted');
+      router.replace('/more/announcements');
+    } catch (err) {
+      toast.error('Could not delete the announcement', toApiError(err).message);
+    }
+  };
 
   return (
     <Screen header={<Header title="Announcement" back backTo="/more/announcements" />} onRefresh={() => query.refetch()}>
@@ -113,6 +129,11 @@ export const AnnouncementDetailScreen = () => {
                 ))}
               </Card>
             </>
+          ) : null}
+          {a.canEdit ? (
+            <Button variant="danger" icon={Trash2} loading={remove.isPending} onPress={() => void onDelete()}>
+              Delete announcement
+            </Button>
           ) : null}
         </>
       )}

@@ -1,12 +1,11 @@
 import { Types, type FilterQuery } from 'mongoose';
 import type { WorkTaskPriority, WorkTaskStatus } from '@stencil/shared';
-import { DepartmentModel, EmployeeModel, TaskModel, type Task } from '../models';
+import { EmployeeModel, TaskModel, type Task } from '../models';
 import { can, type RequestContext } from '../types/context';
 import { badRequest, forbidden, notFound } from '../utils/errors';
 import { buildPagination } from '../utils/pagination';
 import { audit } from './audit.service';
 import { notify } from './notification.service';
-import { getReportIds } from './scope.service';
 
 const POPULATE = [
   {
@@ -22,34 +21,10 @@ const POPULATE = [
 
 const STATUS_LABEL: Record<WorkTaskStatus, string> = { TODO: 'To do', IN_PROGRESS: 'In progress', DONE: 'Done' };
 
-/**
- * Who the caller may assign tasks to: `null` = anyone (HR / admins with `employee:read`); otherwise their
- * direct + indirect reports (managers) and everyone in the departments they head (department heads).
- */
-export const assignableScope = async (ctx: RequestContext): Promise<Types.ObjectId[] | null> => {
-  if (can(ctx, 'employee:read')) return null;
-  if (!ctx.employeeId) return [];
-  const [reports, headed] = await Promise.all([
-    getReportIds(ctx.organizationId, ctx.employeeId),
-    DepartmentModel.find({ organizationId: ctx.organizationId, headId: ctx.employeeId }).select('_id').lean(),
-  ]);
-  const inDepartments = headed.length
-    ? await EmployeeModel.find({ organizationId: ctx.organizationId, deletedAt: null, departmentId: { $in: headed.map((d) => d._id) } })
-        .select('_id')
-        .lean()
-    : [];
-  const ids = new Map<string, Types.ObjectId>();
-  for (const id of [...reports, ...inDepartments.map((e) => e._id)]) if (!id.equals(ctx.employeeId)) ids.set(String(id), id);
-  return [...ids.values()];
-};
-
-/** People the caller can assign to (for the "Assign task" picker). Empty = the caller can't assign tasks. */
+/** People the caller can assign to (the "Assign task" picker): everyone active in the organization except themselves. */
 export const listAssignable = async (ctx: RequestContext) => {
-  const scope = await assignableScope(ctx);
-  if (scope && !scope.length) return [];
   const filter: FilterQuery<unknown> = { organizationId: ctx.organizationId, deletedAt: null, employmentStatus: { $nin: ['TERMINATED', 'RESIGNED', 'EXITED'] } };
-  if (scope) filter._id = { $in: scope };
-  else if (ctx.employeeId) filter._id = { $ne: ctx.employeeId };
+  if (ctx.employeeId) filter._id = { $ne: ctx.employeeId };
   return EmployeeModel.find(filter)
     .select('employeeId firstName lastName profilePhoto departmentId designationId')
     .populate([
@@ -64,18 +39,12 @@ export const createTasks = async (
   ctx: RequestContext,
   input: { title: string; description?: string; assigneeIds: string[]; priority?: WorkTaskPriority; dueDate?: string },
 ) => {
-  const scope = await assignableScope(ctx);
-  if (scope && !scope.length) throw forbidden('Only managers, department heads and HR can assign tasks');
+  // Anyone can assign to anyone in the organization; each assignee is notified (in-app, push and the pop-up).
   const wanted = [...new Set(input.assigneeIds)];
   const employees = await EmployeeModel.find({ _id: { $in: wanted }, organizationId: ctx.organizationId, deletedAt: null })
     .select('firstName lastName userId')
     .lean();
   if (employees.length !== wanted.length) throw badRequest('Some of the chosen people were not found', 'ASSIGNEE_NOT_FOUND');
-  if (scope) {
-    const allowed = new Set(scope.map(String));
-    const outside = employees.filter((e) => !allowed.has(String(e._id)));
-    if (outside.length) throw forbidden(`You can only assign tasks to your team (${outside.map((e) => e.firstName).join(', ')} is not in it)`);
-  }
 
   const dueDate = input.dueDate ? new Date(`${input.dueDate}T00:00:00Z`) : null;
   const docs = await TaskModel.insertMany(

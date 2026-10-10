@@ -209,7 +209,6 @@ export const assertAttachment = async (
 export const uploadFile = async (ctx: RequestContext, file: UploadedFile, input: FileUpload) => {
   const context = input.context;
   if (context === 'RESUME' && !can(ctx, 'recruitment:create') && !can(ctx, 'recruitment:update')) throw forbidden();
-  if (context === 'ANNOUNCEMENT' && !can(ctx, 'announcement:manage')) throw forbidden();
   if (context === 'LOGO' && !can(ctx, 'settings:manage')) throw forbidden();
   if (context === 'ATTENDANCE' && !ctx.employeeId) throw badRequest('No employee profile is linked to your account', 'NO_EMPLOYEE_PROFILE');
 

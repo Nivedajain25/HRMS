@@ -35,6 +35,8 @@ export interface Announcement {
   read: boolean;
   /** Only with `scope=all`. */
   readCount?: number;
+  /** The caller posted it, or is HR (`announcement:manage`): may edit, delete and see read tracking. */
+  canEdit?: boolean;
 }
 
 export interface AnnouncementReads {

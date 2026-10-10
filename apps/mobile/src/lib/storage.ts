@@ -16,6 +16,8 @@ export const StorageKeys = {
   pushToken: 'stencil.pushToken',
   /** Emergency decisions the employee has already seen (JSON array of emergency ids). */
   emergencyDecisionsSeen: 'stencil.emergencyDecisionsSeen',
+  /** Day (YYYY-MM-DD, phone's date) the "Update available" pop-up was last shown — it shows once a day. */
+  updatePromptShownOn: 'stencil.updatePromptShownOn',
 } as const;
 type Key = (typeof StorageKeys)[keyof typeof StorageKeys];
 

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarPlus, LayoutGrid, Megaphone, PartyPopper, Target, Users, Zap } from 'lucide-react';
+import { ArrowRight, CalendarPlus, LayoutGrid, ListPlus, Megaphone, PartyPopper, Target, Users, Zap } from 'lucide-react';
 import { AllFeaturesModal } from './all-features';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
@@ -20,7 +20,7 @@ const Count = ({ to, value, loading }: { to: string; value: number | undefined; 
     </Link>
   );
 
-/** Role-aware quick actions (Apply leave, My Goals, My team, Live board, Announce). */
+/** Role-aware quick actions (Apply leave, My Goals, My team, Live board, and for everyone Announce and Assign task). */
 const useQuickActions = () => {
   const { user, can, hasEmployee, isManager } = usePermissions();
   const actions: { to: string; icon: ReactNode; label: string }[] = [];
@@ -34,8 +34,10 @@ const useQuickActions = () => {
   if (can('attendance:read')) actions.push({ to: '/attendance?view=board', icon: <LayoutGrid className="h-4 w-4" />, label: 'Live board' });
   else if (isManager) actions.push({ to: '/attendance?view=board&scope=team', icon: <LayoutGrid className="h-4 w-4" />, label: 'Live board' });
   else if (hasEmployee) actions.push({ to: '/attendance?view=board', icon: <LayoutGrid className="h-4 w-4" />, label: 'Live board' });
-  if (can('announcement:manage')) actions.push({ to: '/announcements', icon: <Megaphone className="h-4 w-4" />, label: 'Announce' });
-  return actions.slice(0, 5);
+  // Anyone can post an announcement or give a colleague a task.
+  actions.push({ to: '/announcements?new=1', icon: <Megaphone className="h-4 w-4" />, label: 'Announce' });
+  actions.push({ to: '/tasks?assign=1', icon: <ListPlus className="h-4 w-4" />, label: 'Assign task' });
+  return actions.slice(0, 6);
 };
 
 /** Admin dashboard (right column): the quick actions as a list card. */

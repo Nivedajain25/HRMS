@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { Megaphone, Paperclip, Pin } from 'lucide-react-native';
-import { Card, EmptyState, ErrorState, Header, Screen, SkeletonList, StatusBadge, Text } from '@/components';
+import { Megaphone, Paperclip, Pin, Plus } from 'lucide-react-native';
+import { Button, Card, EmptyState, ErrorState, Header, IconButton, Screen, SkeletonList, StatusBadge, Text } from '@/components';
 import { flattenPages, LoadMore, totalOf } from '@/features/profile/kit/infinite';
 import { fullName } from '@/lib/format';
 import { timeAgo } from '@/lib/time';
@@ -54,10 +54,27 @@ const AnnouncementCard = ({ a }: { a: Announcement }) => {
 };
 
 export const AnnouncementListScreen = () => {
+  const { c } = useTheme();
   const feed = useAnnouncementFeed();
   const items = flattenPages(feed.data);
+  const compose = () => router.push('/more/announcements/new');
   return (
-    <Screen header={<Header title="Announcements" subtitle="Company news" back backTo="/more" />} onRefresh={() => feed.refetch()}>
+    <Screen
+      header={
+        <Header
+          title="Announcements"
+          subtitle="Company news"
+          back
+          backTo="/more"
+          // Anyone can post one.
+          right={<IconButton icon={Plus} color={c.fg} onPress={compose} accessibilityLabel="New announcement" />}
+        />
+      }
+      onRefresh={() => feed.refetch()}
+    >
+      <Button icon={Megaphone} variant="outline" onPress={compose}>
+        Post an announcement
+      </Button>
       {feed.isLoading ? (
         <Card>
           <SkeletonList rows={4} />

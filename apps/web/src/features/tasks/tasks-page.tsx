@@ -161,8 +161,8 @@ const TaskCard = ({
 /* -------------------------------- Page -------------------------------- */
 
 /**
- * Tasks assigned by a manager, department head or HR. Employees work through "My tasks" (Start → Mark as done),
- * finished ones move to "Finished". People who can assign also see and manage the tasks they gave out.
+ * Tasks anyone can give anyone. Everyone works through "My tasks" (Start → Mark as done), finished ones move to
+ * "Finished", and "Assigned by me" lists the tasks they gave out. `/tasks?assign=1` opens the Assign dialog.
  */
 export const TasksPage = () => {
   const { user, hasEmployee } = usePermissions();
@@ -171,7 +171,16 @@ export const TasksPage = () => {
   const assignable = useAssignable();
   const people = assignable.data ?? [];
   const canAssign = people.length > 0;
-  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignState, setAssignOpen] = useState(false);
+  // Dashboard "Assign task" quick action.
+  const assignOpen = assignState || params.get('assign') === '1';
+  const closeAssign = () => {
+    setAssignOpen(false);
+    if (params.has('assign')) {
+      params.delete('assign');
+      setParams(params, { replace: true });
+    }
+  };
   const [page, setPage] = useState(1);
   const [completing, setCompleting] = useState<Task | null>(null);
   const [note, setNote] = useState('');
@@ -288,7 +297,7 @@ export const TasksPage = () => {
     <div>
       <PageHeader
         title="Tasks"
-        description={canAssign ? 'Tasks assigned to you, and the ones you have given to others.' : 'Tasks assigned to you by your manager, department head or HR.'}
+        description={canAssign ? 'Tasks assigned to you, and the ones you have given to others.' : 'Tasks assigned to you by your colleagues.'}
         actions={
           canAssign && (
             <Button icon={<Plus className="h-4 w-4" />} onClick={() => setAssignOpen(true)}>
@@ -302,7 +311,7 @@ export const TasksPage = () => {
         assignable.isLoading ? (
           <Skeleton className="h-40" />
         ) : (
-          <EmptyState className="card" icon={<ClipboardList className="h-5 w-5" />} title="No tasks here" description="Tasks are assigned to employees by their manager, department head or HR." />
+          <EmptyState className="card" icon={<ClipboardList className="h-5 w-5" />} title="No tasks here" description="Anyone can assign a task to a colleague from here." />
         )
       ) : (
         <>
@@ -370,7 +379,7 @@ export const TasksPage = () => {
         </label>
       </Modal>
 
-      {canAssign && <AssignTaskDialog open={assignOpen} onClose={() => setAssignOpen(false)} people={people} />}
+      {canAssign && <AssignTaskDialog open={assignOpen} onClose={closeAssign} people={people} />}
     </div>
   );
 };

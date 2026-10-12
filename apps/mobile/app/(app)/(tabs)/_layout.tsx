@@ -21,8 +21,8 @@ const TABS: { name: string; label: string; icon: LucideIcon }[] = [
 /** Tabs with their own pages (a stack under the tab, e.g. More → Payslips). */
 const STACK_TABS = new Set(['attendance', 'leave', 'more']);
 
-/** How far the current page's bubble rises out of the bar. */
-const POP = 24;
+/** How far the current page's bubble rises out of the bar (kept small: a gentle lift, not a pop-out). */
+const POP = 10;
 
 /**
  * One tab. The page you're on pops up out of the bar: its icon rises in a round bubble of the role's colour with a
@@ -144,26 +144,26 @@ const styles = StyleSheet.create({
   },
   item: { flex: 1, alignItems: 'center', gap: 4 },
   // The bubble takes the old icon row's 30 pt; it only grows (and rises) for the current page.
-  bubble: { width: 54, height: 54, marginVertical: -12, alignItems: 'center', justifyContent: 'center' },
+  bubble: { width: 46, height: 46, marginVertical: -8, alignItems: 'center', justifyContent: 'center' },
   bubbleFill: {
     position: 'absolute',
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
-    borderRadius: 27,
-    borderWidth: 4,
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    borderRadius: 23,
+    borderWidth: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
   },
-  iconLayer: { zIndex: 1, elevation: 9 },
+  iconLayer: { zIndex: 1, elevation: 6 },
   // Soft tile under each flat tab icon: a light, professional shadow (not a dark fill).
   tile: {
     position: 'absolute',
-    top: 10,
-    left: 5,
+    top: 6,
+    left: 1,
     width: 44,
     height: 34,
     borderRadius: 12,

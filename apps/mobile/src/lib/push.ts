@@ -60,11 +60,28 @@ const pushToken = async (Notifications: typeof NotificationsModule): Promise<str
 };
 
 /**
+ * The token last registered with the server for the signed-in user. Fetching the token (getDevicePushTokenAsync)
+ * also fires the push-token listener on Android, so without this the listener re-registered, which fetched the
+ * token again… an endless loop of `POST /devices` that got the phone rate-limited (and its other requests with it).
+ */
+let registeredToken: string | null = null;
+let inFlight: Promise<string | null> | null = null;
+
+/**
  * Asks for notification permission, obtains the push token (Firebase on Android) and registers
  * it with `POST /devices`. Returns the token, or `null` when push is not
  * available (Expo Go, simulator, permission denied, no EAS project id).
+ * One registration at a time; the same token isn't sent twice unless `force` (e.g. after the server dropped it).
  */
-export const registerForPush = async (): Promise<string | null> => {
+export const registerForPush = (force = false): Promise<string | null> => {
+  if (force && !inFlight) registeredToken = null;
+  inFlight ??= register().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+};
+
+const register = async (): Promise<string | null> => {
   const Notifications = loadNotifications();
   if (!Notifications || !Device.isDevice) return null;
   if (Platform.OS === 'android') {
@@ -80,6 +97,7 @@ export const registerForPush = async (): Promise<string | null> => {
   if (!granted) return null;
   const token = await pushToken(Notifications);
   if (!token) return null;
+  if (token === registeredToken) return token;
   await post('/devices', {
     token,
     platform: Platform.OS === 'ios' ? 'ios' : 'android',
@@ -88,6 +106,7 @@ export const registerForPush = async (): Promise<string | null> => {
     ...(CURRENT_BUILD ? { appBuild: CURRENT_BUILD } : {}),
     deviceName: (Device.deviceName ?? Device.modelName ?? undefined)?.slice(0, 120),
   });
+  registeredToken = token;
   await storage.set(StorageKeys.pushToken, token);
   return token;
 };
@@ -111,9 +130,12 @@ export const usePushNotifications = (userId: string | null) => {
   useEffect(() => {
     const Notifications = loadNotifications();
     if (!userId || !Notifications) return;
+    // A different user on this phone: the token must be registered to them.
+    registeredToken = null;
     registerForPush().catch((err: unknown) => console.warn('[push] registration failed', err));
-    // Expo push tokens rarely rotate; when the native token changes, register again.
-    const sub = Notifications.addPushTokenListener(() => {
+    // Only when the phone's token really changes (fetching it fires this too, with the same token).
+    const sub = Notifications.addPushTokenListener((next) => {
+      if (inFlight || (typeof next.data === 'string' && next.data === registeredToken)) return;
       registerForPush().catch((err: unknown) => console.warn('[push] re-registration failed', err));
     });
     return () => sub.remove();

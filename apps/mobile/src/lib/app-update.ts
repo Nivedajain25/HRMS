@@ -116,11 +116,15 @@ const FLAG_GRANT_READ_URI_PERMISSION = 1;
 /** Shows Android's install screen for a downloaded APK. */
 const launchInstaller = async (file: File) => {
   const data = await getContentUriAsync(file.uri);
-  await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-    data,
-    flags: FLAG_GRANT_READ_URI_PERMISSION,
-    type: 'application/vnd.android.package-archive',
-  });
+  const open = (action: string) =>
+    IntentLauncher.startActivityAsync(action, { data, flags: FLAG_GRANT_READ_URI_PERMISSION, type: 'application/vnd.android.package-archive' });
+  // INSTALL_PACKAGE goes straight to the system installer. VIEW also matches store apps on some phones (e.g. Realme /
+  // Oppo's App Market), so Android showed an "Open with" chooser and closing it silently skipped the update.
+  try {
+    await open('android.intent.action.INSTALL_PACKAGE');
+  } catch {
+    await open('android.intent.action.VIEW');
+  }
 };
 
 /**

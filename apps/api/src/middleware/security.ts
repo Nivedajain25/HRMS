@@ -31,14 +31,34 @@ export const sanitizeInput = (req: Request, _res: Response, next: NextFunction) 
 
 const skip = () => isTest;
 
+/** `POST /api/v1/devices` (push registration), relative to the `/api` mount. */
+const isDeviceRegistration = (req: Request) => req.method === 'POST' && req.path === '/v1/devices';
+
 /** General API limit. */
 export const apiLimiter = rateLimit({
   windowMs: 60_000,
   limit: 600,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  skip,
+  // Device registrations have their own limit (below), so they can't use up this one.
+  skip: (req) => isTest || isDeviceRegistration(req),
   message: { success: false, message: 'Too many requests, please slow down', code: 'RATE_LIMITED', errors: [] },
+});
+
+/**
+ * Push registration: a phone registers once per launch or token change. Android builds before 8 could re-register
+ * in a tight loop (thousands a minute); without this they used up the general limit that everyone behind the same
+ * IP (the office Wi-Fi) shares, so the whole office got "Too many requests". Per IP + token, answered without
+ * touching the database.
+ */
+export const deviceRegistrationLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  skip: (req) => isTest || !isDeviceRegistration(req),
+  keyGenerator: (req) => `${req.ip ?? 'unknown'}|${typeof req.body?.token === 'string' ? req.body.token.slice(0, 200) : ''}`,
+  message: { success: false, message: 'This device was registered moments ago', code: 'RATE_LIMITED', errors: [] },
 });
 
 /** Strict limit for credential endpoints (brute-force protection). */

@@ -73,7 +73,7 @@ export const useChangePassword = () =>
       if (session.refreshToken) await storage.set(StorageKeys.refreshToken, session.refreshToken);
       useAuthStore.setState({ user: session.user });
       await storage.remove(StorageKeys.pushToken);
-      registerForPush().catch((err: unknown) => console.warn('[push] re-registration after password change failed', err));
+      registerForPush(true).catch((err: unknown) => console.warn('[push] re-registration after password change failed', err));
       return res;
     },
   });

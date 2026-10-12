@@ -9,7 +9,7 @@ import { env, isProd, isTest } from './config/env';
 import { databaseStatus } from './config/database';
 import { logger } from './config/logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
-import { apiLimiter, sanitizeInput } from './middleware/security';
+import { apiLimiter, deviceRegistrationLimiter, sanitizeInput } from './middleware/security';
 import { mountRoutes } from './routes';
 import { buildOpenApiDocument } from './routes/registry';
 import { usingRedis } from './jobs/queue';
@@ -75,7 +75,7 @@ export const createApp = () => {
     });
   });
 
-  app.use('/api', apiLimiter);
+  app.use('/api', deviceRegistrationLimiter, apiLimiter);
   mountRoutes(app);
 
   const openApi = buildOpenApiDocument(env.API_URL);

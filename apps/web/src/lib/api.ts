@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import type { ApiError as ApiErrorBody, ApiFieldError, AuthSession, Pagination } from '@stencil/types';
 import { useAuthStore } from '@/store/auth';
 

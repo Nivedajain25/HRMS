@@ -19,7 +19,8 @@ const USERS = {
   payroll: 'payroll@stencil-demo.test',
   superadmin: 'superadmin@stencil-demo.test',
 };
-const API = 'http://localhost:5000/api/v1';
+// E2E_API_URL: run against an API on another port (e.g. while a dev API already uses 5000).
+const API = process.env.E2E_API_URL ?? 'http://localhost:5000/api/v1';
 
 const apiToken = async (request: APIRequestContext, email: string) => {
   const res = await request.post(`${API}/auth/login`, { data: { email, password: PASSWORD } });
@@ -42,7 +43,25 @@ const signIn = async (browser: Browser, email: string): Promise<Page> => {
   await page.getByLabel(/^Password/).fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  await dismissPopups(page);
   return page;
+};
+
+/**
+ * After sign-in, new announcements (the seeded "Welcome to Stencil HRMS") and new tasks pop up over the page and
+ * block clicks; put them off so the journey can carry on.
+ */
+const dismissPopups = async (page: Page) => {
+  const close = page.getByRole('dialog').getByRole('button', { name: /^(Remind me later|Got it)$/ });
+  for (let i = 0; i < 5; i++) {
+    const shown = await close
+      .first()
+      .waitFor({ state: 'visible', timeout: i === 0 ? 5_000 : 1_500 })
+      .then(() => true)
+      .catch(() => false);
+    if (!shown) return;
+    await close.first().click();
+  }
 };
 
 /** Confirms a `useConfirm()` dialog if one opens. */

@@ -129,8 +129,9 @@ export const CompanyToday = () => {
 
       {/* One bar, split by status (2 pt gaps between parts); anyone not counted (e.g. week off) stays as track. */}
       <View style={[styles.companyBar, { backgroundColor: c.surface3 }]}>
-        {parts.map((p) =>
-          p.value > 0 ? <View key={p.label} style={{ flex: p.value, backgroundColor: toneColors(p.tone, c).solid }} /> : null,
+        {/* `count`, not `p.value`, in the style: Reanimated's dev check warns about any `x.value` in an inline style. */}
+        {parts.map(({ label, value: count, tone }) =>
+          count > 0 ? <View key={label} style={{ flex: count, backgroundColor: toneColors(tone, c).solid }} /> : null,
         )}
         {total > counted ? <View style={{ flex: total - counted }} /> : null}
       </View>

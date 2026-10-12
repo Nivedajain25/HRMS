@@ -12,7 +12,7 @@ export const notFoundHandler = (req: Request, res: Response) => {
 };
 
 // Express recognises error handlers by arity, so `_next` must stay.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction) => {
   let status = 500;
   let code = 'INTERNAL_ERROR';

@@ -38,8 +38,7 @@ export const Screen = ({ children, header, footer, onRefresh, scroll = true, key
     }
   }, [onRefresh]);
 
-  // In the tabs, the current tab's bubble rises ~10 pt above the bar: leave room so it doesn't cover the last button.
-  const bottomPad = footer ? space(6) : inTabs ? space(9) : insets.bottom + space(6);
+  const bottomPad = inTabs || footer ? space(6) : insets.bottom + space(6);
   const body = scroll ? (
     <ScrollView
       style={styles.flex}

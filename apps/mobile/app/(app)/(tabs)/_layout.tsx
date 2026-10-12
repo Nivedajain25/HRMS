@@ -1,6 +1,6 @@
 import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { interpolate, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router/js-tabs';
 import { Clock, Home, Menu, Plane, Plus, type LucideIcon } from 'lucide-react-native';
@@ -21,33 +21,28 @@ const TABS: { name: string; label: string; icon: LucideIcon }[] = [
 /** Tabs with their own pages (a stack under the tab, e.g. More → Payslips). */
 const STACK_TABS = new Set(['attendance', 'leave', 'more']);
 
-/** How far the current page's bubble rises out of the bar (kept small: a gentle lift, not a pop-out). */
-const POP = 10;
-
 /**
- * One tab. The page you're on pops up out of the bar: its icon rises in a round bubble of the role's colour with a
- * white half-moon rim, so it's always clear where you are; the others sit flat.
+ * One tab. Every icon sits on the same soft rounded tile (like Actions); the page you're on fills its tile with the
+ * role's colour — it stays in the bar (no pop-out), with a quick fade rather than a bounce.
  */
 const TabItem = ({ label, icon: Icon, focused, onPress }: { label: string; icon: LucideIcon; focused: boolean; onPress: () => void }) => {
   const { c } = useTheme();
   const up = useSharedValue(focused ? 1 : 0);
   useEffect(() => {
-    up.value = withSpring(focused ? 1 : 0, { damping: 14, stiffness: 190, reduceMotion: ReduceMotion.System });
+    up.value = withTiming(focused ? 1 : 0, { duration: 180, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System });
   }, [focused, up]);
-  const rise = useAnimatedStyle(() => ({ transform: [{ translateY: interpolate(up.value, [0, 1], [0, -POP]) }] }));
-  const fill = useAnimatedStyle(() => ({ opacity: up.value, transform: [{ scale: interpolate(up.value, [0, 1], [0.5, 1]) }] }));
-  // The flat tabs sit on a soft tile with a light shadow; it fades out as the bubble takes over.
+  const fill = useAnimatedStyle(() => ({ opacity: up.value }));
   const tile = useAnimatedStyle(() => ({ opacity: 1 - up.value }));
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={label} style={styles.item}>
-      <Animated.View style={[styles.bubble, rise]}>
+      <View style={styles.bubble}>
         <Animated.View style={[styles.tile, { backgroundColor: c.surface, borderColor: c.line }, tile]} />
-        <Animated.View style={[styles.bubbleFill, { backgroundColor: c.primary, borderColor: c.surface, shadowColor: c.primary }, fill]} />
-        {/* Above the bubble's shadow (on Android a raised view draws over its flat siblings). */}
+        <Animated.View style={[styles.bubbleFill, { backgroundColor: c.primary, shadowColor: c.primary }, fill]} />
+        {/* Above the tiles' shadows (on Android a raised view draws over its flat siblings). */}
         <View style={styles.iconLayer}>
-          <Icon size={22} color={focused ? c.onPrimary : c.muted} strokeWidth={focused ? 2.4 : 2} />
+          <Icon size={20} color={focused ? c.onPrimary : c.muted} strokeWidth={focused ? 2.4 : 2} />
         </View>
-      </Animated.View>
+      </View>
       <Text size="xs" weight={focused ? 'bold' : 'medium'} style={{ color: focused ? c.accent : c.muted }} numberOfLines={1}>
         {label}
       </Text>
@@ -143,29 +138,29 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   item: { flex: 1, alignItems: 'center', gap: 4 },
-  // The bubble takes the old icon row's 30 pt; it only grows (and rises) for the current page.
-  bubble: { width: 46, height: 46, marginVertical: -8, alignItems: 'center', justifyContent: 'center' },
+  // Same footprint as the Actions tile: 44 × 34, in the 30 pt icon row.
+  bubble: { width: 44, height: 34, marginVertical: -2, alignItems: 'center', justifyContent: 'center' },
+  // The current page: the tile filled with the role's colour (stays in the bar).
   bubbleFill: {
     position: 'absolute',
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
-    borderRadius: 23,
-    borderWidth: 3,
+    borderRadius: 12,
     shadowOpacity: 0.25,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
+    elevation: 4,
   },
-  iconLayer: { zIndex: 1, elevation: 6 },
+  iconLayer: { zIndex: 1, elevation: 5 },
   // Soft tile under each flat tab icon: a light, professional shadow (not a dark fill).
   tile: {
     position: 'absolute',
-    top: 6,
-    left: 1,
-    width: 44,
-    height: 34,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#0f172a',

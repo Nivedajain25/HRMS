@@ -1,5 +1,5 @@
 import { Types, type FilterQuery } from 'mongoose';
-import { holidaySchema, holidayUpdateSchema } from '@stencil/shared';
+import { type holidaySchema, type holidayUpdateSchema } from '@stencil/shared';
 import type { z } from 'zod';
 import { EmployeeModel, HolidayModel, LocationModel, type Holiday } from '../models';
 import type { RequestContext } from '../types/context';

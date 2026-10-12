@@ -1,4 +1,4 @@
-import mongoose, { Types } from 'mongoose';
+import mongoose, { type Types } from 'mongoose';
 import { SYSTEM_ROLE_KEYS, type SystemRoleKey } from '@stencil/shared';
 import {
   ActionTokenModel,
@@ -1039,10 +1039,10 @@ export const seedDemo = async (): Promise<SeedResult> => {
 /** Prints the demo credentials table (CLI). */
 export const printCredentials = (result: SeedResult) => {
   const rows = result.credentials.map((c) => ({ Role: c.role, Email: c.email, Password: c.password, Name: c.name }));
-  // eslint-disable-next-line no-console
+   
   console.log('\nStencil Demo Co. seeded. Demo accounts (password for all: %s):\n', DEMO_PASSWORD);
-  // eslint-disable-next-line no-console
+   
   console.table(rows);
-  // eslint-disable-next-line no-console
+   
   console.log('Counts:', result.counts);
 };

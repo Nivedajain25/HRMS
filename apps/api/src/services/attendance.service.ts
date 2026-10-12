@@ -1,6 +1,6 @@
 import { Types, type AnyBulkWriteOperation, type FilterQuery } from 'mongoose';
 import type { AttendanceCreateInput, AttendanceStatus, AttendanceUpdateInput, PaginationQuery } from '@stencil/shared';
-import { clockInSchema, clockOutSchema } from '@stencil/shared';
+import { type clockInSchema, type clockOutSchema } from '@stencil/shared';
 import type { z } from 'zod';
 import { defineScheduledJob } from '../jobs';
 import {

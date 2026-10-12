@@ -29,7 +29,7 @@ import {
 } from '../models';
 import { can, type RequestContext } from '../types/context';
 import { dateOnly, toDateKey, todayKey } from '../utils/dates';
-import { AppError, badRequest, conflict, forbidden, invalidTransition, notFound, unprocessable } from '../utils/errors';
+import { type AppError, badRequest, conflict, forbidden, invalidTransition, notFound, unprocessable } from '../utils/errors';
 import { buildPagination, buildSort, paginate } from '../utils/pagination';
 import { withTransaction } from '../utils/transaction';
 import { applyDecision, approvalQueueFilter, closeApproval, initApproval, nextApproverLabel, type Approvable, type ApprovalPolicy } from './approval.service';

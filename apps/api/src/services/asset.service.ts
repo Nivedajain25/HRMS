@@ -1,4 +1,4 @@
-import { Types, type FilterQuery } from 'mongoose';
+import { Types, type ClientSession, type FilterQuery } from 'mongoose';
 import type { z } from 'zod';
 import {
   ASSET_WORKFLOW,
@@ -53,7 +53,7 @@ const assertTransition = (from: AssetStatus, to: AssetStatus) => {
   if (!ASSET_WORKFLOW.can(from, to)) throw invalidTransition('Asset', from, to);
 };
 
-const loadAsset = async (ctx: RequestContext, id: string, session?: import('mongoose').ClientSession) => {
+const loadAsset = async (ctx: RequestContext, id: string, session?: ClientSession) => {
   const asset = await AssetModel.findOne({ _id: id, organizationId: ctx.organizationId, deletedAt: null }).session(session ?? null);
   if (!asset) throw notFound('Asset');
   return asset;

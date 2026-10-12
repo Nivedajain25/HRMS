@@ -3,6 +3,8 @@ import type { RegisterDeviceInput } from '@stencil/shared';
 import { DeviceModel } from '../models';
 import type { RequestContext } from '../types/context';
 import { notFound } from '../utils/errors';
+import { notify } from './notification.service';
+import { pushEnabled } from './push.service';
 
 const PUBLIC_FIELDS = 'token platform appVersion appBuild deviceName lastSeenAt disabledAt createdAt';
 
@@ -41,4 +43,23 @@ export const removeDevice = async (ctx: RequestContext, token: string) => {
 /** Removes every device of a user (sign-out everywhere, password change, deactivation). */
 export const removeAllDevices = async (userId: Types.ObjectId) => {
   await DeviceModel.deleteMany({ userId });
+};
+
+/**
+ * Settings → "Send test notification": one in-app notification and a push to the caller's own phones only (no
+ * email). Says how many phones it went to, so "nothing arrived" can be told apart from "no phone registered".
+ */
+export const sendTestNotification = async (ctx: RequestContext) => {
+  const phones = await DeviceModel.countDocuments({ organizationId: ctx.organizationId, userId: ctx.userId, disabledAt: null });
+  await notify({
+    organizationId: ctx.organizationId,
+    userIds: [ctx.userId],
+    type: 'GENERAL',
+    title: 'Test notification',
+    message: 'Notifications are working. You will see alerts like this for leave, tasks, announcements and more.',
+    link: '/notifications',
+    force: true,
+    skipEmail: true,
+  });
+  return { phones, pushEnabled: pushEnabled() };
 };

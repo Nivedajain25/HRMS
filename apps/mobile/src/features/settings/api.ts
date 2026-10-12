@@ -80,3 +80,19 @@ export const useChangePassword = () =>
 
 /** Saves the theme on the account so the web app follows it too (best effort). */
 export const saveThemePreference = (theme: ThemePreference) => patch('/users/me/preferences', { theme });
+
+/**
+ * Settings → "Send a test notification": registers this phone for push first (in case it never was), then the
+ * server sends one in-app notification and a push to the caller's own phones.
+ */
+export const useSendTestNotification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const token = await registerForPush(true).catch(() => null);
+      const res = await post<{ phones: number; pushEnabled: boolean }>('/devices/test');
+      return { ...res.data, thisPhone: !!token };
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+};

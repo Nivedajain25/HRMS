@@ -19,6 +19,15 @@ deviceModule.route(
 deviceModule.route({ method: 'get', path: '/', summary: 'List my registered devices' }, c.list);
 deviceModule.route(
   {
+    method: 'post',
+    path: '/test',
+    summary: 'Send a test notification to yourself',
+    description: 'One in-app notification plus a push to the caller’s own registered phones (no email). Returns how many phones it was sent to and whether push is enabled on the server.',
+  },
+  c.test,
+);
+deviceModule.route(
+  {
     method: 'delete',
     path: '/:token',
     summary: 'Unregister one of my devices',

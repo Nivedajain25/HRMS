@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Application from 'expo-application';
-import { Download, KeyRound, LogOut, Monitor, Moon, RefreshCw, Save, Smartphone, Sun } from 'lucide-react-native';
+import { BellRing, Download, KeyRound, LogOut, Monitor, Moon, RefreshCw, Save, Smartphone, Sun } from 'lucide-react-native';
 import { Button, Card, ErrorState, Header, ListItem, Screen, SectionHeader, Segmented, Skeleton, Text, toast, useConfirm } from '@/components';
 import { useNotificationPreferences, useSaveNotificationPreferences, type NotificationPreference } from '@/features/notifications/api';
 import { DetailList } from '@/features/profile/kit/detail-list';
@@ -11,7 +11,7 @@ import { checkForUpdate, CURRENT_BUILD, isNewer, useAppUpdateStore, useLatestRel
 import { API_ORIGIN, APP_VERSION } from '@/lib/config';
 import { label } from '@/lib/format';
 import { space, TOUCH_TARGET, useTheme, type ThemePreference } from '@/theme';
-import { saveThemePreference, signOutEverywhere } from '../api';
+import { saveThemePreference, signOutEverywhere, useSendTestNotification } from '../api';
 
 const Toggle = ({ value, onChange, accessibilityLabel }: { value: boolean; onChange: (v: boolean) => void; accessibilityLabel: string }) => {
   const { c } = useTheme();
@@ -104,6 +104,25 @@ const NotificationPreferences = () => {
   );
 };
 
+/** Sends yourself a notification (in-app + this phone's notification bar) to check they arrive. */
+const TestNotificationButton = () => {
+  const send = useSendTestNotification();
+  const onPress = () =>
+    send.mutate(undefined, {
+      onSuccess: ({ phones, pushEnabled, thisPhone }) => {
+        if (!pushEnabled) toast.success('Test notification sent', 'It is in your notifications list. Phone alerts are turned off on the server.');
+        else if (!thisPhone || !phones) toast.error('Sent to your notifications list only', 'This phone is not set up for alerts. Allow notifications for Stencil HRMS in your phone settings, then try again.');
+        else toast.success('Test notification sent', 'It should appear in your notification bar in a few seconds.');
+      },
+      onError: (err) => toast.error('Could not send a test notification', toApiError(err).message),
+    });
+  return (
+    <Button variant="outline" icon={BellRing} loading={send.isPending} onPress={onPress}>
+      Send a test notification
+    </Button>
+  );
+};
+
 /** Android: "Check for updates", or "Update to build N" (opens the update sheet) when a newer version is out. */
 const AppUpdateButton = () => {
   const latest = useLatestRelease();
@@ -186,6 +205,7 @@ export const SettingsScreen = () => {
 
       <SectionHeader title="Notifications" />
       <NotificationPreferences />
+      <TestNotificationButton />
 
       <SectionHeader title="Security" />
       <Card padding={0}>

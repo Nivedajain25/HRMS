@@ -6,6 +6,7 @@ import { handle } from '../utils/controller';
 export const deviceController = {
   register: handle((ctx, req) => devices.registerDevice(ctx, body<RegisterDeviceInput>(req)), 'Device registered'),
   list: handle((ctx) => devices.listDevices(ctx)),
+  test: handle((ctx) => devices.sendTestNotification(ctx), 'Test notification sent'),
   remove: handle(async (ctx, req) => {
     await devices.removeDevice(ctx, String(req.params.token));
     return null;

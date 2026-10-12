@@ -255,6 +255,26 @@ describe('Devices', () => {
     expect((await DeviceModel.findOne({ token: fcmGood }).lean())?.disabledAt).toBeNull();
   });
 
+  it('sends a test notification to the caller only: in-app and push to their phones', async () => {
+    const admin = await registerOrg();
+    const other = await createEmployeeUser(admin.token, { firstName: 'Other' });
+    const mine = expoToken();
+    await as(admin.token).post('/api/v1/devices', { token: mine, platform: 'android' });
+    await as(other.token).post('/api/v1/devices', { token: expoToken(), platform: 'android' });
+    const expo = fakeExpo();
+    configurePush({ enabled: true, transport: expo.transport });
+
+    const res = await as(admin.token).post('/api/v1/devices/test');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ phones: 1, pushEnabled: true });
+    expect(expo.calls).toHaveLength(1);
+    expect(expo.calls[0]!.messages.map((m) => m.to)).toEqual([mine]);
+    expect(expo.calls[0]!.messages[0]).toMatchObject({ title: 'Test notification', data: { type: 'GENERAL', link: '/notifications' } });
+    const inbox = await as(admin.token).get('/api/v1/notifications');
+    expect(inbox.body.data[0]).toMatchObject({ title: 'Test notification', type: 'GENERAL' });
+    expect((await as(other.token).get('/api/v1/notifications')).body.data.some((n: { title: string }) => n.title === 'Test notification')).toBe(false);
+  });
+
   it('removes all devices on logout-all', async () => {
     const { token, user } = await registerOrg();
     await as(token).post('/api/v1/devices', { token: expoToken(), platform: 'android' });

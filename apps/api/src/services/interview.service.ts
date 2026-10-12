@@ -15,8 +15,7 @@ import { addDaysKey, dateKeyInTz, round2, timeInTz, zonedInstant } from '../util
 import { badRequest, conflict, forbidden, notFound, unprocessable } from '../utils/errors';
 import { buildSort, paginate } from '../utils/pagination';
 import { audit } from './audit.service';
-import { sendEmail } from './email.service';
-import { notify, userIdsForEmployees } from './notification.service';
+import { dispatchNotification } from './notification-dispatch.service';
 import { toObjectId } from './scope.service';
 
 type Id = Types.ObjectId;
@@ -122,32 +121,62 @@ const assertNoDoubleBooking = async (ctx: RequestContext, interviewerIds: Id[], 
 
 const whenLabel = (ctx: RequestContext, at: Date) => `${dateKeyInTz(at, ctx.timezone)} ${timeInTz(at, ctx.timezone)} (${ctx.timezone})`;
 
+const TYPE_LABEL: Record<string, string> = { PHONE: 'phone call', VIDEO: 'video call', ONSITE: 'in person', TECHNICAL: 'technical', HR: 'HR round' };
+
+type InterviewLike = {
+  _id: Id;
+  scheduledAt: Date;
+  type?: string | null;
+  round?: number | null;
+  meetingLink?: string | null;
+  location?: string | null;
+  interviewerIds: Id[];
+  candidateId: Id;
+  jobId?: Id | null;
+};
+
+/**
+ * Automated interview notification (Settings → Notification rules): interviewers, hiring manager, recruiters, HR /
+ * admin as configured, and the candidate by email — logged in the notification log.
+ */
 const announce = async (
   ctx: RequestContext,
-  interview: { _id: Id; scheduledAt: Date; type?: string | null; meetingLink?: string | null; interviewerIds: Id[] },
-  candidate: { firstName: string; lastName: string; email: string },
-  jobTitle: string,
-  rescheduled: boolean,
+  event: 'INTERVIEW_SCHEDULED' | 'INTERVIEW_RESCHEDULED' | 'INTERVIEW_CANCELLED' | 'INTERVIEW_RESULT',
+  interview: InterviewLike,
+  extra: { reason?: string | null; result?: string | null; rating?: number | null } = {},
 ) => {
-  const when = whenLabel(ctx, interview.scheduledAt);
-  await notify({
+  const [candidate, job, interviewers] = await Promise.all([
+    CandidateModel.findOne({ _id: interview.candidateId, organizationId: ctx.organizationId }).select('firstName lastName email jobId').lean(),
+    interview.jobId ? JobOpeningModel.findOne({ _id: interview.jobId, organizationId: ctx.organizationId }).select('title').lean() : null,
+    EmployeeModel.find({ _id: { $in: interview.interviewerIds }, organizationId: ctx.organizationId }).select('firstName lastName').lean(),
+  ]);
+  if (!candidate) return;
+  const candidateName = `${candidate.firstName} ${candidate.lastName}`.trim();
+  await dispatchNotification({
     organizationId: ctx.organizationId,
-    userIds: await userIdsForEmployees(ctx.organizationId, interview.interviewerIds),
-    type: 'INTERVIEW_SCHEDULED',
-    title: rescheduled ? 'Interview rescheduled' : 'Interview scheduled',
-    message: `${candidate.firstName} ${candidate.lastName} for ${jobTitle} on ${when}.`,
+    event,
+    actor: { userId: ctx.userId, name: ctx.userName },
     link: `/recruitment/interviews/${interview._id}`,
     entityType: 'Interview',
     entityId: interview._id,
-    excludeUserId: ctx.userId,
+    interview: { interviewerIds: interview.interviewerIds, jobId: interview.jobId ?? (candidate.jobId as Id | null) ?? null },
+    candidate: { name: candidateName, email: candidate.email },
+    vars: {
+      candidateName,
+      jobTitle: job?.title ?? 'the role',
+      when: whenLabel(ctx, interview.scheduledAt),
+      round: `Round ${interview.round ?? 1}`,
+      interviewType: TYPE_LABEL[String(interview.type ?? 'VIDEO')] ?? String(interview.type ?? '').toLowerCase(),
+      meetingLink: interview.meetingLink ?? '',
+      location: interview.location ?? '',
+      interviewers: interviewers.map((i) => `${i.firstName} ${i.lastName}`.trim()).join(', '),
+      reason: extra.reason ?? '',
+      result: extra.result ?? '',
+      rating: extra.rating != null ? `${extra.rating} / 5` : '',
+    },
   });
-  await sendEmail(
-    candidate.email,
-    'interview',
-    { name: candidate.firstName, when, type: String(interview.type ?? 'VIDEO'), meetingLink: interview.meetingLink ?? undefined, job: jobTitle },
-    ctx.organizationId,
-  );
 };
+
 
 export const scheduleInterview = async (ctx: RequestContext, input: InterviewInput) => {
   const candidate = await CandidateModel.findOne({ _id: input.candidateId, organizationId: ctx.organizationId, deletedAt: null });
@@ -155,7 +184,6 @@ export const scheduleInterview = async (ctx: RequestContext, input: InterviewInp
   if (CLOSED_STAGES.has(candidate.stage as CandidateStage)) {
     throw unprocessable(`Cannot schedule interviews for a ${candidate.stage.toLowerCase()} candidate`, 'CANDIDATE_CLOSED');
   }
-  const job = await JobOpeningModel.findOne({ _id: candidate.jobId, organizationId: ctx.organizationId }).select('title').lean();
   const interviewers = await assertInterviewers(ctx, input.interviewerIds);
   const scheduledAt = zonedInstant(input.date, input.startTime, ctx.timezone);
   if (scheduledAt.getTime() < Date.now()) throw badRequest('Interviews cannot be scheduled in the past', 'PAST_DATE', [{ path: 'date', message: 'Must be in the future' }]);
@@ -190,7 +218,7 @@ export const scheduleInterview = async (ctx: RequestContext, input: InterviewInp
     recordLabel: `Interview: ${candidate.firstName} ${candidate.lastName}`,
     newValues: { candidateId: candidate._id, scheduledAt, interviewerIds, round: input.round },
   });
-  await announce(ctx, interview, candidate, job?.title ?? 'the role', false);
+  await announce(ctx, 'INTERVIEW_SCHEDULED', interview);
   return interview.toJSON();
 };
 
@@ -226,9 +254,7 @@ export const updateInterview = async (ctx: RequestContext, id: string, input: In
   });
 
   if (moved || input.interviewerIds || input.meetingLink !== undefined || input.type !== undefined) {
-    const candidate = await CandidateModel.findOne({ _id: interview.candidateId, organizationId: ctx.organizationId }).lean();
-    const job = await JobOpeningModel.findOne({ _id: interview.jobId, organizationId: ctx.organizationId }).select('title').lean();
-    if (candidate) await announce(ctx, interview, candidate, job?.title ?? 'the role', true);
+    await announce(ctx, 'INTERVIEW_RESCHEDULED', interview);
   }
   return interview.toJSON();
 };
@@ -255,17 +281,8 @@ export const setInterviewStatus = async (ctx: RequestContext, id: string, input:
     oldValues: { status: from },
     newValues: { status: input.status, reason: input.reason },
   });
-  if (input.status === 'CANCELLED') {
-    await notify({
-      organizationId: ctx.organizationId,
-      userIds: await userIdsForEmployees(ctx.organizationId, interview.interviewerIds),
-      type: 'INTERVIEW_SCHEDULED',
-      title: 'Interview cancelled',
-      message: `An interview on ${whenLabel(ctx, interview.scheduledAt)} was cancelled: ${input.reason}`,
-      link: `/recruitment/interviews/${interview._id}`,
-      excludeUserId: ctx.userId,
-    });
-  }
+  if (input.status === 'CANCELLED') await announce(ctx, 'INTERVIEW_CANCELLED', interview, { reason: input.reason });
+  if (input.status === 'NO_SHOW') await announce(ctx, 'INTERVIEW_RESULT', interview, { result: 'Candidate did not show up', reason: input.reason });
   return interview.toJSON();
 };
 
@@ -315,6 +332,10 @@ export const submitFeedback = async (ctx: RequestContext, id: string, input: Fee
     recordId: updated._id,
     recordLabel: 'Interview feedback',
     newValues: { rating: input.rating, recommendation: input.recommendation },
+  });
+  await announce(ctx, 'INTERVIEW_RESULT', updated, {
+    result: input.recommendation ? String(input.recommendation).replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : 'Feedback submitted',
+    rating: input.rating ?? null,
   });
   return updated.toJSON();
 };

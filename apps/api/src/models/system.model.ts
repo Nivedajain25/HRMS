@@ -98,18 +98,80 @@ export const CounterModel = model('Counter', counterSchema);
 const emailLogSchema = new Schema(
   {
     organizationId: { type: Schema.Types.ObjectId, default: null },
+    /** Comma-separated To addresses. */
     to: { type: String, required: true },
+    cc: { type: [String], default: [] },
     template: { type: String, required: true },
     subject: String,
-    status: { type: String, enum: ['QUEUED', 'SENT', 'FAILED', 'SKIPPED'], default: 'QUEUED' },
+    /** RETRYING: a send failed and another attempt is scheduled. */
+    status: { type: String, enum: ['QUEUED', 'SENT', 'FAILED', 'SKIPPED', 'RETRYING'], default: 'QUEUED' },
     error: String,
     messageId: String,
     sentAt: Date,
+    attempts: { type: Number, default: 0 },
+    lastAttemptAt: Date,
+    /** The automated notification this email belongs to (Settings → Notification log). */
+    dispatchId: { type: Schema.Types.ObjectId, default: null, index: true },
+    /** The rendered email, kept so a failed one can be re-sent as-is (deleted with the log after 90 days). */
+    rendered: { type: { subject: String, html: String, text: String }, default: null, select: false },
   },
   { timestamps: true, versionKey: false },
 );
 emailLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 });
+emailLogSchema.index({ organizationId: 1, status: 1, createdAt: -1 });
 export const EmailLogModel = model('EmailLog', emailLogSchema);
+
+/**
+ * Audit trail of every automated notification (leave, interviews): the event, who it reached and how (in-app,
+ * email To / CC), who was skipped and why, any escalation past an unavailable manager, and the emails sent (whose
+ * delivery status lives on their EmailLog rows). Kept for 2 years.
+ */
+const notificationDispatchSchema = new Schema(
+  {
+    organizationId: { type: Schema.Types.ObjectId, required: true },
+    event: { type: String, required: true },
+    title: String,
+    entityType: String,
+    entityId: { type: Schema.Types.ObjectId, default: null },
+    actorId: { type: Schema.Types.ObjectId, default: null },
+    actorName: String,
+    /** NO_RECIPIENTS / DISABLED: nothing was sent (still recorded). */
+    outcome: { type: String, enum: ['SENT', 'NO_RECIPIENTS', 'DISABLED', 'ERROR'], default: 'SENT' },
+    error: String,
+    recipients: [
+      {
+        _id: false,
+        role: String,
+        userId: { type: Schema.Types.ObjectId, default: null },
+        employeeId: { type: Schema.Types.ObjectId, default: null },
+        name: String,
+        email: String,
+        inApp: { type: Boolean, default: false },
+        /** TO / CC on the email, or null when not emailed. */
+        emailAs: { type: String, enum: ['TO', 'CC', null], default: null },
+        /** Why they got nothing (e.g. performed the action themselves, no email address). */
+        skipped: { type: String, default: null },
+      },
+    ],
+    escalations: [
+      {
+        _id: false,
+        fromEmployeeId: Schema.Types.ObjectId,
+        fromName: String,
+        toEmployeeId: { type: Schema.Types.ObjectId, default: null },
+        toName: String,
+        reason: String,
+      },
+    ],
+    emailLogIds: [{ type: Schema.Types.ObjectId }],
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
+);
+notificationDispatchSchema.index({ organizationId: 1, createdAt: -1 });
+notificationDispatchSchema.index({ organizationId: 1, event: 1, createdAt: -1 });
+notificationDispatchSchema.index({ organizationId: 1, entityId: 1 });
+notificationDispatchSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 730 });
+export const NotificationDispatchModel = model('NotificationDispatch', notificationDispatchSchema);
 
 /**
  * Idempotency ledger for scheduled jobs: a run is claimed by inserting its

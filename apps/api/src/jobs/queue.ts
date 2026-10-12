@@ -20,16 +20,18 @@ export const registerJobHandler = <T>(name: string, handler: JobHandler<T>) => {
   handlers.set(name, handler as JobHandler);
 };
 
-const runInline = (name: string, data: unknown) => {
+const runInline = (name: string, data: unknown, delayMs = 0) => {
   const handler = handlers.get(name);
   if (!handler) {
     logger.warn({ job: name }, 'No handler registered for job');
     return;
   }
   // Detach from the request so the caller never waits on or fails because of the job.
-  setImmediate(() => {
+  const run = () => {
     handler(data).catch((err) => logger.error({ err, job: name }, 'Inline job failed'));
-  });
+  };
+  if (delayMs > 0) setTimeout(run, delayMs).unref();
+  else setImmediate(run);
 };
 
 export const enqueue = async (name: string, data: unknown, opts: { delayMs?: number; jobId?: string } = {}) => {
@@ -49,7 +51,7 @@ export const enqueue = async (name: string, data: unknown, opts: { delayMs?: num
     await handlers.get(name)?.(data);
     return;
   }
-  runInline(name, data);
+  runInline(name, data, opts.delayMs);
 };
 
 export const initQueue = async ({ startWorker }: { startWorker: boolean }) => {

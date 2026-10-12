@@ -14,7 +14,7 @@ interface Rendered {
   text: string;
 }
 
-const layout = (title: string, bodyHtml: string, cta?: { label: string; url: string }) => `<!doctype html>
+const layout = (title: string, bodyHtml: string, cta?: { label: string; url: string }, org?: string) => `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1f2330">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 12px"><tr><td align="center">
@@ -22,6 +22,7 @@ const layout = (title: string, bodyHtml: string, cta?: { label: string; url: str
 <tr><td style="padding:24px 32px;border-bottom:1px solid #eef0f4">
 <span style="display:inline-block;width:28px;height:28px;border-radius:8px;background:#4f46e5;color:#fff;font-weight:700;text-align:center;line-height:28px;vertical-align:middle">S</span>
 <span style="font-weight:700;font-size:16px;letter-spacing:.08em;vertical-align:middle;margin-left:8px">STENCIL</span>
+${org ? `<span style="float:right;font-size:13px;color:#6b7280;line-height:28px">${escapeHtml(org)}</span>` : ''}
 </td></tr>
 <tr><td style="padding:32px">
 <h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(title)}</h1>
@@ -33,12 +34,35 @@ ${
     : ''
 }
 </td></tr>
-<tr><td style="padding:16px 32px;border-top:1px solid #eef0f4;font-size:12px;color:#8a90a0">Sent by Stencil HRMS. You are receiving this because of your account activity.</td></tr>
+<tr><td style="padding:16px 32px;border-top:1px solid #eef0f4;font-size:12px;color:#8a90a0">${org ? `Sent automatically by Stencil HRMS for ${escapeHtml(org)}.` : 'Sent by Stencil HRMS.'} You are receiving this because of your role or account activity.</td></tr>
 </table></td></tr></table></body></html>`;
 
 const p = (text: string) => `<p style="margin:0 0 12px">${escapeHtml(text)}</p>`;
 // CLIENT_URL may list several origins (web, mobile web); email links go to the first (the web app).
 const url = (path: string) => `${env.CLIENT_URL.split(',')[0]!.trim().replace(/\/$/, '')}${path}`;
+
+/**
+ * An automated notification in the Stencil design: the title, the body (plain text; blank lines split paragraphs,
+ * single newlines become line breaks, http(s) links are clickable) and an "Open in Stencil HRMS" button.
+ * Everything is HTML-escaped, so templates edited in Settings can't inject markup.
+ */
+export const renderBranded = (input: { title: string; body: string; link?: string; organization?: string; ctaLabel?: string }) => {
+  const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#4f46e5">$1</a>');
+  const bodyHtml = input.body
+    .split(/\n{2,}/)
+    .map((para) => `<p style="margin:0 0 12px">${linkify(escapeHtml(para)).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  const cta = input.link ? { label: input.ctaLabel ?? 'Open in Stencil HRMS', url: input.link.startsWith('http') ? input.link : url(input.link) } : undefined;
+  const footer = `— Stencil HRMS${input.organization ? ` · ${input.organization}` : ''}`;
+  return {
+    subject: input.title,
+    html: layout(input.title, bodyHtml, cta, input.organization),
+    text: [input.body, cta ? `${cta.label}: ${cta.url}` : null, footer].filter(Boolean).join('\n\n'),
+  };
+};
+
+/** Absolute link into the web app for a path (e.g. /leave/requests/…). */
+export const appUrl = (path: string) => url(path);
 
 export const templates = {
   welcome: (d: { name: string; organization: string; setupUrl?: string }): Rendered => ({

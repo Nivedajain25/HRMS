@@ -15,6 +15,7 @@ import { announcementModule, notificationModule } from './communication.routes';
 import { auditLogModule, dashboardModule, reportModule, searchModule } from './insights.routes';
 import { deviceModule } from './devices.routes';
 import { appModule } from './app.routes';
+import { notificationLogModule, notificationSettingsModule } from './notification-admin.routes';
 import { emergencyModule } from './emergency.routes';
 import { taskModule } from './task.routes';
 import { todoModule } from './todo.routes';
@@ -55,6 +56,8 @@ export const modules = [
   notificationModule,
   deviceModule,
   appModule,
+  notificationSettingsModule,
+  notificationLogModule,
   emergencyModule,
   taskModule,
   todoModule,

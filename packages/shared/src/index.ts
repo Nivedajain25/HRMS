@@ -2,6 +2,7 @@ export * from './enums';
 export * from './permissions';
 export * from './workflows';
 export * from './labels';
+export * from './notification-events';
 export * from './schemas/common';
 export * from './schemas/auth';
 export * from './schemas/organization';

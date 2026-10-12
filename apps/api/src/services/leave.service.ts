@@ -45,7 +45,8 @@ import {
   listBalances,
   refreshMonthlyAccruals,
 } from './leave-balance.service';
-import { managerUserId, notify, notifyHr, userIdsWithPermission } from './notification.service';
+import { dispatchNotification } from './notification-dispatch.service';
+import { managerUserId, notify, userIdsWithPermission } from './notification.service';
 import { assertEmployeeAccess, resolveEmployeeScope } from './scope.service';
 
 /* -------------------------------- Types -------------------------------- */
@@ -375,19 +376,49 @@ const describe = (type: { name: string }, leave: { startDate: Date; endDate: Dat
   return `${type.name}: ${s === e ? s : `${s} to ${e}`} (${leave.days} day${leave.days === 1 ? '' : 's'})`;
 };
 
-/** A new request: HR hears about it too (in-app), beyond whoever approves it. */
-const informHr = (ctx: RequestContext, leave: LeaveRequestDoc, employee: EmployeeLean, typeName: string, alreadyNotified: Types.ObjectId[]) =>
-  notifyHr({
+/**
+ * Automated leave notification (Settings → Notification rules): manager (escalated past one on leave), HR in CC,
+ * admin and the employee, per the organization's rule for the event, logged in the notification log.
+ */
+const dispatchLeave = async (
+  ctx: RequestContext,
+  event: 'LEAVE_SUBMITTED' | 'LEAVE_APPROVED' | 'LEAVE_REJECTED' | 'LEAVE_CANCELLED' | 'LEAVE_MODIFIED',
+  leave: LeaveRequestDoc,
+  employee: EmployeeLean,
+  typeName: string,
+  extra: { note?: string | null; approverUserIds?: Types.ObjectId[]; managerApproves?: boolean } = {},
+) => {
+  const s = toDateKey(leave.startDate);
+  const e = toDateKey(leave.endDate);
+  await dispatchNotification({
     organizationId: ctx.organizationId,
-    alreadyNotified: [...alreadyNotified, employee.userId],
-    type: 'LEAVE_SUBMITTED',
-    title: `New leave request · ${employeeName(employee)}`,
-    message: `${employeeName(employee)} requested ${describe({ name: typeName }, leave)}`,
+    event,
+    actor: { userId: ctx.userId, name: ctx.userName },
     link: `/leave/requests/${leave._id}`,
     entityType: 'LeaveRequest',
     entityId: leave._id,
-    excludeUserId: ctx.userId,
+    employeeId: employee._id,
+    approverUserIds: extra.approverUserIds,
+    managerApproves: extra.managerApproves,
+    vars: {
+      employeeName: employeeName(employee),
+      employeeCode: (employee as { employeeId?: string }).employeeId ?? '',
+      leaveType: typeName,
+      dates: s === e ? s : `${s} to ${e}`,
+      days: `${leave.days} day${leave.days === 1 ? '' : 's'}`,
+      reason: leave.reason ?? '',
+      note: extra.note ?? '',
+      approver: nextApproverLabel(leave.currentApproverType),
+    },
   });
+};
+
+/** A request starts (or restarts) its approval chain: whoever approves first, plus HR / admin per the rules. */
+const announceRequest = async (ctx: RequestContext, leave: LeaveRequestDoc, employee: EmployeeLean, typeName: string) => {
+  const managerApproves = leave.currentApproverType === 'MANAGER';
+  const approverUserIds = managerApproves ? [] : await currentApproverUserIds(ctx, leave.currentApproverType, employee);
+  await dispatchLeave(ctx, 'LEAVE_SUBMITTED', leave, employee, typeName, { approverUserIds, managerApproves });
+};
 
 const notifyApprovers = async (ctx: RequestContext, leave: LeaveRequestDoc, employee: EmployeeLean, typeName: string) => {
   const userIds = await currentApproverUserIds(ctx, leave.currentApproverType, employee);
@@ -536,7 +567,7 @@ export const createLeave = async (ctx: RequestContext, input: LeaveCreateInput) 
     days: ev.days,
     onBehalf,
   });
-  await informHr(ctx, leave, employee, type.name, await notifyApprovers(ctx, leave, employee, type.name));
+  await announceRequest(ctx, leave, employee, type.name);
   return getLeave(ctx, String(leave._id));
 };
 
@@ -609,6 +640,12 @@ export const updateLeave = async (ctx: RequestContext, id: string, input: LeaveU
         await ledger(ctx, { ...previous, leaveTypeId: type._id, startDate: fields.startDate, days: ev.days }, 'RESERVE', session, { allowNegative });
       }
     });
+    // A pending request changed: the manager, HR and admin hear what it was before.
+    const typeName = await typeNameOf(ctx, type._id);
+    const oldTypeName = previous.leaveTypeId.equals(type._id) ? typeName : await typeNameOf(ctx, previous.leaveTypeId);
+    await dispatchLeave(ctx, 'LEAVE_MODIFIED', leave, employee, typeName, {
+      note: `Before: ${oldTypeName} from ${toDateKey(previous.startDate)} (${previous.days} day${previous.days === 1 ? '' : 's'}).`,
+    });
   }
   return getLeave(ctx, id);
 };
@@ -651,7 +688,7 @@ export const submitLeave = async (ctx: RequestContext, id: string) => {
   leave.status = 'SUBMITTED';
 
   await auditLeave(ctx, 'LEAVE_SUBMITTED', leave, employee, type.name, { status: 'DRAFT' }, { status: 'SUBMITTED', days: ev.days });
-  await informHr(ctx, leave, employee, type.name, await notifyApprovers(ctx, leave, employee, type.name));
+  await announceRequest(ctx, leave, employee, type.name);
   return getLeave(ctx, id);
 };
 
@@ -699,7 +736,7 @@ export const approveLeave = async (ctx: RequestContext, id: string, comment?: st
     await ledger(ctx, leave, 'CONSUME', session, { reason: 'Leave approved' });
   });
   await auditLeave(ctx, 'LEAVE_APPROVED', leave, employee, typeName, { status: from }, { status: 'APPROVED', comment });
-  await notifyEmployee(ctx, leave, employee, 'LEAVE_APPROVED', 'Leave approved', `Your ${describe({ name: typeName }, leave)} was approved by ${ctx.userName}`);
+  await dispatchLeave(ctx, 'LEAVE_APPROVED', leave, employee, typeName, { note: comment ? `Comment: ${comment}` : null });
   return getLeave(ctx, id);
 };
 
@@ -718,7 +755,7 @@ export const rejectLeave = async (ctx: RequestContext, id: string, reason: strin
     await ledger(ctx, leave, 'RELEASE', session);
   });
   await auditLeave(ctx, 'LEAVE_REJECTED', leave, employee, typeName, { status: from }, { status: 'REJECTED', reason });
-  await notifyEmployee(ctx, leave, employee, 'LEAVE_REJECTED', 'Leave rejected', `Your ${describe({ name: typeName }, leave)} was rejected by ${ctx.userName}: ${reason}`);
+  await dispatchLeave(ctx, 'LEAVE_REJECTED', leave, employee, typeName, { note: reason });
   return getLeave(ctx, id);
 };
 
@@ -767,21 +804,9 @@ export const cancelLeave = async (ctx: RequestContext, id: string, reason?: stri
 
   if (from !== 'DRAFT') {
     await auditLeave(ctx, 'LEAVE_CANCELLED', leave, employee, typeName, { status: from }, { status: 'CANCELLED', reason });
-    if (!ctx.employeeId?.equals(employee._id)) {
-      await notifyEmployee(ctx, leave, employee, 'GENERAL', 'Leave cancelled', `Your ${describe({ name: typeName }, leave)} was cancelled by ${ctx.userName}${reason ? `: ${reason}` : ''}`);
-    } else if (from === 'APPROVED') {
-      await notify({
-        organizationId: ctx.organizationId,
-        userIds: [await managerUserId(ctx.organizationId, employee.managerId)],
-        type: 'GENERAL',
-        title: 'Approved leave cancelled',
-        message: `${employeeName(employee)} cancelled ${describe({ name: typeName }, leave)}`,
-        link: `/leave/requests/${leave._id}`,
-        entityType: 'LeaveRequest',
-        entityId: leave._id,
-        excludeUserId: ctx.userId,
-      });
-    }
+    await dispatchLeave(ctx, 'LEAVE_CANCELLED', leave, employee, typeName, {
+      note: [from === 'APPROVED' ? 'It had already been approved.' : 'It was still waiting for approval.', reason ? `Reason: ${reason}` : null].filter(Boolean).join('\n'),
+    });
   }
   return getLeave(ctx, id);
 };

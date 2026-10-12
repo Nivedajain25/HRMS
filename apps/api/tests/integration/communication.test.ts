@@ -268,7 +268,7 @@ describe('Announcements & notifications', () => {
   it('merges notification preferences with defaults and applies them', async () => {
     const prefs = await as(sales.token).get('/api/v1/notifications/preferences');
     expect(prefs.status).toBe(200);
-    expect(prefs.body.data).toHaveLength(16);
+    expect(prefs.body.data).toHaveLength(20);
     expect(prefs.body.data.find((p: { type: string }) => p.type === 'LEAVE_APPROVED')).toEqual({ type: 'LEAVE_APPROVED', inApp: true, email: true });
     expect(prefs.body.data.find((p: { type: string }) => p.type === 'ANNOUNCEMENT')).toEqual({ type: 'ANNOUNCEMENT', inApp: true, email: false });
 

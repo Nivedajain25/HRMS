@@ -145,7 +145,7 @@ describe('Recruitment: jobs, pipeline, interviews, hiring', () => {
     expect(res.body.data.scheduledAt).toBe('2030-01-15T10:00:00.000Z'); // org timezone is UTC
     interviewId = res.body.data._id;
     expect((await CandidateModel.findById(candidateId).lean())?.stage).toBe('INTERVIEW');
-    expect(sentEmails.some((e) => e.to === candidateEmail && e.template === 'interview')).toBe(true);
+    expect(sentEmails.some((e) => e.to === candidateEmail && e.template === 'auto:INTERVIEW_SCHEDULED:self')).toBe(true);
 
     const other = (await addCandidate(recruiter.token)).body.data._id;
     const clash = await as(recruiter.token).post('/api/v1/recruitment/interviews', {

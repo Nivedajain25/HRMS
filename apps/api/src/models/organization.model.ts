@@ -64,6 +64,8 @@ const settingsSchema = new Schema(
       birthdayReminders: { type: Boolean, default: true },
       anniversaryReminders: { type: Boolean, default: true },
     },
+    /** Automated notification rules per event (overrides over the defaults in @stencil/shared). */
+    notificationRules: { type: Schema.Types.Mixed, default: {} },
   },
   { _id: false },
 );

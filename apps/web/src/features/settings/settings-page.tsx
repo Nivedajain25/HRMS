@@ -2,10 +2,12 @@ import { lazy, Suspense, type ComponentType } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router-dom';
 import {
   Bell,
+  BellRing,
   Building2,
   ClipboardList,
   KeyRound,
   Mail,
+  MailCheck,
   Palette,
   Plug,
   ScrollText,
@@ -34,6 +36,7 @@ const load = <K extends string>(loader: () => Promise<Record<K, ComponentType>>,
 const admin = () => import('./sections/admin-sections');
 const policy = () => import('./sections/policy-sections');
 const personal = () => import('./sections/personal-sections');
+const notifications = () => import('./sections/notification-sections');
 
 const SECTIONS: Section[] = [
   { key: 'organization', label: 'Organization', description: 'Company profile, locale and fiscal settings.', icon: Building2, permission: 'settings:manage', component: load(admin, 'OrganizationSection') },
@@ -44,6 +47,8 @@ const SECTIONS: Section[] = [
   { key: 'payroll', label: 'Payroll', description: 'Pay day, basis and rule packs.', icon: SlidersHorizontal, permission: 'settings:manage', component: load(policy, 'PayrollSettingsSection') },
   { key: 'approvals', label: 'Approvals', description: 'Approval chains for leave, regularization and expenses.', icon: ShieldCheck, permission: 'settings:manage', component: load(policy, 'ApprovalSettingsSection') },
   { key: 'identity', label: 'Employee fields', description: 'Identity documents collected per employee.', icon: ClipboardList, permission: 'settings:manage', component: load(policy, 'IdentityFieldsSection') },
+  { key: 'notification-rules', label: 'Notification rules', description: 'Automated leave and interview emails: who gets them, CC, escalation and wording.', icon: BellRing, permission: 'settings:manage', component: load(notifications, 'NotificationRulesSection') },
+  { key: 'notification-log', label: 'Notification log', description: 'Every automated notification, its recipients and delivery.', icon: MailCheck, permission: 'audit:read', component: load(notifications, 'NotificationLogSection') },
   { key: 'notifications', label: 'Notifications', description: 'What you are notified about and how.', icon: Bell, component: load(personal, 'NotificationPreferencesSection') },
   { key: 'email', label: 'Email', description: 'Outgoing email delivery.', icon: Mail, permission: 'settings:manage', component: load(policy, 'EmailSection') },
   { key: 'security', label: 'Security', description: 'Sessions and sign-in protection.', icon: ShieldCheck, component: load(personal, 'SecuritySection') },

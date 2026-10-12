@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { AuthUser, MobileAuthSession } from '@stencil/types';
 import { hasAnyPermission, hasPermission, type LoginInput, type Permission } from '@stencil/shared';
 import { ApiError, del, get, getAccessToken, refreshSession, request, setAccessToken, setSessionHandlers } from './api';
+import { useAppUpdateStore } from './app-update';
 import { queryClient } from './query-client';
 import { storage, StorageKeys } from './storage';
 
@@ -70,6 +71,8 @@ export const signIn = async (input: LoginInput) => {
   if (session.refreshToken) await storage.set(StorageKeys.refreshToken, session.refreshToken);
   await storage.set(StorageKeys.lastEmail, input.email);
   queryClient.clear();
+  // Every sign-in shows "Update available" (Update / Not now) when this install is behind.
+  useAppUpdateStore.getState().promptAfterSignIn();
   setSession(session.user);
   return session;
 };

@@ -31,7 +31,7 @@ export const AssignTaskDialog = ({ open, onClose, people }: { open: boolean; onC
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return people;
-    return people.filter((p) => `${fullName(p)} ${p.employeeId} ${p.departmentId?.name ?? ''} ${p.designationId?.name ?? ''}`.toLowerCase().includes(q));
+    return people.filter((p) => `${fullName(p)} ${p.employeeId} ${p.departmentId?.name ?? ''} ${p.designationId?.name ?? ''} ${p.isSelf ? 'me myself' : ''}`.toLowerCase().includes(q));
   }, [people, search]);
 
   const reset = () => {
@@ -57,7 +57,7 @@ export const AssignTaskDialog = ({ open, onClose, people }: { open: boolean; onC
     );
 
   const titleError = touched && !title.trim() ? 'Enter a title' : undefined;
-  const peopleError = touched && !assigneeIds.length ? 'Choose at least one person' : assigneeIds.length > 50 ? 'You can assign to at most 50 people at once' : undefined;
+  const peopleError = touched && !assigneeIds.length ? 'Choose at least one person (or Myself)' : assigneeIds.length > 50 ? 'You can assign to at most 50 people at once' : undefined;
 
   const submit = async () => {
     setTouched(true);
@@ -70,7 +70,8 @@ export const AssignTaskDialog = ({ open, onClose, people }: { open: boolean; onC
       dueDate: dueDate || undefined,
     });
     const count = res.data.length || assigneeIds.length;
-    toast.success(res.message ?? (count > 1 ? `Task assigned to ${count} people` : 'Task assigned'));
+    const onlyMe = assigneeIds.length === 1 && people.find((p) => p._id === assigneeIds[0])?.isSelf;
+    toast.success(onlyMe ? 'Added to your tasks' : (res.message ?? (count > 1 ? `Task assigned to ${count} people` : 'Task assigned')));
     close();
   };
 
@@ -164,8 +165,8 @@ export const AssignTaskDialog = ({ open, onClose, people }: { open: boolean; onC
                     <input type="checkbox" checked={checked} onChange={() => toggle(p._id)} className="h-4 w-4 shrink-0 rounded border-line-strong accent-brand-600" />
                     <Avatar name={fullName(p)} src={p.profilePhoto} size="sm" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-fg">{fullName(p)}</span>
-                      <span className="block truncate text-xs text-muted">{subtitle(p)}</span>
+                      <span className="block truncate text-sm font-medium text-fg">{p.isSelf ? `Myself (${fullName(p)})` : fullName(p)}</span>
+                      <span className="block truncate text-xs text-muted">{p.isSelf ? 'Add it to your own task list' : subtitle(p)}</span>
                     </span>
                   </label>
                 </li>

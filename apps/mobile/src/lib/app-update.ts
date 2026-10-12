@@ -60,8 +60,9 @@ export const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
- * The "Update available" pop-up shows once a day until the app is updated: the day it was last shown is kept on
- * the phone, so closing and reopening the app (or signing in again) the same day doesn't bring it back.
+ * The "Update available" pop-up shows every time someone signs in, and otherwise once a day until the app is
+ * updated: the day it was last shown is kept on the phone, so closing and reopening the app the same day doesn't
+ * bring it back.
  */
 export const useAppUpdateStore = create<{
   phase: Phase;
@@ -76,6 +77,8 @@ export const useAppUpdateStore = create<{
   markShown: () => void;
   dismiss: () => void;
   request: () => void;
+  /** After signing in: show the pop-up again (if an update is out), even if it was already shown today. */
+  promptAfterSignIn: () => void;
 }>((set, getState) => ({
   phase: 'idle',
   progress: null,
@@ -94,6 +97,10 @@ export const useAppUpdateStore = create<{
   },
   dismiss: () => set({ requested: false }),
   request: () => set({ requested: true }),
+  promptAfterSignIn: () => {
+    set({ shownOn: null });
+    void storage.remove(StorageKeys.updatePromptShownOn);
+  },
 }));
 
 /** Opens the update sheet (after checking for the newest release), e.g. from an "update available" notification. */

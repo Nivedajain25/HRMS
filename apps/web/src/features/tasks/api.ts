@@ -13,6 +13,8 @@ export interface TaskPerson {
   profilePhoto?: string | null;
   departmentId?: { _id: string; name: string } | null;
   designationId?: { _id: string; name: string } | null;
+  /** The signed-in person (listed first in the picker so they can give themselves a task). */
+  isSelf?: boolean;
 }
 
 export interface Task {

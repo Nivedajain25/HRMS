@@ -10,7 +10,10 @@ import { dateKeyIn } from '@/lib/time';
 import { radius, space, useTheme } from '@/theme';
 import { useAssignable, useAssignTask, type TaskPriority } from './api';
 
-/** Managers / department heads / HR give one or more people a task; each gets it (and a pop-up) right away. */
+/**
+ * Anyone gives one or more people a task; each gets it (and a pop-up) right away. "Myself" (first in the list) adds
+ * it to your own task list instead, without a pop-up.
+ */
 export const AssignTaskScreen = () => {
   const { c } = useTheme();
   const { timeZone } = useAuth();
@@ -30,7 +33,7 @@ export const AssignTaskScreen = () => {
     const s = search.trim().toLowerCase();
     const all = people.data ?? [];
     if (!s) return all;
-    return all.filter((p) => [fullName(p), p.employeeId, p.departmentId?.name].filter(Boolean).join(' ').toLowerCase().includes(s));
+    return all.filter((p) => [fullName(p), p.employeeId, p.departmentId?.name, p.isSelf ? 'me myself' : null].filter(Boolean).join(' ').toLowerCase().includes(s));
   }, [people.data, search]);
 
   const toggle = (id: string) => {
@@ -38,14 +41,23 @@ export const AssignTaskScreen = () => {
     setErrors((e) => ({ ...e, people: undefined }));
   };
 
+  const selfId = people.data?.find((p) => p.isSelf)?._id;
+  const onlyMe = selected.length === 1 && selected[0] === selfId;
+
   const submit = async () => {
-    const next = { title: title.trim() ? undefined : 'Give the task a title', people: selected.length ? undefined : 'Choose at least one person' };
+    const next = { title: title.trim() ? undefined : 'Give the task a title', people: selected.length ? undefined : 'Choose at least one person (or Myself)' };
     setErrors(next);
-    if (next.title || next.people) return;
+    // The errors sit higher up the page; say it where the button is too.
+    if (next.title || next.people) {
+      toast.error(next.title ?? 'Who is it for?', next.title ? undefined : 'Choose at least one person, or Myself.');
+      return;
+    }
     try {
       await assign.mutateAsync({ title: title.trim(), description: description.trim() || undefined, assigneeIds: selected, priority, dueDate: dueDate || undefined });
-      toast.success(selected.length > 1 ? `Task assigned to ${selected.length} people` : 'Task assigned', 'They’ve been notified.');
-      router.back();
+      if (onlyMe) toast.success('Added to your tasks');
+      else toast.success(selected.length > 1 ? `Task assigned to ${selected.length} people` : 'Task assigned', 'They’ve been notified.');
+      if (router.canGoBack()) router.back();
+      else router.replace('/more/tasks');
     } catch (err) {
       toast.error('Could not assign the task', toApiError(err).message);
     }
@@ -124,11 +136,11 @@ export const AssignTaskScreen = () => {
                 >
                   <Avatar name={fullName(p)} uri={p.profilePhoto} size={36} />
                   <View style={styles.flex}>
-                    <Text weight="medium" numberOfLines={1}>
-                      {fullName(p)}
+                    <Text weight={p.isSelf ? 'semibold' : 'medium'} numberOfLines={1}>
+                      {p.isSelf ? `Myself (${fullName(p)})` : fullName(p)}
                     </Text>
                     <Text size="xs" color="muted" numberOfLines={1}>
-                      {[p.employeeId, p.designationId?.name, p.departmentId?.name].filter(Boolean).join(' · ')}
+                      {p.isSelf ? 'Add it to your own task list' : [p.employeeId, p.designationId?.name, p.departmentId?.name].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
                   <View style={[styles.check, { borderColor: on ? c.primary : c.lineStrong, backgroundColor: on ? c.primary : c.surface }]}>
@@ -142,7 +154,7 @@ export const AssignTaskScreen = () => {
       </Card>
 
       <Button icon={Send} size="lg" loading={assign.isPending} onPress={() => void submit()}>
-        {selected.length > 1 ? `Assign to ${selected.length} people` : 'Assign task'}
+        {onlyMe ? 'Add to my tasks' : selected.length > 1 ? `Assign to ${selected.length} people` : 'Assign task'}
       </Button>
     </Screen>
   );

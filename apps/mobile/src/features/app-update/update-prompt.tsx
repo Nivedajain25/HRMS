@@ -12,9 +12,9 @@ import { radius, space, useTheme } from '@/theme';
 const megabytes = (bytes: number | null) => (bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : null);
 
 /**
- * "Update available" pop-up (Android): while a newer APK is published, it pops up once a day — the first time the
- * user opens the app or signs in that day — until they update. "Later" hides it until tomorrow (the server also
- * sends a daily reminder notification). "Update now" downloads the APK and opens Android's installer. A tap on the
+ * "Update available" pop-up (Android): while a newer APK is published, it pops up every time the user signs in, and
+ * once a day when they open the app, until they update. "Not now" hides it (until the next sign-in or tomorrow; the
+ * server also sends a daily reminder notification). "Update" downloads the APK and opens Android's installer. A tap on the
  * "update available" notification, or Settings → Update, opens it any time.
  * Waits for the permissions sheet, announcement and new-task pop-ups so only one sheet shows at a time.
  */
@@ -55,7 +55,7 @@ export const UpdatePrompt = () => {
   }, [showing, markShown]);
   if (!showing || !isNewer(release)) return null;
 
-  // Until tomorrow. A download in progress carries on in the background (the installer still opens when it finishes).
+  // Until the next sign-in or tomorrow. A download in progress carries on in the background (the installer still opens when it finishes).
   const later = () => {
     dismiss();
     setOpen(false);
@@ -111,10 +111,10 @@ export const UpdatePrompt = () => {
         Stencil HRMS — turn it on, come back and tap Install.
       </Text>
       <Button icon={Download} loading={busy} onPress={() => void downloadAndInstall(release)}>
-        {phase === 'downloading' ? 'Downloading…' : phase === 'installing' ? 'Opening installer…' : 'Update now'}
+        {phase === 'downloading' ? 'Downloading…' : phase === 'installing' ? 'Opening installer…' : 'Update'}
       </Button>
       <Button variant="ghost" onPress={later}>
-        {busy ? 'Hide' : 'Remind me tomorrow'}
+        {busy ? 'Hide' : 'Not Now'}
       </Button>
     </BottomSheet>
   );

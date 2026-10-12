@@ -54,7 +54,8 @@ describe('Announcements and tasks by anyone', () => {
     expect(people.status).toBe(200);
     const ids = people.body.data.map((p: { _id: string }) => p._id);
     expect(ids).toContain(bob.employee._id);
-    expect(ids).not.toContain(alice.employee._id);
+    // The caller is listed first (flagged) so they can give themselves a task.
+    expect(people.body.data[0]).toMatchObject({ _id: alice.employee._id, isSelf: true });
 
     const res = await as(alice.token).post('/api/v1/tasks', { title: 'Send the stock report', assigneeIds: [bob.employee._id] });
     expect(res.status).toBe(201);
@@ -62,5 +63,19 @@ describe('Announcements and tasks by anyone', () => {
     expect(unseen.body.data.map((t: { title: string }) => t.title)).toContain('Send the stock report');
     const notified = await NotificationModel.find({ userId: await userIdOf(bob), type: 'TASK' }).lean();
     expect(notified.some((n) => n.title.includes('Send the stock report'))).toBe(true);
+  });
+
+  it('lets an employee assign a task to themselves: it is in their list, with no pop-up or notification', async () => {
+    const res = await as(alice.token).post('/api/v1/tasks', { title: 'Call the vendor', assigneeIds: [alice.employee._id], priority: 'HIGH' });
+    expect(res.status).toBe(201);
+    const mine = await as(alice.token).get('/api/v1/tasks?scope=mine&state=open');
+    expect(mine.body.data.map((t: { title: string }) => t.title)).toContain('Call the vendor');
+    const unseen = await as(alice.token).get('/api/v1/tasks/unseen');
+    expect(unseen.body.data.map((t: { title: string }) => t.title)).not.toContain('Call the vendor');
+    const notified = await NotificationModel.find({ userId: await userIdOf(alice), type: 'TASK' }).lean();
+    expect(notified.some((n) => n.title.includes('Call the vendor'))).toBe(false);
+    // ...and they can move it along themselves.
+    const done = await as(alice.token).patch(`/api/v1/tasks/${res.body.data[0]._id}/status`, { status: 'DONE' });
+    expect(done.status).toBe(200);
   });
 });

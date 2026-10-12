@@ -21,11 +21,13 @@ const POPULATE = [
 
 const STATUS_LABEL: Record<WorkTaskStatus, string> = { TODO: 'To do', IN_PROGRESS: 'In progress', DONE: 'Done' };
 
-/** People the caller can assign to (the "Assign task" picker): everyone active in the organization except themselves. */
+/**
+ * People the caller can assign to (the "Assign task" picker): everyone active in the organization. The caller comes
+ * first, flagged `isSelf`, so they can give themselves a task (a personal to-do).
+ */
 export const listAssignable = async (ctx: RequestContext) => {
   const filter: FilterQuery<unknown> = { organizationId: ctx.organizationId, deletedAt: null, employmentStatus: { $nin: ['TERMINATED', 'RESIGNED', 'EXITED'] } };
-  if (ctx.employeeId) filter._id = { $ne: ctx.employeeId };
-  return EmployeeModel.find(filter)
+  const people = await EmployeeModel.find(filter)
     .select('employeeId firstName lastName profilePhoto departmentId designationId')
     .populate([
       { path: 'departmentId', select: 'name' },
@@ -33,6 +35,9 @@ export const listAssignable = async (ctx: RequestContext) => {
     ])
     .sort({ firstName: 1, lastName: 1 })
     .lean();
+  const me = ctx.employeeId ? String(ctx.employeeId) : null;
+  const self = people.filter((p) => String(p._id) === me).map((p) => ({ ...p, isSelf: true }));
+  return [...self, ...people.filter((p) => String(p._id) !== me)];
 };
 
 export const createTasks = async (
@@ -57,6 +62,8 @@ export const createTasks = async (
       assigneeId: e._id,
       assignedBy: ctx.userId,
       assignedByName: ctx.userName,
+      // A task you give yourself is already "seen": no pop-up (and no notification, see excludeUserId below).
+      seenAt: ctx.employeeId && e._id.equals(ctx.employeeId) ? new Date() : null,
     })),
   );
 

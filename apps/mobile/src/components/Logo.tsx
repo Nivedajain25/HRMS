@@ -1,32 +1,34 @@
-import { StyleSheet, View } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
-import { brand, space } from '@/theme';
+import { Image, StyleSheet, View } from 'react-native';
+import { space, useTheme } from '@/theme';
+// The Stencil brand (same files as the web): the "Stencil® Interior & Exterior Products" logo and the "S" mark.
+import LOGO from '../../assets/images/brand/stencil-logo.png';
+import LOGO_DARK from '../../assets/images/brand/stencil-logo-dark.png';
+import MARK from '../../assets/images/brand/stencil-mark.png';
 import { Text } from './Text';
+/** Width ÷ height of the logo images. */
+const LOGO_RATIO = 837 / 285;
 
-/** Stencil logomark: three offset strokes suggesting a cut stencil (same as the web). */
+/** Stencil "S" mark (rounded navy square), e.g. on the loading screen. */
 export const Logomark = ({ size = 40 }: { size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 32 32" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-    <Rect width={32} height={32} rx={9} fill={brand[600]} />
-    <Path d="M10 11h12M10 16h8M10 21h12" stroke="#ffffff" strokeWidth={2.6} strokeLinecap="round" />
-  </Svg>
+  <Image source={MARK} style={{ width: size, height: size, borderRadius: size * 0.22 }} accessibilityIgnoresInvertColors accessible={false} />
 );
 
-export const Logo = ({ size = 40 }: { size?: number }) => (
-  <View style={styles.row} accessible accessibilityRole="image" accessibilityLabel="Stencil HRMS">
-    <Logomark size={size} />
-    <View>
-      <Text weight="bold" size="md" style={styles.word}>
-        STENCIL
-      </Text>
-      <Text weight="medium" size="xs" color="muted" style={styles.sub}>
+/** The Stencil logo with "HRMS" beside it; `size` is the logo's height. Light text version in dark mode. */
+export const Logo = ({ size = 40 }: { size?: number }) => {
+  const { scheme } = useTheme();
+  return (
+    <View style={styles.row} accessible accessibilityRole="image" accessibilityLabel="Stencil HRMS">
+      <Image source={scheme === 'dark' ? LOGO_DARK : LOGO} style={{ height: size, width: size * LOGO_RATIO }} resizeMode="contain" accessibilityIgnoresInvertColors />
+      <View style={styles.divider} />
+      <Text weight="semibold" size="sm" color="muted" style={styles.sub}>
         HRMS
       </Text>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space(3) },
-  word: { letterSpacing: 2.2, lineHeight: 18 },
-  sub: { letterSpacing: 2.4, lineHeight: 14 },
+  divider: { width: StyleSheet.hairlineWidth * 2, height: 22, backgroundColor: '#94a3b8', opacity: 0.6 },
+  sub: { letterSpacing: 2.4 },
 });

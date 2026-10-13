@@ -18,6 +18,8 @@ const hasFile = (root: string, name: string): boolean => {
 };
 
 const BRAND = '#4f46e5';
+/** Stencil's logo navy: the app icon's wordmark and the notification accent. */
+const STENCIL_NAVY = '#133775';
 const apiUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
 const projectId = process.env.EAS_PROJECT_ID;
 
@@ -65,7 +67,8 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => withClear
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
       monochromeImage: './assets/images/adaptive-icon-monochrome.png',
-      backgroundColor: BRAND,
+      // The "Stencil" wordmark in navy on white, like the logo.
+      backgroundColor: '#ffffff',
     },
     permissions: [
       'android.permission.CAMERA',
@@ -87,11 +90,12 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => withClear
     [
       'expo-splash-screen',
       {
+        // The full Stencil logo (wide), with a light version for dark mode.
         image: './assets/images/splash-icon.png',
-        imageWidth: 120,
+        imageWidth: 240,
         resizeMode: 'contain',
-        backgroundColor: '#f6f7f9',
-        dark: { image: './assets/images/splash-icon.png', backgroundColor: '#0b0d12' },
+        backgroundColor: '#ffffff',
+        dark: { image: './assets/images/splash-icon-dark.png', backgroundColor: '#0b0d12' },
       },
     ],
     [
@@ -122,7 +126,7 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => withClear
       'expo-notifications',
       {
         icon: './assets/images/notification-icon.png',
-        color: BRAND,
+        color: STENCIL_NAVY,
       },
     ],
   ],

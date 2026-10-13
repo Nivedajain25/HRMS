@@ -6,9 +6,15 @@ import { Toaster, toast } from 'sonner';
 import { ConfirmProvider } from '@/components/ui/overlay';
 import { useBootstrapSession } from '@/features/auth/use-auth';
 import { ApiError } from '@/lib/api';
+import { reloadForNewVersion } from '@/lib/stale-build';
 import { router } from '@/routes/router';
 import { themeMode, useThemeStore, watchSystemTheme } from '@/store/theme';
 import '@/styles/index.css';
+
+// A code file from before the latest deploy failed to load (Vite's preload): load the new version instead.
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadForNewVersion()) event.preventDefault();
+});
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({

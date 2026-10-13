@@ -1,7 +1,8 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
 import { ErrorState } from '@/components/ui/display';
 import { Button } from '@/components/ui/button';
+import { isChunkLoadError, reloadForNewVersion } from '@/lib/stale-build';
 
 /** Catches render errors so one broken widget never blanks the whole app. */
 export class ErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { error: Error | null }> {
@@ -13,9 +14,21 @@ export class ErrorBoundary extends Component<{ children: ReactNode; fallback?: R
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
     if (import.meta.env.DEV) console.error(error, info.componentStack);
+    // A page from before the latest deploy: load the new version.
+    if (isChunkLoadError(error)) reloadForNewVersion();
   }
 
   override render() {
+    if (this.state.error && isChunkLoadError(this.state.error)) {
+      return (
+        <ErrorState
+          title="A new version is available"
+          message="Stencil HRMS was just updated. Reload the page to continue."
+          onRetry={() => window.location.reload()}
+          className="card"
+        />
+      );
+    }
     if (this.state.error) {
       return (
         this.props.fallback ?? (
@@ -31,7 +44,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode; fallback?: R
 export const RouteError = () => {
   const error = useRouteError();
   const message = isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : error instanceof Error ? error.message : 'Unexpected error';
-  const isChunk = /dynamically imported module|Loading chunk/i.test(message);
+  const isChunk = isChunkLoadError(error) || /dynamically imported module|Loading chunk/i.test(message);
+  useEffect(() => {
+    if (isChunk) reloadForNewVersion();
+  }, [isChunk]);
   return (
     <div className="flex min-h-full items-center justify-center p-6">
       <div className="card w-full max-w-lg">

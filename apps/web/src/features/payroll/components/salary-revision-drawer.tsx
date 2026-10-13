@@ -200,7 +200,7 @@ export const SalaryRevisionDrawer = ({ open, onClose, employeeId: lockedEmployee
               <FormField label="Employee" required error={errors.employeeId}>
                 {({ id, invalid }) =>
                   lockedEmployee ? (
-                    <Input id={id} value={employeeLabel ?? (salary.data ? `${fullName(salary.data.employee)} (${salary.data.employee.employeeId})` : '')} readOnly disabled />
+                    <Input id={id} value={employeeLabel ?? (salary.data ? `${fullName(salary.data.employee)}${salary.data.employee.employeeId ? ` (${salary.data.employee.employeeId})` : ''}` : '')} readOnly disabled />
                   ) : (
                     <Controller
                       control={control}

@@ -10,7 +10,8 @@ export interface NamedRef {
 
 export interface EmployeeSummary {
   _id: string;
-  employeeId: string;
+  /** Employee code; null for people without one (e.g. the managing director). */
+  employeeId: string | null;
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -81,7 +82,7 @@ export const useMyEmployee = () => useQuery({ queryKey: ['employees', 'me'], que
 
 export interface Teammate {
   _id: string;
-  employeeId: string;
+  employeeId: string | null;
   firstName: string;
   lastName: string;
   profilePhoto?: string | null;

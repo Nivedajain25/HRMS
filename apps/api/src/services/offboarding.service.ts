@@ -72,7 +72,7 @@ const statusHistory = (
 
 const hrUserIds = (ctx: RequestContext) => userIdsWithPermission(ctx.organizationId, 'offboarding:manage');
 
-const employeeName = (e: { firstName: string; lastName: string; employeeId: string }) => `${e.firstName} ${e.lastName} (${e.employeeId})`;
+const employeeName = (e: { firstName: string; lastName: string; employeeId?: string | null }) => `${e.firstName} ${e.lastName}${e.employeeId ? ` (${e.employeeId})` : ''}`;
 
 /* ------------------------------- Queries ------------------------------ */
 

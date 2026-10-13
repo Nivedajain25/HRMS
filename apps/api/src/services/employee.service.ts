@@ -68,7 +68,7 @@ const labelFor = async (key: string, value: unknown) => {
     | { name?: string; firstName?: string; lastName?: string; employeeId?: string }
     | null;
   if (!doc) return String(value);
-  return doc.name ?? `${doc.firstName} ${doc.lastName} (${doc.employeeId})`;
+  return doc.name ?? `${doc.firstName} ${doc.lastName}${doc.employeeId ? ` (${doc.employeeId})` : ''}`;
 };
 
 const toDate = (v: unknown) => (typeof v === 'string' && v ? dateOnly(v) : v === null ? null : undefined);
@@ -403,7 +403,7 @@ export const createEmployee = async (ctx: RequestContext, raw: EmployeeCreateInp
     action: 'EMPLOYEE_CREATED',
     module: 'employees',
     recordId: employee._id,
-    recordLabel: `${employee.firstName} ${employee.lastName} (${employee.employeeId})`,
+    recordLabel: `${employee.firstName} ${employee.lastName}${employee.employeeId ? ` (${employee.employeeId})` : ''}`,
     newValues: { employeeId: employee.employeeId, workEmail: employee.workEmail, departmentId: employee.departmentId, designationId: employee.designationId },
   });
   return getEmployee(ctx, String(employee._id));
@@ -420,6 +420,11 @@ export const updateEmployee = async (ctx: RequestContext, id: string, input: z.o
   if (input.workEmail && input.workEmail !== emp.workEmail) {
     if (await EmployeeModel.exists({ organizationId: ctx.organizationId, workEmail: input.workEmail, _id: { $ne: emp._id } })) {
       throw conflict('Another employee uses this work email', 'EMAIL_TAKEN');
+    }
+  }
+  if (input.employeeId && input.employeeId !== emp.employeeId) {
+    if (await EmployeeModel.exists({ organizationId: ctx.organizationId, employeeId: input.employeeId, _id: { $ne: emp._id } })) {
+      throw conflict('Another employee has this employee ID', 'EMPLOYEE_ID_TAKEN');
     }
   }
   if (input.employmentStatus === 'EXITED' && emp.employmentStatus !== 'EXITED') {
@@ -473,7 +478,7 @@ export const updateEmployee = async (ctx: RequestContext, id: string, input: z.o
     action: 'EMPLOYEE_UPDATED',
     module: 'employees',
     recordId: emp._id,
-    recordLabel: `${emp.firstName} ${emp.lastName} (${emp.employeeId})`,
+    recordLabel: `${emp.firstName} ${emp.lastName}${emp.employeeId ? ` (${emp.employeeId})` : ''}`,
     ...changes,
   });
   return getEmployee(ctx, id);
@@ -519,7 +524,7 @@ export const archiveEmployee = async (ctx: RequestContext, id: string) => {
     action: 'EMPLOYEE_ARCHIVED',
     module: 'employees',
     recordId: emp._id,
-    recordLabel: `${emp.firstName} ${emp.lastName} (${emp.employeeId})`,
+    recordLabel: `${emp.firstName} ${emp.lastName}${emp.employeeId ? ` (${emp.employeeId})` : ''}`,
     oldValues: before,
     newValues: { employmentStatus: 'ARCHIVED' },
   });

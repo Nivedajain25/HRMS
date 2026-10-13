@@ -290,7 +290,7 @@ export const assignAsset = async (ctx: RequestContext, id: string, input: Assign
           statusHistory: {
             from,
             to: 'ASSIGNED',
-            note: `Assigned to ${employee.firstName} ${employee.lastName} (${employee.employeeId})`,
+            note: `Assigned to ${employee.firstName} ${employee.lastName}${employee.employeeId ? ` (${employee.employeeId})` : ''}`,
             by: ctx.userId,
             at: new Date(),
           },

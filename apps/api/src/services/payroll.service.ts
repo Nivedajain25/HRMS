@@ -327,7 +327,7 @@ const computeRun = async (ctx: RequestContext, run: { _id: Id; month: number; ye
 
   for (const emp of employees) {
     const key = String(emp._id);
-    const label = `${emp.employeeId} ${emp.firstName} ${emp.lastName}`;
+    const label = `${emp.employeeId ? `${emp.employeeId} ` : ''}${emp.firstName} ${emp.lastName}`;
     const joinKey = toDateKey(emp.joiningDate);
     const exitKey = emp.exitDate ? toDateKey(emp.exitDate) : null;
     const employedFrom = joinKey > ps ? joinKey : ps;

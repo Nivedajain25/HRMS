@@ -60,7 +60,7 @@ const Overview = ({ e }: { e: EmployeeDetail }) => (
       <CardBody>
         <DescriptionList
           items={[
-            { label: 'Employee ID', value: <span className="font-mono">{e.employeeId}</span> },
+            ...(e.employeeId ? [{ label: 'Employee ID', value: <span className="font-mono">{e.employeeId}</span> }] : []),
             { label: 'Status', value: <StatusBadge status={e.employmentStatus} /> },
             { label: 'Department', value: e.departmentId?.name },
             { label: 'Designation', value: e.designationId?.name },

@@ -27,6 +27,7 @@ interface IdentityField {
 }
 
 const toFormValues = (e?: EmployeeDetail): FormValues => ({
+  employeeId: e?.employeeId ?? '',
   firstName: e?.firstName ?? '',
   middleName: e?.middleName ?? '',
   lastName: e?.lastName ?? '',
@@ -68,7 +69,8 @@ const clean = (values: FormValues, editing: boolean) => {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(values)) {
     if (v === '' || v === undefined) {
-      if (editing && ['departmentId', 'designationId', 'managerId', 'locationId', 'shiftId', 'confirmationDate'].includes(k)) out[k] = null;
+      // Editing: a cleared field removes the value (a blank employee ID = none, e.g. the managing director).
+      if (editing && ['employeeId', 'departmentId', 'designationId', 'managerId', 'locationId', 'shiftId', 'confirmationDate'].includes(k)) out[k] = null;
       continue;
     }
     out[k] = v;
@@ -105,7 +107,8 @@ export const EmployeeFormDrawer = ({ open, onClose, employee }: { open: boolean;
     const payload = clean(values, editing);
     if (editing) {
       delete payload.createUserAccount;
-      delete payload.employeeId;
+      // Only sent when changed.
+      if ((payload.employeeId ?? null) === (employee?.employeeId ?? null)) delete payload.employeeId;
     }
     // Only send sensitive sections when the user entered something.
     const bank = values.bank && Object.values(values.bank).some(Boolean) ? values.bank : undefined;
@@ -139,7 +142,7 @@ export const EmployeeFormDrawer = ({ open, onClose, employee }: { open: boolean;
       open={open}
       onClose={() => onClose()}
       title={editing ? `Edit ${fullName(employee)}` : 'Add employee'}
-      description={editing ? `Employee ID ${employee?.employeeId}` : 'Creates the employee record, leave balances and onboarding checklist.'}
+      description={editing ? (employee?.employeeId ? `Employee ID ${employee.employeeId}` : 'No employee ID') : 'Creates the employee record, leave balances and onboarding checklist.'}
       width="max-w-3xl"
       footer={
         <>
@@ -164,9 +167,9 @@ export const EmployeeFormDrawer = ({ open, onClose, employee }: { open: boolean;
             {text('weddingAnniversary', 'Wedding anniversary', { type: 'date' })}
             {select('bloodGroup', 'Blood group', enumOptions(BLOOD_GROUPS), 'Select…')}
           </FormGrid>
-          {!editing && (
-            <FormGrid cols={3}>{text('employeeId', 'Employee ID', { hint: 'Leave blank to auto-generate' })}</FormGrid>
-          )}
+          <FormGrid cols={3}>
+            {text('employeeId', 'Employee ID', { hint: editing ? 'Leave blank if they have no employee ID (e.g. the MD)' : 'Leave blank to auto-generate' })}
+          </FormGrid>
         </FormSection>
 
         <FormSection title="Contact">

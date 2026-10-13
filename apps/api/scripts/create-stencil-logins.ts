@@ -88,7 +88,7 @@ const main = async () => {
       ]);
       await EmployeeModel.updateOne({ _id: e._id }, { userId: user!._id });
       created.push([
-        e.employeeId,
+        e.employeeId ?? '',
         name,
         designations.get(String(e.designationId)) ?? '',
         isManager ? 'Employee + Manager' : 'Employee',

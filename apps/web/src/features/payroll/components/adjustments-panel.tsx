@@ -78,7 +78,7 @@ const AdjustmentDrawer = ({ adjustment, onClose }: { adjustment?: Adjustment; on
         <FormField label="Employee" required error={errors.employeeId}>
           {({ id, invalid }) =>
             adjustment ? (
-              <Input id={id} value={adjustment.employeeId ? `${fullName(adjustment.employeeId)} (${adjustment.employeeId.employeeId})` : ''} readOnly disabled />
+              <Input id={id} value={adjustment.employeeId ? `${fullName(adjustment.employeeId)}${adjustment.employeeId.employeeId ? ` (${adjustment.employeeId.employeeId})` : ''}` : ''} readOnly disabled />
             ) : (
               <Controller
                 control={control}

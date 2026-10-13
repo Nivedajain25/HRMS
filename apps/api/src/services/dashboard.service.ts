@@ -73,7 +73,7 @@ const nextOccurrence = (date: Date, today: string) => {
   return { key, inDays: dayDiff(today, key) };
 };
 
-const person = (e: { _id: Types.ObjectId; employeeId?: string; firstName: string; lastName: string; profilePhoto?: string | null }) => ({
+const person = (e: { _id: Types.ObjectId; employeeId?: string | null; firstName: string; lastName: string; profilePhoto?: string | null }) => ({
   _id: e._id,
   employeeId: e.employeeId,
   name: `${e.firstName} ${e.lastName}`,

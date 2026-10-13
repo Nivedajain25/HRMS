@@ -80,7 +80,7 @@ export const SalaryListPage = () => {
               enableHiding: false,
               cell: ({ row }: { row: { original: SalaryListRow } }) => (
                 <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                  <Button size="xs" variant="outline" icon={<TrendingUp className="h-3.5 w-3.5" />} onClick={() => setRevising({ id: row.original._id, label: `${fullName(row.original)} (${row.original.employeeId})` })}>
+                  <Button size="xs" variant="outline" icon={<TrendingUp className="h-3.5 w-3.5" />} onClick={() => setRevising({ id: row.original._id, label: `${fullName(row.original)}${row.original.employeeId ? ` (${row.original.employeeId})` : ''}` })}>
                     Revise
                   </Button>
                 </div>
@@ -317,7 +317,7 @@ export const SalaryDetailPage = () => {
         }
       />
       <EmployeeSalaryPanel employeeId={employeeId} onRevise={can('salary:update') ? () => setRevising(true) : undefined} />
-      {revising && <SalaryRevisionDrawer open onClose={() => setRevising(false)} employeeId={employeeId} employeeLabel={e ? `${name} (${e.employeeId})` : undefined} />}
+      {revising && <SalaryRevisionDrawer open onClose={() => setRevising(false)} employeeId={employeeId} employeeLabel={e ? `${name}${e.employeeId ? ` (${e.employeeId})` : ''}` : undefined} />}
     </>
   );
 };

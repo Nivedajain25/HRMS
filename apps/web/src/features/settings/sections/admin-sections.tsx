@@ -231,7 +231,7 @@ export const UsersSection = () => {
     const { confirmed } = await confirm({
       title: `Delete ${name}'s login?`,
       message: `${name} (${u.email}) will be signed out everywhere and can no longer sign in. ${
-        u.employeeId ? `Their employee record (${u.employeeId.employeeId}) and HR history are kept. ` : ''
+        u.employeeId ? `Their employee record${u.employeeId.employeeId ? ` (${u.employeeId.employeeId})` : ''} and HR history are kept. ` : ''
       }You can invite them again later. This can't be undone.`,
       confirmLabel: 'Delete user',
     });
@@ -464,7 +464,7 @@ const EditUserModal = ({ user, onClose, roles, isSuperAdmin }: { user: UserRow |
     const name = `${user.firstName} ${user.lastName}`.trim();
     const { confirmed } = await confirm({
       title: `Remove ${name}'s employee record?`,
-      message: `${user.employeeId.employeeId} is archived: ${name} leaves the staff list, attendance and absent marking, and anyone reporting to them is left without a manager. ${name} keeps signing in with the same email, password and roles. Past records are kept.`,
+      message: `${user.employeeId.employeeId ? `${user.employeeId.employeeId} is` : 'The record is'} archived: ${name} leaves the staff list, attendance and absent marking, and anyone reporting to them is left without a manager. ${name} keeps signing in with the same email, password and roles. Past records are kept.`,
       confirmLabel: 'Remove record',
     });
     if (confirmed) removeRecord.mutate();

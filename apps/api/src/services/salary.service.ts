@@ -302,7 +302,7 @@ export const createStructure = async (
     action: 'SALARY_UPDATED',
     module: 'payroll',
     recordId: structure._id,
-    recordLabel: `${employee.firstName} ${employee.lastName} (${employee.employeeId})`,
+    recordLabel: `${employee.firstName} ${employee.lastName}${employee.employeeId ? ` (${employee.employeeId})` : ''}`,
     oldValues: previous ? { annualCtc: previous.annualCtc, monthlyGross: previous.monthlyGross } : null,
     newValues: { annualCtc: structure.annualCtc, monthlyGross: structure.monthlyGross, effectiveFrom: input.effectiveFrom, reason: input.reason },
   });

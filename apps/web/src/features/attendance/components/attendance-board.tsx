@@ -214,7 +214,7 @@ export const AttendanceBoardView = ({ scope, onChange }: { scope?: string; onCha
       (d?.cards ?? []).filter((c) => {
         if (!q) return true;
         const e = c.employee;
-        return `${e.firstName} ${e.lastName} ${e.employeeId} ${e.designation ?? ''} ${e.department ?? ''}`.toLowerCase().includes(q);
+        return `${e.firstName} ${e.lastName} ${e.employeeId ?? ''} ${e.designation ?? ''} ${e.department ?? ''}`.toLowerCase().includes(q);
       }),
     [d, q],
   );

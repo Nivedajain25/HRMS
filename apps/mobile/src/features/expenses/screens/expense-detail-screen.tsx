@@ -250,7 +250,7 @@ export const ExpenseDetailScreen = () => {
           <DetailCard
             title="Details"
             items={[
-              { label: 'Employee', value: mine ? null : `${fullName(e.employeeId)} (${e.employeeId.employeeId})` },
+              { label: 'Employee', value: mine ? null : `${fullName(e.employeeId)}${e.employeeId.employeeId ? ` (${e.employeeId.employeeId})` : ''}` },
               { label: 'Category', value: label(e.category) },
               { label: 'Expense date', value: formatDate(e.date) },
               { label: 'Merchant', value: e.merchant },

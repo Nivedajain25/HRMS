@@ -114,7 +114,7 @@ const employees: ReportDefinition = {
         { key: 'joiningDate', label: 'Joining date', type: 'date' },
       ],
       rows.map((e) => ({
-        code: e.employeeId,
+        code: e.employeeId ?? null,
         name: `${e.firstName} ${e.lastName}`,
         email: e.workEmail,
         department: name(e.departmentId),
@@ -222,7 +222,7 @@ const attendance: ReportDefinition = {
     const rows = emps.map((e) => {
       const a = byEmp.get(String(e._id));
       return {
-        code: e.employeeId,
+        code: e.employeeId ?? null,
         name: `${e.firstName} ${e.lastName}`,
         department: name(e.departmentId),
         present: a?.present ?? 0,

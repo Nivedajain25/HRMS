@@ -100,6 +100,16 @@ export const employeeCreateSchema = employeeBaseSchema.extend({
 export type EmployeeCreateInput = z.input<typeof employeeCreateSchema>;
 
 export const employeeUpdateSchema = patchSchema(employeeBaseSchema).extend({
+  // A new code, or blank / null for none (e.g. the managing director).
+  employeeId: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? null : v),
+    z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9-]{1,20}$/, 'Letters, digits and dashes only')
+      .nullable()
+      .optional(),
+  ),
   // Sensitive details are merged, never cleared wholesale through PATCH.
   bank: employeeBaseSchema.shape.bank,
   identity: employeeBaseSchema.shape.identity,

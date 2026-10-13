@@ -120,7 +120,7 @@ const LoanDetailModal = ({ loan, onClose }: { loan: Loan; onClose: () => void })
   const currency = useOrgCurrency();
   const repaid = loan.principal - loan.outstanding;
   return (
-    <Modal open onClose={onClose} title={loan.type === 'LOAN' ? 'Loan details' : 'Salary advance details'} description={loan.employeeId ? `${fullName(loan.employeeId)} (${loan.employeeId.employeeId})` : undefined} size="lg">
+    <Modal open onClose={onClose} title={loan.type === 'LOAN' ? 'Loan details' : 'Salary advance details'} description={loan.employeeId ? `${fullName(loan.employeeId)}${loan.employeeId.employeeId ? ` (${loan.employeeId.employeeId})` : ''}` : undefined} size="lg">
       <div className="space-y-5">
         <DescriptionList
           items={[

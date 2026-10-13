@@ -866,7 +866,7 @@ export const updateAttendance = async (ctx: RequestContext, id: string, input: A
     action: 'ATTENDANCE_UPDATED',
     module: 'attendance',
     recordId: doc._id,
-    recordLabel: `${emp.firstName} ${emp.lastName} (${emp.employeeId}) — ${toDateKey(doc.date)}`,
+    recordLabel: `${emp.firstName} ${emp.lastName}${emp.employeeId ? ` (${emp.employeeId})` : ''} — ${toDateKey(doc.date)}`,
     ...diff(before, snapshot(doc)),
   });
   return getAttendance(ctx, id);
@@ -910,7 +910,7 @@ export const createAttendance = async (ctx: RequestContext, input: AttendanceCre
     action: 'ATTENDANCE_UPDATED',
     module: 'attendance',
     recordId: doc._id,
-    recordLabel: `${emp.firstName} ${emp.lastName} (${emp.employeeId}) — ${input.date}`,
+    recordLabel: `${emp.firstName} ${emp.lastName}${emp.employeeId ? ` (${emp.employeeId})` : ''} — ${input.date}`,
     oldValues: null,
     newValues: snapshot(doc),
   });

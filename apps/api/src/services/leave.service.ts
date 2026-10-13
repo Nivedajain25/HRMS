@@ -475,7 +475,7 @@ const auditLeave = (
     action,
     module: 'leave',
     recordId: leave._id,
-    recordLabel: `${employeeName(employee)} (${employee.employeeId}) - ${describe({ name: typeName }, leave)}`,
+    recordLabel: `${employeeName(employee)}${employee.employeeId ? ` (${employee.employeeId})` : ''} - ${describe({ name: typeName }, leave)}`,
     oldValues,
     newValues,
   });

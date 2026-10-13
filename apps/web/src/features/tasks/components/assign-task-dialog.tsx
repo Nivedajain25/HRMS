@@ -31,7 +31,7 @@ export const AssignTaskDialog = ({ open, onClose, people }: { open: boolean; onC
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return people;
-    return people.filter((p) => `${fullName(p)} ${p.employeeId} ${p.departmentId?.name ?? ''} ${p.designationId?.name ?? ''} ${p.isSelf ? 'me myself' : ''}`.toLowerCase().includes(q));
+    return people.filter((p) => `${fullName(p)} ${p.employeeId ?? ''} ${p.departmentId?.name ?? ''} ${p.designationId?.name ?? ''} ${p.isSelf ? 'me myself' : ''}`.toLowerCase().includes(q));
   }, [people, search]);
 
   const reset = () => {

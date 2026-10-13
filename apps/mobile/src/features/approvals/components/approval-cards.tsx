@@ -77,7 +77,7 @@ export const ExpenseApprovalCard = ({ e, onPress }: { e: ExpenseRecord; onPress:
     <Frame onPress={onPress} a11y={`${name}, ${amount}, ${label(e.category)} on ${formatDate(e.date)}${e.merchant ? ` at ${e.merchant}` : ''}, ${e.expenseNumber}, ${label(e.status)}`}>
       <Person
         name={name}
-        code={e.employeeId?.employeeId}
+        code={e.employeeId?.employeeId ?? undefined}
         photo={e.employeeId?.profilePhoto}
         right={
           <Text size="lg" weight="bold" tabular>

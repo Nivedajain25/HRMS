@@ -11,7 +11,8 @@ import { baseSchemaOptions, ref, softDeleteField, tenantField } from './plugins'
 const employeeSchema = new Schema(
   {
     ...tenantField,
-    employeeId: { type: String, required: true, trim: true },
+    /** Employee code (EMP0042). null for people without one, e.g. the managing director. */
+    employeeId: { type: String, trim: true, default: null },
     userId: ref('User'),
     firstName: { type: String, required: true, trim: true },
     middleName: { type: String, trim: true },
@@ -81,7 +82,11 @@ const employeeSchema = new Schema(
   baseSchemaOptions,
 );
 
-employeeSchema.index({ organizationId: 1, employeeId: 1 }, { unique: true });
+// Unique among the employees who have a code (several can have none).
+employeeSchema.index(
+  { organizationId: 1, employeeId: 1 },
+  { unique: true, name: 'org_employee_code_unique', partialFilterExpression: { employeeId: { $type: 'string' } } },
+);
 employeeSchema.index({ organizationId: 1, workEmail: 1 }, { unique: true });
 employeeSchema.index({ organizationId: 1, deletedAt: 1, employmentStatus: 1 });
 employeeSchema.index({ organizationId: 1, departmentId: 1 });

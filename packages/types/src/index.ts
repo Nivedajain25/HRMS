@@ -38,7 +38,8 @@ export interface Ref {
 
 export interface EmployeeRef {
   _id: string;
-  employeeId: string;
+  /** Employee code; null for people without one (e.g. the managing director). */
+  employeeId: string | null;
   firstName: string;
   lastName: string;
   profilePhoto?: string | null;

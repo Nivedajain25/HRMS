@@ -145,6 +145,20 @@ export const listUsers = async (ctx: RequestContext, q: PaginationQuery & { stat
 export const createUser = async (ctx: RequestContext, input: UserCreateInput) => {
   const roles = await loadRoles(ctx, input.roleIds);
   if (await UserModel.exists({ email: input.email })) throw conflict('A user with this email already exists', 'EMAIL_TAKEN');
+  // No employee picked: connect the active employee with this work email (if they have no login yet). Otherwise a
+  // re-created login has no employee profile — the person signs in to an empty dashboard and can't check in.
+  if (!input.employeeId) {
+    const match = await EmployeeModel.findOne({
+      organizationId: ctx.organizationId,
+      workEmail: input.email.toLowerCase(),
+      userId: null,
+      deletedAt: null,
+      employmentStatus: { $nin: ['EXITED', 'ARCHIVED'] },
+    })
+      .select('_id')
+      .lean();
+    if (match) input = { ...input, employeeId: String(match._id) };
+  }
   if (input.employeeId) {
     const emp = await EmployeeModel.findOne({ _id: input.employeeId, organizationId: ctx.organizationId, deletedAt: null });
     if (!emp) throw notFound('Employee');

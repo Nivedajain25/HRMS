@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { as, registerOrg } from '../helpers';
 import request from 'supertest';
 import { createApp } from '../../src/app';
+import { EmployeeModel, UserModel } from '../../src/models';
 
 const app = createApp();
 
@@ -58,6 +59,9 @@ describe('Logins for employees without one', () => {
     const invited = (await add('Invited')).body.data;
     const activeUser = await as(admin.token).post('/api/v1/users', { email: `active.${stamp}@example.test`, firstName: 'Active', lastName: 'Staff', roleIds: [employeeRoleId], sendInvite: false });
     await as(admin.token).post('/api/v1/users', { email: `invited.${stamp}@example.test`, firstName: 'Invited', lastName: 'Staff', roleIds: [employeeRoleId], sendInvite: false });
+    // Like logins invited before "Invite user" connected records by email: login and record not linked.
+    await UserModel.updateMany({ email: { $in: [`active.${stamp}@example.test`, `invited.${stamp}@example.test`] } }, { employeeId: null });
+    await EmployeeModel.updateMany({ _id: { $in: [active._id, invited._id] } }, { userId: null });
     const activeLink = await as(admin.token).post(`/api/v1/users/${activeUser.body.data._id}/invite-link`);
     await request(app).post('/api/v1/auth/accept-invite').send({ token: new URL(activeLink.body.data.url).searchParams.get('token'), password: 'Active@2026x' });
     const before = await request(app).post('/api/v1/auth/login').send({ email: `active.${stamp}@example.test`, password: 'Active@2026x' });
@@ -72,6 +76,14 @@ describe('Logins for employees without one', () => {
     expect(usersAfter.find((u) => u.email === `invited.${stamp}@example.test`)?.employeeId?._id).toBe(invited._id);
     const after = await request(app).post('/api/v1/auth/login').send({ email: `active.${stamp}@example.test`, password: 'Active@2026x' });
     expect((await as(after.body.data.accessToken).post('/api/v1/attendance/check-in', { workMode: 'OFFICE' })).status).toBe(200);
+
+    // Deleting a login and inviting the same email again (Settings → Users) reconnects the employee record.
+    const deleted = await as(admin.token).delete(`/api/v1/users/${activeUser.body.data._id}`);
+    expect(deleted.status).toBe(200);
+    const again = await as(admin.token).post('/api/v1/users', { email: `active.${stamp}@example.test`, firstName: 'Active', lastName: 'Staff', roleIds: [employeeRoleId], sendInvite: false });
+    expect(again.status).toBe(201);
+    const reinvited = ((await as(admin.token).get('/api/v1/users?limit=100')).body.data as { email: string; employeeId: { _id: string } | null }[]).find((u) => u.email === `active.${stamp}@example.test`);
+    expect(reinvited?.employeeId?._id).toBe(active._id);
 
     // Running it again does nothing (everyone has a login now); employees can't use it.
     expect((await as(admin.token).post('/api/v1/users/employee-logins', {})).body.data.created).toEqual([]);

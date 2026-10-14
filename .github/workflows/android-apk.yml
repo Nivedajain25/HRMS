@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -68,9 +68,14 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       # Phones (arm64) and the test emulator (x86_64) only — skipping old 32-bit CPUs roughly halves the build.
+      # Retried once: a passing download / network hiccup on the runner shouldn't block a release.
       - name: Build the release APK
         working-directory: apps/mobile/android
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
+        run: |
+          if ! ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64; then
+            echo "::warning::Gradle build failed; retrying once"
+            ./gradlew assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a,x86_64
+          fi
 
       - name: Name the APK
         run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk stencil-hrms.apk

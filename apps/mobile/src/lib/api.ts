@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { Directory, File, Paths } from 'expo-file-system';
+import { FileSystemUploadType, uploadAsync } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import type { ApiError as ApiErrorBody, ApiFieldError, ApiPaginated, ApiSuccess, MobileAuthSession, Pagination } from '@stencil/types';
 import { MOBILE_CLIENT_VALUE } from '@stencil/shared';
@@ -198,6 +199,12 @@ const secondsLeft = (token: string | null) => {
   }
 };
 
+/** Renews the session when the access token has expired or is about to (before an upload). */
+const renewIfExpiring = async () => {
+  const left = secondsLeft(accessToken);
+  if (!accessToken || (left !== null && left < 60)) await refreshSession().catch(() => null);
+};
+
 export const request = async <T>(path: string, opts: RequestOptions = {}): Promise<T> => {
   if (!API_ORIGIN) throw notConfigured();
   const auth = opts.auth ?? true;
@@ -206,10 +213,7 @@ export const request = async <T>(path: string, opts: RequestOptions = {}): Promi
   // Uploads: renew an expired / nearly expired session first. The server turns an expired token away before
   // reading the file, and on Android that broken-off upload surfaces as "Cannot reach the server" — not a 401 the
   // app could recover from — so a check-in selfie taken after the 15-minute token lapsed always failed.
-  if (opts.form && auth) {
-    const left = secondsLeft(accessToken);
-    if (!accessToken || (left !== null && left < 60)) await refreshSession().catch(() => null);
-  }
+  if (opts.form && auth) await renewIfExpiring();
 
   const send = () => {
     const headers: Record<string, string> = { ...CLIENT_HEADERS };
@@ -287,7 +291,57 @@ export interface UploadFile {
 }
 
 /** Multipart upload (`file` + extra fields), e.g. `POST /files` with `context`. */
+/**
+ * Phones: upload with the file's size stated up front (Content-Length), through expo-file-system. React Native's
+ * fetch streams FormData file parts in chunks without a size, and the API host's edge cuts those requests off —
+ * every check-in selfie, profile photo and attachment failed with "Cannot reach the server" (since 9 Oct). Same
+ * session handling as `request`: renew an expiring token first, retry once after a 401.
+ */
+const uploadFromPhone = async <T>(path: string, file: UploadFile, fields: Record<string, string | undefined>): Promise<ApiSuccess<T>> => {
+  if (!API_ORIGIN) throw notConfigured();
+  const url = apiUrl(path);
+  const parameters = Object.fromEntries(Object.entries(fields).filter((e): e is [string, string] => e[1] !== undefined && e[1] !== ''));
+  const send = async () => {
+    try {
+      return await uploadAsync(url, file.uri, {
+        uploadType: FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        mimeType: file.type,
+        parameters,
+        headers: { ...CLIENT_HEADERS, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      });
+    } catch (err) {
+      console.warn('[api] upload failed', path, (err as Error)?.message);
+      throw new ApiError('Cannot reach the server. Check your internet connection and try again.', 0, 'NETWORK_ERROR');
+    }
+  };
+  await renewIfExpiring();
+  let res = await send();
+  if (res.status === 401) {
+    const session = await refreshSession();
+    if (session) {
+      res = await send();
+      if (res.status === 401) handlers?.onExpired();
+    } else {
+      handlers?.onExpired();
+    }
+  }
+  let body: unknown;
+  try {
+    body = res.body ? (JSON.parse(res.body) as unknown) : null;
+  } catch {
+    body = undefined;
+  }
+  if (res.status < 200 || res.status >= 300) throw errorFrom({ status: res.status } as Response, body);
+  if (!body) throw new ApiError('Unexpected response from the server.', res.status, 'BAD_RESPONSE');
+  return body as ApiSuccess<T>;
+};
+
 export const upload = async <T>(path: string, file: UploadFile, fields: Record<string, string | undefined> = {}): Promise<Mutation<T>> => {
+  if (Platform.OS !== 'web') {
+    const res = await uploadFromPhone<T>(path, file, fields);
+    return { data: res.data, message: res.message };
+  }
   const form = new FormData();
   if (Platform.OS === 'web') {
     // Browsers need a real Blob (the camera/picker gives a blob: or data: URL).

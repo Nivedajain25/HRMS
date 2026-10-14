@@ -197,6 +197,79 @@ export const inviteLink = async (ctx: RequestContext, userId: string) => {
   return { url: `${base}/accept-invite?token=${token}`, expiresInDays: 7 };
 };
 
+/* ---------------------- Logins for existing staff ---------------------- */
+
+const ACTIVE_STAFF = { deletedAt: null, userId: null, employmentStatus: { $nin: ['EXITED', 'ARCHIVED'] } };
+
+/** Active employees who can't sign in yet (no login), e.g. helping staff added as records only. */
+export const employeesWithoutLogin = async (ctx: RequestContext) =>
+  EmployeeModel.find({ organizationId: ctx.organizationId, ...ACTIVE_STAFF })
+    .select('employeeId firstName lastName workEmail phone departmentId designationId')
+    .populate([
+      { path: 'departmentId', select: 'name' },
+      { path: 'designationId', select: 'name' },
+    ])
+    .sort({ firstName: 1, lastName: 1 })
+    .lean();
+
+/**
+ * Gives each chosen employee (default: everyone without one) a working login, linked to their record:
+ *  - a login already made with their work email but never connected to the record (e.g. invited from Settings →
+ *    Users) is connected — without that the person can sign in but the app has no employee profile, so no check-in;
+ *  - otherwise a new login with the Employee role (+ Manager when people report to them).
+ * Returns a personal activation link for everyone who still has to set a password (to hand over, e.g. on WhatsApp);
+ * people whose login is already active just sign in again. Nobody chooses anyone's password.
+ */
+export const createLoginsForEmployees = async (ctx: RequestContext, input: { employeeIds?: string[] }) => {
+  const filter: Record<string, unknown> = { organizationId: ctx.organizationId, ...ACTIVE_STAFF };
+  if (input.employeeIds?.length) filter._id = { $in: input.employeeIds.map((id) => new Types.ObjectId(id)) };
+  const employees = await EmployeeModel.find(filter).select('firstName lastName workEmail phone').sort({ firstName: 1 }).lean();
+  const roles = await RoleModel.find({ organizationId: ctx.organizationId, key: { $in: ['employee', 'manager'] } }).select('key').lean();
+  const employeeRole = roles.find((r) => r.key === 'employee');
+  if (!employeeRole) throw unprocessable('The Employee role is missing', 'ROLE_MISSING');
+  const managerRole = roles.find((r) => r.key === 'manager');
+
+  const created: { employeeId: string; name: string; email: string; phone: string | null; url: string; linked?: boolean }[] = [];
+  /** Existing, already activated logins now connected to their record: they can check in after signing in again. */
+  const linked: { employeeId: string; name: string; email: string }[] = [];
+  const skipped: { employeeId: string; name: string; reason: string }[] = [];
+  for (const e of employees) {
+    const name = `${e.firstName} ${e.lastName}`.trim();
+    const email = (e.workEmail ?? '').toLowerCase();
+    if (!email) {
+      skipped.push({ employeeId: String(e._id), name, reason: 'No work email: add one to their profile first' });
+      continue;
+    }
+    const existing = await UserModel.findOne({ email }).select('organizationId employeeId emailVerified lastLoginAt');
+    if (existing) {
+      if (!existing.organizationId.equals(ctx.organizationId) || existing.employeeId) {
+        skipped.push({ employeeId: String(e._id), name, reason: `${email} is already used by another login` });
+        continue;
+      }
+      existing.employeeId = e._id;
+      await existing.save();
+      await EmployeeModel.updateOne({ _id: e._id }, { userId: existing._id });
+      invalidateAuthCache(String(existing._id));
+      await audit(ctx, { action: 'USER_UPDATED', module: 'users', recordId: existing._id, recordLabel: email, newValues: { employee: name } });
+      if (existing.emailVerified || existing.lastLoginAt) linked.push({ employeeId: String(e._id), name, email });
+      else created.push({ employeeId: String(e._id), name, email, phone: e.phone ?? null, url: (await inviteLink(ctx, String(existing._id))).url, linked: true });
+      continue;
+    }
+    const leadsPeople = managerRole && (await EmployeeModel.exists({ organizationId: ctx.organizationId, managerId: e._id, deletedAt: null }));
+    const user = await createUser(ctx, {
+      email,
+      firstName: e.firstName,
+      lastName: e.lastName || e.firstName,
+      roleIds: [String(employeeRole._id), ...(leadsPeople ? [String(managerRole._id)] : [])],
+      employeeId: String(e._id),
+      sendInvite: true,
+    });
+    const link = await inviteLink(ctx, String(user._id));
+    created.push({ employeeId: String(e._id), name, email, phone: e.phone ?? null, url: link.url });
+  }
+  return { created, linked, skipped, expiresInDays: 7 };
+};
+
 export const updateUser = async (ctx: RequestContext, id: string, input: UserUpdateInput) => {
   const user = await UserModel.findOne({ _id: id, organizationId: ctx.organizationId });
   if (!user) throw notFound('User');

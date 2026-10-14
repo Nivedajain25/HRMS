@@ -36,5 +36,7 @@ export const userController = {
   remove: handle((ctx, req) => rbac.deleteUser(ctx, idOf(req)), 'User deleted'),
   removeEmployee: handle((ctx, req) => rbac.removeEmployeeRecord(ctx, idOf(req)), 'Employee record removed'),
   inviteLink: handle((ctx, req) => rbac.inviteLink(ctx, idOf(req))),
+  withoutLogin: handle((ctx) => rbac.employeesWithoutLogin(ctx)),
+  createLogins: handle((ctx, req) => rbac.createLoginsForEmployees(ctx, body<{ employeeIds?: string[] }>(req)), 'Logins created'),
   preferences: handle((ctx, req) => rbac.updatePreferences(ctx, body<{ theme?: string; language?: string }>(req)), 'Preferences saved'),
 };

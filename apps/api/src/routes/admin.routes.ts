@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   USER_STATUS,
   idParam,
+  objectId,
   optionalObjectId,
   organizationSettingsSchema,
   organizationUpdateSchema,
@@ -53,6 +54,23 @@ userModule.route(
   users.list,
 );
 userModule.route({ method: 'post', path: '/', summary: 'Create and invite a user', permissions: ['user:manage'], body: userCreateSchema }, users.create);
+// Before the /:id routes.
+userModule.route(
+  { method: 'get', path: '/without-login', summary: 'Active employees who have no login yet (cannot use the app)', permissions: ['user:manage'] },
+  users.withoutLogin,
+);
+userModule.route(
+  {
+    method: 'post',
+    path: '/employee-logins',
+    summary: 'Create logins for employees without one (all, or the given ones) and return their activation links',
+    description:
+      'Employee role (+ Manager for anyone with direct reports), login email = work email, invitation emailed. Returns a 7-day activation link per person to hand over (e.g. on WhatsApp); each sets their own password. Skips people with no work email or whose email another login uses.',
+    permissions: ['user:manage'],
+    body: z.object({ employeeIds: z.array(objectId).max(500).optional() }),
+  },
+  users.createLogins,
+);
 userModule.route(
   { method: 'patch', path: '/:id', summary: 'Update user roles/status', permissions: ['user:manage'], params: idParam, body: userUpdateSchema },
   users.update,

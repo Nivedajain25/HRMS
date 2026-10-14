@@ -21,6 +21,7 @@ import { label } from '@/lib/i18n';
 import { cn, formatDateTime, timeAgo } from '@/lib/utils';
 import { useRefreshMe } from '@/features/auth/use-auth';
 import { usePermissions } from '@/store/auth';
+import { StaffWithoutLoginCard } from './staff-logins';
 
 /* ---------------------------- Organization ---------------------------- */
 
@@ -320,6 +321,7 @@ export const UsersSection = () => {
 
   return (
     <>
+      <StaffWithoutLoginCard />
       <DataTable
         caption="Users"
         columns={columns}

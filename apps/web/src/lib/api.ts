@@ -100,9 +100,37 @@ export const patch = async <T>(url: string, body?: unknown) => (await api.patch<
 export const put = async <T>(url: string, body?: unknown) => (await api.put<{ data: T; message?: string }>(url, body)).data;
 export const del = async <T>(url: string) => (await api.delete<{ data: T; message?: string }>(url)).data;
 
+/**
+ * Uploads go through the web host's /api proxy, which turns away bodies over ~4.5 MB (a phone camera photo is often
+ * 5–15 MB). Large JPEG / PNG / WebP pictures are scaled down to 2400 px and re-encoded as JPEG first (plenty for
+ * photos and scanned documents); anything else, or a picture that can't be read, is sent as it is.
+ */
+const MAX_DIRECT_UPLOAD = 4 * 1024 * 1024;
+const shrinkImage = async (file: File): Promise<File> => {
+  if (file.size <= MAX_DIRECT_UPLOAD || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const g = canvas.getContext('2d');
+    if (!g) return file;
+    g.fillStyle = '#ffffff'; // transparent PNG areas become white, not black
+    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], `${file.name.replace(/\.(png|webp|jpe?g)$/i, '')}.jpg`, { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+};
+
 export const upload = async <T>(url: string, file: File, fields: Record<string, string | undefined> = {}) => {
   const form = new FormData();
-  form.append('file', file);
+  form.append('file', await shrinkImage(file));
   for (const [k, v] of Object.entries(fields)) if (v !== undefined && v !== '') form.append(k, v);
   return (await api.post<{ data: T; message?: string }>(url, form)).data;
 };

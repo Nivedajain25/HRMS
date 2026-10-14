@@ -87,8 +87,10 @@ const rawFetch = async (url: string, init: RequestInit, timeoutMs: number): Prom
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
-  } catch {
+  } catch (err) {
     if (controller.signal.aborted) throw new ApiError('The server took too long to respond. Please try again.', 0, 'TIMEOUT');
+    // The real cause (e.g. "Network request failed") for the device log; the user gets the friendly message.
+    console.warn('[api] request failed', init.method ?? 'GET', url.split('?')[0], (err as Error)?.message);
     throw new ApiError('Cannot reach the server. Check your internet connection and try again.', 0, 'NETWORK_ERROR');
   } finally {
     clearTimeout(timer);
@@ -183,10 +185,31 @@ export interface RequestOptions {
   timeoutMs?: number;
 }
 
+/** Seconds until the access token expires (from its `exp` claim); null if it can't be read. */
+const secondsLeft = (token: string | null) => {
+  if (!token) return null;
+  try {
+    const part = token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/');
+    if (!part) return null;
+    const { exp } = JSON.parse(atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), '='))) as { exp?: number };
+    return typeof exp === 'number' ? exp - Date.now() / 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
 export const request = async <T>(path: string, opts: RequestOptions = {}): Promise<T> => {
   if (!API_ORIGIN) throw notConfigured();
   const auth = opts.auth ?? true;
   const url = apiUrl(path, opts.query);
+
+  // Uploads: renew an expired / nearly expired session first. The server turns an expired token away before
+  // reading the file, and on Android that broken-off upload surfaces as "Cannot reach the server" — not a 401 the
+  // app could recover from — so a check-in selfie taken after the 15-minute token lapsed always failed.
+  if (opts.form && auth) {
+    const left = secondsLeft(accessToken);
+    if (!accessToken || (left !== null && left < 60)) await refreshSession().catch(() => null);
+  }
 
   const send = () => {
     const headers: Record<string, string> = { ...CLIENT_HEADERS };
@@ -201,7 +224,16 @@ export const request = async <T>(path: string, opts: RequestOptions = {}): Promi
     return rawFetch(url, { method: opts.method ?? 'GET', headers, body }, opts.timeoutMs ?? (opts.form ? UPLOAD_TIMEOUT : DEFAULT_TIMEOUT));
   };
 
-  let res = await send();
+  let res: Response;
+  try {
+    res = await send();
+  } catch (err) {
+    // An upload cut off by the server (e.g. a token that expired mid-way): renew the session and send it once more.
+    if (!(opts.form && auth && err instanceof ApiError && err.code === 'NETWORK_ERROR')) throw err;
+    const session = await refreshSession().catch(() => null);
+    if (!session) throw err;
+    res = await send();
+  }
   if (res.status === 401 && auth) {
     const session = await refreshSession();
     if (session) {

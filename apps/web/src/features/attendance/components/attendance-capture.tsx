@@ -58,7 +58,7 @@ const openPhoto = (fileId: string) => (e: MouseEvent) => {
 };
 
 /** Selfie thumbnail loaded through the authenticated file endpoint; opens the full image on click. */
-export const SelfieThumb = ({ fileId, label, size = 'sm' }: { fileId: string; label: string; size?: 'sm' | 'lg' }) => {
+export const SelfieThumb = ({ fileId, label, size = 'sm' }: { fileId: string; label: string; size?: 'sm' | 'md' | 'lg' }) => {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -78,7 +78,7 @@ export const SelfieThumb = ({ fileId, label, size = 'sm' }: { fileId: string; la
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [fileId]);
-  const dims = size === 'lg' ? 'h-20 w-20 rounded-xl' : 'h-8 w-8 rounded-lg';
+  const dims = size === 'lg' ? 'h-20 w-20 rounded-xl' : size === 'md' ? 'h-12 w-12 rounded-lg' : 'h-8 w-8 rounded-lg';
   return (
     <button
       type="button"

@@ -13,10 +13,11 @@ import { label } from '@/lib/i18n';
 import { fullName, minutesToHours } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { toOptions, useAllOf } from '@/features/employees/api';
-import { useAttendanceList, type AttendanceRow } from '../api';
+import { useAttendanceList, type AttendanceRow, type PersonRef } from '../api';
 import { formatKey, formatTimeIn, useOrgTimezone } from '../lib';
 import { CaptureCell, PlaceCell } from './attendance-capture';
 import { AttendanceDrawer, MarkAttendanceModal } from './attendance-forms';
+import { EmployeeMonthDrawer } from './employee-month-drawer';
 
 const FILTER_KEYS = ['from', 'to', 'departmentId', 'employeeId', 'status', 'scope'];
 
@@ -30,6 +31,7 @@ export const AttendanceRecords = () => {
   const canCreate = can('attendance:create');
   const [open, setOpen] = useState<AttendanceRow | null>(null);
   const [marking, setMarking] = useState(false);
+  const [monthOf, setMonthOf] = useState<{ employee: PersonRef; date: string } | null>(null);
 
   const apiQuery = useMemo(() => {
     const { view: _view, ...rest } = query as Record<string, unknown>;
@@ -44,9 +46,23 @@ export const AttendanceRecords = () => {
         id: 'employee',
         header: 'Employee',
         enableHiding: false,
+        // Clicking the employee opens their whole month (selfies, places, times for every day).
         cell: ({ row }) => {
           const e = row.original.employeeId;
-          return <PersonCell name={fullName(e)} subtitle={[e?.employeeId, e?.departmentId?.name].filter(Boolean).join(' · ')} photo={e?.profilePhoto} />;
+          return (
+            <button
+              type="button"
+              title="See this employee's whole month"
+              aria-label={`See ${fullName(e)}'s attendance for the month`}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (e) setMonthOf({ employee: e, date: row.original.date.slice(0, 10) });
+              }}
+              className="-m-1 rounded-lg p-1 text-left ring-brand-200 hover:bg-brand-50 hover:ring-1 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none dark:ring-brand-500/30 dark:hover:bg-brand-500/10"
+            >
+              <PersonCell name={fullName(e)} subtitle={[e?.employeeId, e?.departmentId?.name].filter(Boolean).join(' · ')} photo={e?.profilePhoto} />
+            </button>
+          );
         },
       },
       { id: 'date', header: 'Date', enableSorting: true, cell: ({ row }) => formatKey(row.original.date, 'EEE, dd MMM yyyy') },
@@ -168,6 +184,20 @@ export const AttendanceRecords = () => {
       />
       <AttendanceDrawer record={open} onClose={() => setOpen(null)} canEdit={canUpdate} />
       <MarkAttendanceModal open={marking} onClose={() => setMarking(false)} />
+      <EmployeeMonthDrawer
+        employee={monthOf?.employee ?? null}
+        initialDate={monthOf?.date}
+        onClose={() => setMonthOf(null)}
+        onEdit={
+          canUpdate
+            ? (record) => {
+                // One panel at a time: the day's editor replaces the month view.
+                setMonthOf(null);
+                setOpen(record);
+              }
+            : undefined
+        }
+      />
     </>
   );
 };

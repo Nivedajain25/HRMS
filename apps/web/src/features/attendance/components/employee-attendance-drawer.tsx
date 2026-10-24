@@ -7,9 +7,19 @@ import { Avatar, Badge, EmptyState, ErrorState, Skeleton } from '@/components/ui
 import { Drawer } from '@/components/ui/overlay';
 import { label } from '@/lib/i18n';
 import { cn, fullName, minutesToHours } from '@/lib/utils';
+import { useEmployee } from '@/features/employees/api';
 import { useAttendanceList, useAttendanceSummary, useHolidays, type AttendanceRow, type GeoPoint, type PersonRef } from '../api';
-import { dateKeyIn, formatKey, formatTimeIn, hoursLabel, monthBounds, shiftMonth, STATUS_DOT, useOrgTimezone } from '../lib';
+import { addDaysToKey, dateKeyIn, formatKey, formatTimeIn, hoursLabel, monthBounds, shiftMonth, STATUS_DOT, useOrgTimezone, weekStart } from '../lib';
 import { CaptureDetails, PlaceBadge, SelfieThumb } from './attendance-capture';
+
+type Period = 'week' | 'month' | 'all';
+const PERIODS: { key: Period; label: string }[] = [
+  { key: 'week', label: 'Week' },
+  { key: 'month', label: 'Month' },
+  { key: 'all', label: 'Since joining' },
+];
+/** Days per page in "Since joining" (one list request; keeps selfie loading light). */
+const PAGE_DAYS = 31;
 
 const Stat = ({ text, value, dot }: { text: string; value: string | number; dot?: string }) => (
   <div className="rounded-xl border border-line bg-surface px-3 py-2">
@@ -49,18 +59,26 @@ const Punch = ({ title, time, photoId, point, timeZone, extra }: { title: string
   );
 };
 
+/** Every `YYYY-MM-DD` from `from` to `to`, inclusive. */
+const daysBetween = (from: string, to: string) => {
+  const out: string[] = [];
+  for (let k = from; k <= to; k = addDaysToKey(k, 1)) out.push(k);
+  return out;
+};
+
 /**
- * One employee's whole month of attendance for HR / admins: totals and a day-by-day register with check-in and
- * check-out selfies, times, places and hours. A day opens to the full verification (big selfies, coordinates, map).
+ * One employee's attendance history for HR / admins — a week, a month or everything since they joined: totals and a
+ * day-by-day register with check-in and check-out selfies, times, places and hours. A day opens to the full
+ * verification (big selfies, coordinates, map).
  */
-export const EmployeeMonthDrawer = ({
+export const EmployeeAttendanceDrawer = ({
   employee,
   initialDate,
   onClose,
   onEdit,
 }: {
   employee: PersonRef | null;
-  /** Any `YYYY-MM-DD` in the month to open on (defaults to this month). */
+  /** The day to open on (defaults to today); the week / month around it is shown. */
   initialDate?: string;
   onClose: () => void;
   /** Present when the viewer may edit attendance: opens the day's record editor. */
@@ -68,45 +86,95 @@ export const EmployeeMonthDrawer = ({
 }) => {
   const timeZone = useOrgTimezone();
   const todayKey = dateKeyIn(timeZone);
-  const currentMonth = todayKey.slice(0, 7);
-  const [month, setMonth] = useState(currentMonth);
+  const [period, setPeriod] = useState<Period>('month');
+  const [anchor, setAnchor] = useState(todayKey);
+  const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
   const employeeId = employee?._id;
 
   useEffect(() => {
     if (!employeeId) return;
-    setMonth((initialDate ?? todayKey).slice(0, 7));
+    setPeriod('month');
+    setAnchor(initialDate ?? todayKey);
+    setPage(0);
     setExpanded(null);
   }, [employeeId, initialDate, todayKey]);
 
-  const bounds = monthBounds(month);
-  const enabled = !!employeeId;
-  const summary = useAttendanceSummary({ from: bounds.from, to: bounds.to, employeeId }, enabled);
-  const records = useAttendanceList({ from: bounds.from, to: bounds.to, employeeId, limit: 31, sortBy: 'date', sortOrder: 'asc' }, enabled);
-  const holidays = useHolidays({ year: Number(month.slice(0, 4)) });
+  const detail = useEmployee(employeeId);
+  // Without a joining date (still loading or not visible), "Since joining" falls back to the last year.
+  const joined = detail.data?.joiningDate?.slice(0, 10);
+  const waitingForJoin = period === 'all' && detail.isLoading;
+
+  // The period's window, clipped to [joining date, today].
+  const win = useMemo(() => {
+    let from: string;
+    let to: string;
+    if (period === 'week') {
+      from = weekStart(anchor);
+      to = addDaysToKey(from, 6);
+    } else if (period === 'month') {
+      const b = monthBounds(anchor.slice(0, 7));
+      from = b.from;
+      to = b.to;
+    } else {
+      from = joined ?? addDaysToKey(todayKey, -365);
+      to = todayKey;
+    }
+    return { from, to, start: joined && joined > from ? joined : from, end: to < todayKey ? to : todayKey };
+  }, [period, anchor, joined, todayKey]);
+
+  const allDays = useMemo(() => (win.start <= win.end ? daysBetween(win.start, win.end) : []), [win.start, win.end]);
+  // Week / month read top to bottom like a register; "Since joining" pages backwards from today.
+  const pages = period === 'all' ? Math.max(1, Math.ceil(allDays.length / PAGE_DAYS)) : 1;
+  const days = useMemo(
+    () => (period === 'all' ? [...allDays].reverse().slice(page * PAGE_DAYS, (page + 1) * PAGE_DAYS) : allDays),
+    [allDays, period, page],
+  );
+  const span = days.length ? { from: days.reduce((a, b) => (a < b ? a : b)), to: days.reduce((a, b) => (a > b ? a : b)) } : null;
+
+  const enabled = !!employeeId && !waitingForJoin && allDays.length > 0;
+  const summary = useAttendanceSummary({ from: win.start, to: win.end, employeeId }, enabled);
+  const records = useAttendanceList({ from: span?.from, to: span?.to, employeeId, limit: PAGE_DAYS, sortBy: 'date', sortOrder: 'asc' }, enabled && !!span);
+  const years = useMemo(() => [...new Set(days.map((k) => Number(k.slice(0, 4))))], [days]);
+  const holidaysA = useHolidays({ year: years[0] ?? Number(todayKey.slice(0, 4)) });
+  const holidaysB = useHolidays({ year: years[years.length - 1] ?? Number(todayKey.slice(0, 4)) });
 
   const byDate = useMemo(() => new Map((records.data?.data ?? []).map((r) => [r.date.slice(0, 10), r])), [records.data]);
   const holidayByDate = useMemo(
-    () => new Map((holidays.data ?? []).filter((h) => !h.locationIds.length && h.date.startsWith(month)).map((h) => [h.date, h])),
-    [holidays.data, month],
-  );
-  // Every day of the month, up to today for the current month.
-  const days = useMemo(
-    () => Array.from({ length: bounds.days }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`).filter((k) => k <= todayKey),
-    [bounds.days, month, todayKey],
+    () => new Map([...(holidaysA.data ?? []), ...(holidaysB.data ?? [])].filter((h) => !h.locationIds.length).map((h) => [h.date, h])),
+    [holidaysA.data, holidaysB.data],
   );
   const s = summary.data?.employees[0];
   const error = summary.error ?? records.error;
-  const go = (delta: number) => {
-    setMonth((m) => shiftMonth(m, delta));
+
+  const choose = (p: Period) => {
+    setPeriod(p);
+    setPage(0);
     setExpanded(null);
   };
+  const step = (delta: number) => {
+    setExpanded(null);
+    if (period === 'all') setPage((p) => Math.min(pages - 1, Math.max(0, p + delta)));
+    else if (period === 'week') setAnchor((a) => addDaysToKey(weekStart(a), delta * 7));
+    else setAnchor((a) => `${shiftMonth(a.slice(0, 7), delta)}-01`);
+  };
+  // "Back" is older; "Forward" is newer (for "Since joining", page 0 is the newest).
+  const canBack = period === 'all' ? page < pages - 1 : !joined || win.from > joined;
+  const canForward = period === 'all' ? page > 0 : win.to < todayKey;
+
+  const rangeLabel =
+    period === 'week'
+      ? `${formatKey(win.from, 'dd MMM')} – ${formatKey(win.to, 'dd MMM yyyy')}`
+      : period === 'month'
+        ? formatKey(win.from, 'MMMM yyyy')
+        : `Since ${formatKey(win.start, 'dd MMM yyyy')}${joined ? '' : ' (last year)'}`;
+  const pagerLabel = span ? `${formatKey(span.to, 'dd MMM yyyy')} – ${formatKey(span.from, 'dd MMM yyyy')}` : '';
 
   const name = fullName(employee ?? undefined);
   const sub = [employee?.employeeId, employee?.departmentId?.name].filter(Boolean).join(' · ');
 
   return (
-    <Drawer open={!!employee} onClose={onClose} width="max-w-6xl" title={`${name} — monthly attendance`} description={formatKey(`${month}-01`, 'MMMM yyyy')}>
+    <Drawer open={!!employee} onClose={onClose} width="max-w-6xl" title={`${name} — attendance`} description={rangeLabel}>
       {employee && (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 p-3">
@@ -114,7 +182,9 @@ export const EmployeeMonthDrawer = ({
               <Avatar name={name} src={employee.profilePhoto} size="md" />
               <div className="min-w-0">
                 <p className="truncate font-semibold text-fg">{name}</p>
-                {sub && <p className="truncate text-xs text-muted">{sub}</p>}
+                <p className="truncate text-xs text-muted">
+                  {[sub, joined ? `Joined ${formatKey(joined, 'dd MMM yyyy')}` : null].filter(Boolean).join(' · ')}
+                </p>
               </div>
               <Link to={`/employees/${employee._id}`} className="ml-1 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">
                 <UserRound className="h-3.5 w-3.5" aria-hidden />
@@ -122,25 +192,24 @@ export const EmployeeMonthDrawer = ({
               </Link>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center rounded-lg border border-line-strong bg-surface" role="group" aria-label="Change month">
-                <Button variant="ghost" size="icon-sm" aria-label="Previous month" onClick={() => go(-1)}>
+              <div className="flex rounded-lg border border-line-strong bg-surface p-0.5" role="group" aria-label="Period">
+                {PERIODS.map((p) => (
+                  <Button key={p.key} variant={period === p.key ? 'secondary' : 'ghost'} size="sm" className="h-7" aria-pressed={period === p.key} onClick={() => choose(p.key)}>
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex items-center rounded-lg border border-line-strong bg-surface" role="group" aria-label="Change period">
+                <Button variant="ghost" size="icon-sm" aria-label={period === 'all' ? 'Older days' : `Previous ${period}`} disabled={!canBack} onClick={() => step(period === 'all' ? 1 : -1)}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="min-w-24 text-center text-sm font-medium text-fg tabular-nums" aria-live="polite">
-                  {formatKey(`${month}-01`, 'MMM yyyy')}
+                <span className="min-w-28 px-1 text-center text-sm font-medium whitespace-nowrap text-fg tabular-nums" aria-live="polite">
+                  {period === 'all' ? `Page ${page + 1} of ${pages}` : period === 'week' ? `${formatKey(win.from, 'dd MMM')} – ${formatKey(win.to, 'dd MMM')}` : formatKey(win.from, 'MMM yyyy')}
                 </span>
-                <Button variant="ghost" size="icon-sm" aria-label="Next month" disabled={month >= currentMonth} onClick={() => go(1)}>
+                <Button variant="ghost" size="icon-sm" aria-label={period === 'all' ? 'Newer days' : `Next ${period}`} disabled={!canForward} onClick={() => step(period === 'all' ? -1 : 1)}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-              {month !== currentMonth && (
-                <Button variant="ghost" size="sm" onClick={() => {
-                    setMonth(currentMonth);
-                    setExpanded(null);
-                  }}>
-                  This month
-                </Button>
-              )}
             </div>
           </div>
 
@@ -149,7 +218,7 @@ export const EmployeeMonthDrawer = ({
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-                {summary.isLoading ? (
+                {summary.isLoading || waitingForJoin ? (
                   Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-[58px]" />)
                 ) : (
                   <>
@@ -165,15 +234,25 @@ export const EmployeeMonthDrawer = ({
                 )}
               </div>
 
-              {records.isLoading ? (
+              {period === 'all' && span && (
+                <p className="text-xs text-muted">
+                  Totals cover everything since joining. Showing {pagerLabel} ({allDays.length} days in all, newest first).
+                </p>
+              )}
+
+              {records.isLoading || waitingForJoin ? (
                 <Skeleton className="h-96" />
               ) : !days.length ? (
-                <EmptyState icon={<CalendarDays className="h-6 w-6" />} title="Nothing yet" description="This month hasn't started." />
+                <EmptyState
+                  icon={<CalendarDays className="h-6 w-6" />}
+                  title={joined && win.to < joined ? 'Not joined yet' : 'Nothing yet'}
+                  description={joined && win.to < joined ? `${name} joined on ${formatKey(joined, 'dd MMM yyyy')}.` : "This period hasn't started."}
+                />
               ) : (
                 <div className="scrollbar-thin -mx-5 overflow-x-auto border-y border-line sm:mx-0 sm:rounded-xl sm:border-x">
                   <table className="w-full text-sm">
                     <caption className="sr-only">
-                      Attendance of {name} for {formatKey(`${month}-01`, 'MMMM yyyy')}
+                      Attendance of {name}, {rangeLabel}
                     </caption>
                     <thead className="bg-surface-2">
                       <tr>
@@ -192,7 +271,9 @@ export const EmployeeMonthDrawer = ({
                         const isToday = key === todayKey;
                         const dateCell = (
                           <td className="px-3 py-2.5 align-top whitespace-nowrap">
-                            <span className={cn('block font-semibold text-fg tabular-nums', isToday && 'text-brand-600 dark:text-brand-300')}>{formatKey(key, 'dd MMM')}</span>
+                            <span className={cn('block font-semibold text-fg tabular-nums', isToday && 'text-brand-600 dark:text-brand-300')}>
+                              {formatKey(key, period === 'all' ? 'dd MMM yy' : 'dd MMM')}
+                            </span>
                             <span className="block text-xs text-muted">{isToday ? 'Today' : formatKey(key, 'EEEE')}</span>
                           </td>
                         );

@@ -117,7 +117,7 @@ export const AttendancePage = () => {
             </nav>
           ) : isAdmin ? (
             // Super admin: pick the day, quick Today / Yesterday, and export the day's attendance.
-            <AdminAttendanceControls date={params.get('date') ?? undefined} onDate={(date) => patchParams({ date })} />
+            <AdminAttendanceControls date={params.get('date') ?? undefined} onDate={(date) => patchParams({ date, page: undefined })} />
           ) : hasEmployee ? (
             <Link
               to="/regularization"
@@ -164,7 +164,7 @@ export const AttendancePage = () => {
                 />
               )}
               {active === 'board' && <AttendanceBoardView scope={params.get('scope') ?? undefined} onChange={patchParams} />}
-              {active === 'records' && <AttendanceRecords />}
+              {active === 'records' && <AttendanceRecords dayPicker={!isAdmin} />}
             </div>
           )}
         </div>

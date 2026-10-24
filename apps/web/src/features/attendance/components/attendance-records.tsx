@@ -7,23 +7,26 @@ import { StatusBadge } from '@/components/common/status-badge';
 import { DataTable } from '@/components/tables/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge, PersonCell } from '@/components/ui/display';
-import { DateRangePicker, Select } from '@/components/ui/input';
+import { Input, Select } from '@/components/ui/input';
 import { useListParams } from '@/hooks/use-list-params';
 import { label } from '@/lib/i18n';
 import { fullName, minutesToHours } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { toOptions, useAllOf } from '@/features/employees/api';
 import { useAttendanceList, type AttendanceRow, type PersonRef } from '../api';
-import { formatKey, formatTimeIn, useOrgTimezone } from '../lib';
+import { dateKeyIn, formatKey, formatTimeIn, useOrgTimezone } from '../lib';
 import { CaptureCell, PlaceCell } from './attendance-capture';
 import { AttendanceDrawer, MarkAttendanceModal } from './attendance-forms';
-import { EmployeeMonthDrawer } from './employee-month-drawer';
+import { EmployeeAttendanceDrawer } from './employee-attendance-drawer';
 
-const FILTER_KEYS = ['from', 'to', 'departmentId', 'employeeId', 'status', 'scope'];
+const FILTER_KEYS = ['departmentId', 'employeeId', 'status', 'scope'];
 
-/** Server-paginated attendance records with filters and admin actions. */
-export const AttendanceRecords = () => {
-  const { params, query, set, clear, hasFilters } = useListParams({ sortBy: 'date', sortOrder: 'desc' });
+/**
+ * One day's attendance records (the `date` URL param, default today) with filters and admin actions. The super admin
+ * / HR pick the day in the page header; others get a day picker here. An employee's whole history opens from their name.
+ */
+export const AttendanceRecords = ({ dayPicker = false }: { dayPicker?: boolean }) => {
+  const { params, query, set, clear, hasFilters } = useListParams({ sortBy: 'checkIn', sortOrder: 'asc' });
   const { can, isManager } = usePermissions();
   const timeZone = useOrgTimezone();
   const departments = useAllOf('departments');
@@ -33,11 +36,13 @@ export const AttendanceRecords = () => {
   const [marking, setMarking] = useState(false);
   const [monthOf, setMonthOf] = useState<{ employee: PersonRef; date: string } | null>(null);
 
+  const today = dateKeyIn(timeZone);
+  const day = typeof params.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : today;
   const apiQuery = useMemo(() => {
-    const { view: _view, ...rest } = query as Record<string, unknown>;
-    void _view;
-    return rest;
-  }, [query]);
+    const rest = { ...(query as Record<string, unknown>) };
+    for (const k of ['view', 'date', 'from', 'to']) delete rest[k];
+    return { ...rest, from: day, to: day };
+  }, [query, day]);
   const list = useAttendanceList(apiQuery);
 
   const columns = useMemo<ColumnDef<AttendanceRow, unknown>[]>(
@@ -52,8 +57,8 @@ export const AttendanceRecords = () => {
           return (
             <button
               type="button"
-              title="See this employee's whole month"
-              aria-label={`See ${fullName(e)}'s attendance for the month`}
+              title="See this employee's week, month or full history"
+              aria-label={`See ${fullName(e)}'s attendance history`}
               onClick={(ev) => {
                 ev.stopPropagation();
                 if (e) setMonthOf({ employee: e, date: row.original.date.slice(0, 10) });
@@ -155,7 +160,7 @@ export const AttendanceRecords = () => {
         onSortingChange={(s) => set({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
         onRowClick={(row) => setOpen(row)}
         emptyTitle="No attendance records"
-        emptyDescription={hasFilters(FILTER_KEYS) ? 'Try changing your filters.' : 'Records appear as employees check in.'}
+        emptyDescription={hasFilters(FILTER_KEYS) ? 'Try changing your filters.' : `No one has checked in on ${formatKey(day, 'EEE, dd MMM yyyy')}${day === today ? ' yet' : ''}.`}
         emptyAction={
           canCreate ? (
             <Button icon={<CalendarPlus className="h-4 w-4" />} onClick={() => setMarking(true)}>
@@ -164,8 +169,14 @@ export const AttendanceRecords = () => {
           ) : undefined
         }
         toolbar={
-          <FilterBar active={hasFilters(FILTER_KEYS)} onClear={() => clear(['view', 'sortBy', 'sortOrder'])}>
-            <DateRangePicker from={params.from as string | undefined} to={params.to as string | undefined} onChange={(r) => set({ from: r.from, to: r.to })} />
+          <FilterBar active={hasFilters(FILTER_KEYS)} onClear={() => clear(['view', 'date', 'sortBy', 'sortOrder'])}>
+            {dayPicker ? (
+              <Input type="date" aria-label="Day" className="w-44" max={today} value={day} onChange={(e) => set({ date: e.target.value && e.target.value !== today ? e.target.value : undefined })} />
+            ) : (
+              <span className="inline-flex h-9 items-center rounded-lg bg-surface-2 px-3 text-sm font-medium text-fg ring-1 ring-line">
+                {day === today ? 'Today' : formatKey(day, 'EEE, dd MMM yyyy')}
+              </span>
+            )}
             <Select aria-label="Department" className="w-44" value={String(params.departmentId ?? '')} onChange={(e) => set({ departmentId: e.target.value })} options={toOptions(departments.data)} placeholder="All departments" />
             <div className="w-full sm:w-56">
               <EmployeePicker value={(params.employeeId as string | undefined) ?? null} onChange={(v) => set({ employeeId: (v as string | null) ?? undefined })} placeholder="All employees" />
@@ -184,7 +195,7 @@ export const AttendanceRecords = () => {
       />
       <AttendanceDrawer record={open} onClose={() => setOpen(null)} canEdit={canUpdate} />
       <MarkAttendanceModal open={marking} onClose={() => setMarking(false)} />
-      <EmployeeMonthDrawer
+      <EmployeeAttendanceDrawer
         employee={monthOf?.employee ?? null}
         initialDate={monthOf?.date}
         onClose={() => setMonthOf(null)}

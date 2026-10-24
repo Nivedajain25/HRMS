@@ -429,7 +429,8 @@ export const attendanceSummary = async (
   const from = q.from ?? month.start;
   const to = q.to ?? month.end;
   if (to < from) throw badRequest('End date must be on or after start date', 'VALIDATION_ERROR');
-  if (dateOnly(to).getTime() - dateOnly(from).getTime() > 366 * 86_400_000) throw badRequest('The range is limited to one year', 'RANGE_TOO_LARGE');
+  // One employee may span their whole tenure ("since joining"); wider queries stay within a year.
+  if (!q.employeeId && dateOnly(to).getTime() - dateOnly(from).getTime() > 366 * 86_400_000) throw badRequest('The range is limited to one year', 'RANGE_TOO_LARGE');
   const allowed = await allowedEmployeeIds(ctx, q);
 
   const match: FilterQuery<Attendance> = { organizationId: ctx.organizationId, date: { $gte: dateOnly(from), $lte: dateOnly(to) } };

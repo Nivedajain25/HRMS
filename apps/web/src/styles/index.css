@@ -318,6 +318,139 @@
     scrollbar-width: thin;
     scrollbar-color: var(--line-strong) transparent;
   }
+  /*
+   * Org chart tree (People → Org Chart). .org-row: reports side by side under a horizontal bar;
+   * .org-stack: a column of reports hanging off a rail on the left.
+   */
+  .org-tree {
+    --org-line: 2px solid color-mix(in srgb, var(--muted) 60%, transparent);
+  }
+  .org-tree ul {
+    position: relative;
+    display: flex;
+  }
+  .org-tree .org-row {
+    justify-content: center;
+    padding-top: 1.25rem;
+  }
+  .org-tree .org-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 1.25rem;
+    border-left: var(--org-line);
+  }
+  .org-tree .org-row > li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.25rem 0.375rem 0;
+  }
+  .org-tree .org-row > li::before,
+  .org-tree .org-row > li::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 1.25rem;
+    border-top: var(--org-line);
+  }
+  .org-tree .org-row > li::before {
+    right: 50%;
+  }
+  .org-tree .org-row > li::after {
+    left: 50%;
+    border-left: var(--org-line);
+  }
+  .org-tree .org-row > li:first-child::before,
+  .org-tree .org-row > li:last-child::after {
+    border-top: 0;
+  }
+  .org-tree .org-row > li:first-child:not(:only-child)::after {
+    border-top-left-radius: 0.5rem;
+  }
+  .org-tree .org-row > li:last-child:not(:only-child)::before {
+    border-top-right-radius: 0.5rem;
+    border-right: var(--org-line);
+    right: calc(50% - 1px);
+  }
+  .org-tree .org-row > li:last-child:not(:only-child)::after {
+    border-left: 0;
+  }
+  /* The top row has nothing above it. */
+  .org-tree > .org-row {
+    padding-top: 0;
+  }
+  .org-tree > .org-row::before,
+  .org-tree > .org-row > li::before,
+  .org-tree > .org-row > li::after {
+    display: none;
+  }
+  .org-tree > .org-row > li {
+    padding-top: 0;
+  }
+  .org-tree .org-stack {
+    flex-direction: column;
+    padding: 1.75rem 0 0 1.25rem;
+  }
+  /* From the manager's card down, then left to the rail. */
+  .org-tree .org-stack::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 0.875rem;
+    border-left: var(--org-line);
+  }
+  .org-tree .org-stack::after {
+    content: '';
+    position: absolute;
+    top: 0.875rem;
+    left: 0.625rem;
+    right: calc(50% - 2px);
+    height: 0.875rem;
+    border-top: var(--org-line);
+    border-left: var(--org-line);
+    border-top-left-radius: 0.5rem;
+  }
+  .org-tree .org-stack > li {
+    position: relative;
+    padding-top: 0.625rem;
+  }
+  .org-tree .org-stack > li:first-child {
+    padding-top: 0;
+  }
+  .org-tree .org-stack > li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -0.625rem;
+    border-left: var(--org-line);
+  }
+  .org-tree .org-stack > li:last-child::before {
+    bottom: auto;
+    height: calc(50% + 0.3125rem);
+    border-bottom: var(--org-line);
+    border-bottom-left-radius: 0.5rem;
+    width: 0.625rem;
+  }
+  .org-tree .org-stack > li::after {
+    content: '';
+    position: absolute;
+    top: calc(50% + 0.3125rem);
+    left: -0.625rem;
+    width: 0.625rem;
+    border-top: var(--org-line);
+  }
+  .org-tree .org-stack > li:first-child::after {
+    top: 50%;
+  }
+  .org-tree .org-stack > li:last-child::after {
+    display: none;
+  }
   .prose-content :where(p) { margin: 0 0 0.75rem; }
   .prose-content :where(h2) { font-size: 1.125rem; font-weight: 600; margin: 1rem 0 0.5rem; }
   .prose-content :where(h3, h4) { font-weight: 600; margin: 0.75rem 0 0.5rem; }

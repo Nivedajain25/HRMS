@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -8,8 +8,6 @@ import {
   Briefcase,
   Building2,
   Calculator,
-  ChevronDown,
-  ChevronRight,
   Footprints,
   HandHelping,
   LocateFixed,
@@ -300,31 +298,30 @@ interface OrgNode {
   children: OrgNode[];
 }
 
-const OrgBranch = ({ node, depth }: { node: OrgNode; depth: number }) => {
-  const [open, setOpen] = useState(depth < 2);
+/**
+ * One person and, below them, their reports. Two or more reports who have no team of their own are
+ * listed one under another (a team column); everyone else branches side by side. Lines: `.org-tree` in index.css.
+ */
+const OrgBranch = ({ node, top }: { node: OrgNode; top?: boolean }) => {
+  const stack = node.children.length > 1 && node.children.every((c) => !c.children.length);
   return (
     <li>
-      <div className="flex items-center gap-2 py-1.5" style={{ paddingLeft: depth * 24 }}>
-        {node.children.length ? (
-          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? 'Collapse' : 'Expand'} className="rounded p-0.5 text-muted hover:bg-surface-3">
-            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </button>
-        ) : (
-          <span className="w-5" />
+      <Link
+        to={`/employees/${node._id}`}
+        title={fullName(node)}
+        className={cn(
+          'flex w-36 flex-col items-center rounded-xl border bg-surface px-2 py-2.5 text-center shadow-card transition hover:border-brand-300 hover:shadow-pop',
+          top ? 'border-brand-300 ring-2 ring-brand-100 dark:ring-brand-900' : 'border-line',
         )}
-        <Link to={`/employees/${node._id}`} className="flex min-w-0 items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 hover:border-brand-300 hover:shadow-card">
-          <Avatar name={fullName(node)} src={node.profilePhoto} size="sm" />
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg">{fullName(node)}</span>
-            <span className="block truncate text-xs text-muted">{[node.designationId?.name, node.departmentId?.name].filter(Boolean).join(' · ') || node.employeeId}</span>
-          </span>
-          {node.children.length > 0 && <span className="ml-2 rounded-full bg-surface-3 px-2 text-xs text-fg-2">{node.children.length}</span>}
-        </Link>
-      </div>
-      {open && node.children.length > 0 && (
-        <ul className={cn('border-l border-dashed border-line')} style={{ marginLeft: depth * 24 + 10 }}>
+      >
+        <Avatar name={fullName(node)} src={node.profilePhoto} size="md" />
+        <span className="mt-1.5 block w-full truncate text-sm font-semibold text-fg">{fullName(node)}</span>
+        <span className="block w-full truncate text-xs text-muted">{node.designationId?.name || node.departmentId?.name || node.employeeId || '—'}</span>
+      </Link>
+      {node.children.length > 0 && (
+        <ul className={stack ? 'org-stack' : 'org-row'}>
           {node.children.map((c) => (
-            <OrgBranch key={c._id} node={c} depth={depth + 1} />
+            <OrgBranch key={c._id} node={c} />
           ))}
         </ul>
       )}
@@ -334,6 +331,13 @@ const OrgBranch = ({ node, depth }: { node: OrgNode; depth: number }) => {
 
 export const OrgChartPage = () => {
   const chart = useQuery({ queryKey: ['employees', 'org-chart'], queryFn: () => get<OrgNode[]>('/employees/org-chart') });
+  // A tree wider than the screen (phones) opens centred on the top of the chart, not on its left edge.
+  const tree = useRef<HTMLDivElement>(null);
+  const loaded = Boolean(chart.data?.length);
+  useEffect(() => {
+    const box = tree.current?.parentElement;
+    if (box) box.scrollLeft = (box.scrollWidth - box.clientWidth) / 2;
+  }, [loaded]);
   return (
     <>
       <PageHeader title={<IconTitle icon={<Network />}>Organization chart</IconTitle>} description="Reporting lines across the organization." breadcrumb={[{ label: 'People' }, { label: 'Org Chart' }]} />
@@ -345,11 +349,13 @@ export const OrgChartPage = () => {
         ) : !chart.data?.length ? (
           <EmptyState title="No employees yet" />
         ) : (
-          <ul className="min-w-max">
-            {chart.data.map((n) => (
-              <OrgBranch key={n._id} node={n} depth={0} />
-            ))}
-          </ul>
+          <div ref={tree} className="org-tree mx-auto w-max py-2">
+            <ul className="org-row">
+              {chart.data.map((n) => (
+                <OrgBranch key={n._id} node={n} top={chart.data.length === 1} />
+              ))}
+            </ul>
+          </div>
         )}
       </Card>
     </>

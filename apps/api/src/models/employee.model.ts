@@ -43,6 +43,8 @@ const employeeSchema = new Schema(
     departmentId: ref('Department'),
     designationId: ref('Designation'),
     managerId: ref('Employee'),
+    /** Position among the manager's reports on the org chart (lower = further left); unset ones follow, by name. */
+    orgChartOrder: { type: Number, default: null },
     locationId: ref('Location'),
     shiftId: ref('Shift'),
     employmentType: { type: String, enum: EMPLOYMENT_TYPES, default: 'FULL_TIME' },

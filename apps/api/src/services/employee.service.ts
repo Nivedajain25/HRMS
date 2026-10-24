@@ -235,8 +235,9 @@ export const getTeammates = async (ctx: RequestContext) => {
 
 export const orgChart = async (ctx: RequestContext) => {
   const people = await EmployeeModel.find({ organizationId: ctx.organizationId, deletedAt: null, employmentStatus: { $nin: ['EXITED', 'ARCHIVED'] } })
-    .select('employeeId firstName lastName profilePhoto managerId designationId departmentId')
+    .select('employeeId firstName lastName profilePhoto managerId orgChartOrder designationId departmentId')
     .populate([{ path: 'designationId', select: 'name' }, { path: 'departmentId', select: 'name' }])
+    .sort({ firstName: 1, lastName: 1 })
     .lean();
   type Node = (typeof people)[number] & { children: Node[] };
   const map = new Map<string, Node>(people.map((p) => [String(p._id), { ...p, children: [] }]));
@@ -246,7 +247,10 @@ export const orgChart = async (ctx: RequestContext) => {
     if (parent) parent.children.push(node);
     else roots.push(node);
   }
-  return roots;
+  // Stable sort: chart order first, the rest keep the name order from the query.
+  const byChartOrder = (a: Node, b: Node) => (a.orgChartOrder ?? Infinity) - (b.orgChartOrder ?? Infinity) || 0;
+  for (const node of map.values()) node.children.sort(byChartOrder);
+  return roots.sort(byChartOrder);
 };
 
 /* ------------------------------ Mutations ----------------------------- */

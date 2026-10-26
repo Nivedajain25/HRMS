@@ -1,0 +1,50 @@
+# Redeploys the API on the VPS (PM2, see deploy/vps/README.md) after every push to main that touches it.
+# Off until the repository variable VPS_HOST is set (Settings → Secrets and variables → Actions):
+#   variables: VPS_HOST (server IP), VPS_USER (default: root)
+#   secret:    VPS_SSH_KEY (private key whose public half is in that user's ~/.ssh/authorized_keys)
+name: Deploy API to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'docker/api.Dockerfile'
+      - 'deploy/vps/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.VPS_HOST != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Pull and rebuild on the VPS
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ vars.VPS_HOST }}
+          USER: ${{ vars.VPS_USER || 'root' }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+          # Login shell, so PM2 / npx are on PATH however Node was installed.
+          ssh "$USER@$HOST" "bash -lc /var/www/stencil-hrms/deploy/vps/update.sh"
+      - name: Health check
+        env:
+          HOST: ${{ vars.API_DOMAIN || 'hrms.stencilindia.com' }}
+        run: |
+          for i in $(seq 1 20); do
+            curl -fsS "https://$HOST/health" && exit 0
+            sleep 6
+          done
+          echo "API did not become healthy" && exit 1

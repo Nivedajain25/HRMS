@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      # Baked into the app at build time: the live API (same as the EAS "preview" profile).
-      EXPO_PUBLIC_API_URL: https://hrms-production-c889.up.railway.app
+      # Baked into the app at build time: the live API on the VPS (same as the EAS "preview" profile).
+      EXPO_PUBLIC_API_URL: https://hrms.stencilindia.com
       # Every run is newer than the last, so the APK installs as an update.
       ANDROID_VERSION_CODE: ${{ github.run_number }}
       NODE_ENV: production

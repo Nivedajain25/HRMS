@@ -38,6 +38,7 @@ export const fileController = {
 export const documentController = {
   list: handlePaged((ctx, req) => documents.listDocuments(ctx, query<Q>(req))),
   expiring: handle((ctx, req) => documents.expiringDocuments(ctx, query(req))),
+  checklist: handle((ctx, req) => documents.documentChecklist(ctx, query(req))),
   get: handle((ctx, req) => documents.getDocument(ctx, idOf(req))),
   versions: handle((ctx, req) => documents.listVersions(ctx, idOf(req))),
   upload: handleCreated((ctx, req) => documents.uploadDocument(ctx, req.file, body(req)), 'Document uploaded'),

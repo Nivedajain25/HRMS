@@ -172,6 +172,21 @@ export const DOCUMENT_CATEGORIES = values(
 );
 export const DOCUMENT_VERIFICATION = values('PENDING', 'VERIFIED', 'REJECTED');
 
+/**
+ * Fixed documents every employee is asked for. Each type is one slot per
+ * employee: re-uploading it adds a new version of the same document.
+ */
+export const DOCUMENT_TYPES = values('AADHAAR', 'PAN', 'MARKS_10TH', 'MARKS_12TH', 'DEGREE_CERTIFICATE', 'DEGREE_MARKS');
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+export const DOCUMENT_TYPE_INFO: Record<DocumentType, { label: string; category: (typeof DOCUMENT_CATEGORIES)[number] }> = {
+  AADHAAR: { label: 'Aadhaar card', category: 'IDENTITY' },
+  PAN: { label: 'PAN card', category: 'IDENTITY' },
+  MARKS_10TH: { label: '10th marks card', category: 'CERTIFICATE' },
+  MARKS_12TH: { label: '2nd PU marks card', category: 'CERTIFICATE' },
+  DEGREE_CERTIFICATE: { label: 'Degree certificate', category: 'CERTIFICATE' },
+  DEGREE_MARKS: { label: 'Degree marks card', category: 'CERTIFICATE' },
+};
+
 export const ASSET_CATEGORIES = values(
   'LAPTOP',
   'DESKTOP',

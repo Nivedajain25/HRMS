@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Types, type FilterQuery } from 'mongoose';
 import type { z } from 'zod';
+import { DOCUMENT_TYPES, DOCUMENT_TYPE_INFO } from '@stencil/shared';
 import type { FileContext, PaginationQuery, documentUploadSchema, documentVerifySchema, fileUploadSchema } from '@stencil/shared';
 import { logger } from '../config/logger';
 import { defineScheduledJob } from '../jobs';
@@ -281,7 +282,8 @@ export const uploadEmployeePhoto = async (ctx: RequestContext, employeeId: strin
 
 export const uploadDocument = async (ctx: RequestContext, file: UploadedFile, input: DocumentUpload) => {
   // Without an explicit employee: organization-level for document admins (or policies), own document otherwise.
-  const orgLevel = !input.employeeId && (can(ctx, 'document:create') || input.category === 'POLICY' || !ctx.employeeId);
+  // Fixed document types (Aadhaar, PAN...) always belong to an employee.
+  const orgLevel = !input.employeeId && !input.docType && (can(ctx, 'document:create') || input.category === 'POLICY' || !ctx.employeeId);
   let employeeId = input.employeeId ? new Types.ObjectId(input.employeeId) : orgLevel ? null : ctx.employeeId;
   let parent: LeanDocument | null = null;
   if (input.parentDocumentId) {
@@ -296,7 +298,19 @@ export const uploadDocument = async (ctx: RequestContext, file: UploadedFile, in
       throw badRequest('A new version must belong to the same employee', 'VERSION_MISMATCH');
     }
     employeeId = parent.employeeId ?? null;
+  } else if (input.docType && employeeId) {
+    // One current file per type: uploading it again replaces the existing one as a new version.
+    parent = await DocumentModel.findOne({
+      organizationId: ctx.organizationId,
+      employeeId,
+      docType: input.docType,
+      deletedAt: null,
+      isLatest: true,
+      context: 'EMPLOYEE',
+    }).lean();
   }
+  const docType = parent?.docType ?? input.docType;
+  if (docType && !employeeId) throw badRequest('This document belongs to an employee; no employee profile is linked to your account', 'NO_EMPLOYEE_PROFILE');
   await assertCanWrite(ctx, employeeId);
 
   const stored = await putFile(ctx, file, DOCUMENT_MIME_TYPES);
@@ -324,8 +338,9 @@ export const uploadDocument = async (ctx: RequestContext, file: UploadedFile, in
           {
             _id,
             organizationId: ctx.organizationId,
-            title: input.title,
-            category: input.category,
+            title: docType ? DOCUMENT_TYPE_INFO[docType].label : input.title,
+            category: docType ? DOCUMENT_TYPE_INFO[docType].category : input.category,
+            docType,
             description: input.description,
             employeeId,
             context: employeeId ? 'EMPLOYEE' : 'ORGANIZATION',
@@ -427,6 +442,43 @@ export const listDocuments = async (ctx: RequestContext, q: DocumentListQuery) =
       { path: 'employeeId', select: 'employeeId firstName lastName profilePhoto' },
       { path: 'uploadedBy', select: 'firstName lastName' },
     ],
+  });
+};
+
+/**
+ * The fixed employee documents (Aadhaar, PAN, marks cards...) with the current
+ * file of each, or null when it is missing. Confidential files a manager cannot
+ * open show as `RESTRICTED` so they are not mistaken for missing ones.
+ */
+export const documentChecklist = async (ctx: RequestContext, q: { employeeId?: string }) => {
+  const employeeId = q.employeeId ?? (ctx.employeeId ? String(ctx.employeeId) : null);
+  if (!employeeId) throw badRequest('No employee profile is linked to your account', 'NO_EMPLOYEE_PROFILE');
+  const access = await assertEmployeeAccess(ctx, employeeId, 'document:read');
+  const docs = await DocumentModel.find({
+    organizationId: ctx.organizationId,
+    employeeId: new Types.ObjectId(employeeId),
+    docType: { $in: DOCUMENT_TYPES },
+    deletedAt: null,
+    isLatest: true,
+    context: 'EMPLOYEE',
+  })
+    .select(PUBLIC_SELECT)
+    .populate([
+      { path: 'employeeId', select: 'employeeId firstName lastName profilePhoto' },
+      { path: 'uploadedBy', select: 'firstName lastName' },
+    ])
+    .sort({ createdAt: -1 })
+    .lean();
+  return DOCUMENT_TYPES.map((type) => {
+    const doc = docs.find((d) => d.docType === type) ?? null;
+    const restricted = !!doc && access === 'team' && doc.confidential;
+    return {
+      type,
+      label: DOCUMENT_TYPE_INFO[type].label,
+      category: DOCUMENT_TYPE_INFO[type].category,
+      status: !doc ? ('MISSING' as const) : restricted ? ('RESTRICTED' as const) : ('UPLOADED' as const),
+      document: doc && !restricted ? doc : null,
+    };
   });
 };
 

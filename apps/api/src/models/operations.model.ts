@@ -6,6 +6,7 @@ import {
   ASSET_CONDITIONS,
   ASSET_STATUS,
   DOCUMENT_CATEGORIES,
+  DOCUMENT_TYPES,
   DOCUMENT_VERIFICATION,
   EXPENSE_CATEGORIES,
   EXPENSE_STATUS,
@@ -22,6 +23,8 @@ const documentSchema = new Schema(
     ...tenantField,
     title: { type: String, required: true },
     category: { type: String, enum: DOCUMENT_CATEGORIES, required: true },
+    /** Fixed employee document slot (Aadhaar, PAN, marks cards...); unset for any other document. */
+    docType: { type: String, enum: DOCUMENT_TYPES },
     description: String,
     /** Owning employee; null for organization-level documents (policies). */
     employeeId: ref('Employee'),

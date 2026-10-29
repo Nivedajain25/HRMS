@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { Building2, History, UserRound } from 'lucide-react';
-import { DOCUMENT_CATEGORIES, documentUploadSchema } from '@stencil/shared';
+import { DOCUMENT_CATEGORIES, DOCUMENT_TYPE_INFO, documentUploadSchema, type DocumentType } from '@stencil/shared';
 import { EmployeePicker, FileUpload } from '@/components/common/controls';
 import { applyServerErrors, FormError, FormField, FormGrid } from '@/components/forms/form';
 import { Button } from '@/components/ui/button';
@@ -28,11 +28,15 @@ export interface DocumentUploadDrawerProps {
   employee?: { id: string; name: string } | null;
   /** Start as a company-wide document (policies tab). */
   organization?: boolean;
+  /** Upload one of the fixed employee documents (title and category are set for you). */
+  docType?: DocumentType | null;
 }
 
 const categoryOptions = DOCUMENT_CATEGORIES.map((c) => ({ value: c, label: label(c) }));
 
-export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organization }: DocumentUploadDrawerProps) => {
+export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organization, docType: docTypeProp }: DocumentUploadDrawerProps) => {
+  const docType = parent?.docType ?? docTypeProp ?? null;
+  const typeInfo = docType ? DOCUMENT_TYPE_INFO[docType] : null;
   const { can, user } = usePermissions();
   const isAdmin = can('document:create');
   const uploadDoc = useUploadDocument();
@@ -53,14 +57,14 @@ export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organiza
     const orgDefault = !parent && !employee && !!organization && isAdmin;
     setOwner(orgDefault ? 'organization' : 'employee');
     reset({
-      title: parent?.title ?? '',
-      category: (parent?.category as Values['category']) ?? (organization ? 'POLICY' : 'OTHER'),
+      title: parent?.title ?? typeInfo?.label ?? '',
+      category: (parent?.category as Values['category']) ?? typeInfo?.category ?? (organization ? 'POLICY' : 'OTHER'),
       employeeId: employee?.id ?? (isAdmin ? '' : (user?.employeeId ?? '')),
       description: parent?.description ?? '',
       expiryDate: '',
       confidential: parent?.confidential ?? false,
     });
-  }, [open, parent, employee, organization, isAdmin, user?.employeeId, reset]);
+  }, [open, parent, employee, organization, typeInfo, isAdmin, user?.employeeId, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -85,6 +89,7 @@ export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organiza
         fields: {
           title: values.title,
           category: values.category,
+          docType: docType ?? undefined,
           employeeId,
           description: values.description || undefined,
           expiryDate: values.expiryDate || undefined,
@@ -92,14 +97,14 @@ export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organiza
           confidential: String(values.confidential ?? false),
         },
       });
-      toast.success(parent ? `Version ${res.data.version} uploaded` : 'Document uploaded');
+      toast.success(res.data.version > 1 ? `${res.data.title} replaced (version ${res.data.version})` : `${res.data.title} uploaded`);
       onClose();
     } catch (err) {
       setServerError(applyServerErrors(toApiError(err), setError, ['title', 'category', 'employeeId', 'description', 'expiryDate']));
     }
   });
 
-  const showOwnerChoice = isAdmin && !parent && !employee;
+  const showOwnerChoice = isAdmin && !parent && !employee && !docType;
   const lockedOwnerLabel = parent
     ? parent.employeeId
       ? fullName(parent.employeeId)
@@ -114,7 +119,7 @@ export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organiza
     <Drawer
       open={open}
       onClose={onClose}
-      title={parent ? 'Upload new version' : 'Upload document'}
+      title={typeInfo ? `${parent ? 'Replace' : 'Upload'} ${typeInfo.label}` : parent ? 'Upload new version' : 'Upload document'}
       description={parent ? `Replaces v${parent.version} of "${parent.title}". Earlier versions stay in the history.` : 'Files are stored privately and only visible to people with access.'}
       footer={
         <>
@@ -122,7 +127,7 @@ export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organiza
             Cancel
           </Button>
           <Button onClick={onSubmit} loading={formState.isSubmitting}>
-            {parent ? 'Upload version' : 'Upload'}
+            {parent ? (typeInfo ? 'Replace' : 'Upload version') : 'Upload'}
           </Button>
         </>
       }
@@ -195,17 +200,19 @@ export const DocumentUploadDrawer = ({ open, onClose, parent, employee, organiza
           </p>
         )}
 
-        <FormGrid>
-          <FormField label="Title" required error={errors.title} className="sm:col-span-2">
-            {({ id, invalid }) => <Input id={id} aria-invalid={invalid} maxLength={150} placeholder="e.g. Passport" {...register('title')} />}
-          </FormField>
-          <FormField label="Category" required error={errors.category}>
-            {({ id, invalid }) => <Select id={id} aria-invalid={invalid} options={categoryOptions} {...register('category')} />}
-          </FormField>
-          <FormField label="Expiry date" error={errors.expiryDate} hint="Owners and HR are reminded before it expires.">
-            {({ id, invalid }) => <Input id={id} type="date" aria-invalid={invalid} {...register('expiryDate')} />}
-          </FormField>
-        </FormGrid>
+        {!typeInfo && (
+          <FormGrid>
+            <FormField label="Title" required error={errors.title} className="sm:col-span-2">
+              {({ id, invalid }) => <Input id={id} aria-invalid={invalid} maxLength={150} placeholder="e.g. Passport" {...register('title')} />}
+            </FormField>
+            <FormField label="Category" required error={errors.category}>
+              {({ id, invalid }) => <Select id={id} aria-invalid={invalid} options={categoryOptions} {...register('category')} />}
+            </FormField>
+            <FormField label="Expiry date" error={errors.expiryDate} hint="Owners and HR are reminded before it expires.">
+              {({ id, invalid }) => <Input id={id} type="date" aria-invalid={invalid} {...register('expiryDate')} />}
+            </FormField>
+          </FormGrid>
+        )}
         <FormField label="Description" error={errors.description}>
           {({ id, invalid }) => <Textarea id={id} rows={3} maxLength={500} aria-invalid={invalid} {...register('description')} />}
         </FormField>

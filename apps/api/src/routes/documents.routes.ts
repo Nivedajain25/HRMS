@@ -88,6 +88,16 @@ documentModule.route(
 );
 documentModule.route(
   {
+    method: 'get',
+    path: '/checklist',
+    summary: 'Fixed employee documents (Aadhaar, PAN, marks cards, degree) with the current file of each or MISSING',
+    description: 'Defaults to your own employee record; another employee needs `document:read` or to be in your team.',
+    query: z.object({ employeeId: optionalObjectId }),
+  },
+  docs.checklist,
+);
+documentModule.route(
+  {
     method: 'post',
     path: '/',
     summary: 'Upload an employee or organization document (optionally a new version)',

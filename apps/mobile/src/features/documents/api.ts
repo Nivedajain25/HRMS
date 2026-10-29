@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { DocumentType } from '@stencil/shared';
 import type { EmployeeRef } from '@stencil/types';
 import { get, upload, type UploadFile } from '@/lib/api';
 import { toDateKey } from '@/lib/time';
@@ -19,6 +20,8 @@ export interface DocumentRecord {
   _id: string;
   title: string;
   category: string;
+  /** Fixed employee document slot (Aadhaar, PAN, marks cards...). */
+  docType?: DocumentType | null;
   description?: string;
   employeeId?: EmployeeRef | null;
   context: 'EMPLOYEE' | 'ORGANIZATION';
@@ -42,13 +45,27 @@ export interface DocumentDetail extends DocumentRecord {
   versions: DocumentRecord[];
 }
 
+/** One fixed document of yours: the current file, or none yet. */
+export interface ChecklistItem {
+  type: DocumentType;
+  label: string;
+  category: string;
+  status: 'MISSING' | 'UPLOADED' | 'RESTRICTED';
+  document: DocumentRecord | null;
+}
+
 export const MAX_UPLOAD_MB = 10;
 
 export const documentKeys = {
   all: ['documents'] as const,
   list: (q: object) => ['documents', 'list', q] as const,
   detail: (id: string) => ['documents', 'detail', id] as const,
+  checklist: ['documents', 'checklist', 'me'] as const,
 };
+
+/** Your Aadhaar, PAN, marks cards and degree documents. */
+export const useDocumentChecklist = (enabled = true) =>
+  useQuery({ queryKey: documentKeys.checklist, queryFn: () => get<ChecklistItem[]>('/documents/checklist'), enabled });
 
 export const useDocumentLibrary = (scope: LibraryScope, category: string | undefined, enabled = true) => {
   const query = { scope, category, sortBy: 'createdAt', sortOrder: 'desc' } as const;
@@ -61,6 +78,7 @@ export const useDocument = (id: string | null) =>
 export interface UploadDocumentFields {
   title: string;
   category: string;
+  docType?: DocumentType;
   employeeId?: string;
   description?: string;
   expiryDate?: string;
@@ -74,6 +92,7 @@ export const useUploadDocument = () => {
       upload<DocumentRecord>('/documents', file, {
         title: fields.title,
         category: fields.category,
+        docType: fields.docType,
         employeeId: fields.employeeId,
         description: fields.description || undefined,
         expiryDate: fields.expiryDate || undefined,

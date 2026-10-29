@@ -5,6 +5,7 @@ import {
   ASSET_CATEGORIES,
   ASSET_CONDITIONS,
   DOCUMENT_CATEGORIES,
+  DOCUMENT_TYPES,
   EMERGENCY_CATEGORIES,
   EMERGENCY_STATUS,
   EXPENSE_CATEGORIES,
@@ -31,6 +32,8 @@ import {
 export const documentUploadSchema = z.object({
   title: requiredString('Title', 150),
   category: z.enum(DOCUMENT_CATEGORIES),
+  /** One of the fixed employee documents (Aadhaar, PAN, marks cards...); empty for any other document. */
+  docType: z.preprocess((v) => (v === '' || v === null ? undefined : v), z.enum(DOCUMENT_TYPES).optional()),
   employeeId: optionalObjectId,
   description: optionalString(500),
   expiryDate: optionalDateString,

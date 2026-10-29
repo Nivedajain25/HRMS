@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { Trash2, Upload, UserX } from 'lucide-react-native';
-import { DOCUMENT_CATEGORIES, documentUploadSchema } from '@stencil/shared';
+import { DOCUMENT_CATEGORIES, DOCUMENT_TYPE_INFO, DOCUMENT_TYPES, documentUploadSchema } from '@stencil/shared';
 import { Button, Card, Checkbox, DateField, EmptyState, Field, Header, IconButton, Notice, Screen, Select, Text, TextField, toast } from '@/components';
 import { pickImage, type ImageSource } from '@/features/profile/kit/files';
 import { ImageSourceButtons } from '@/features/profile/kit/ui';
@@ -26,6 +26,11 @@ const asText = (v: unknown) => (v === null || v === undefined ? '' : String(v));
 export const DocumentUploadScreen = () => {
   const { c } = useTheme();
   const { user, hasEmployee } = useAuth();
+  // `/more/documents/upload?docType=PAN[&replace=1]` uploads one of the fixed documents.
+  const params = useLocalSearchParams<{ docType?: string; replace?: string }>();
+  const docType = DOCUMENT_TYPES.find((t) => t === params.docType);
+  const typeInfo = docType ? DOCUMENT_TYPE_INFO[docType] : null;
+  const replacing = !!typeInfo && params.replace === '1';
   const uploadDoc = useUploadDocument();
   const [file, setFile] = useState<UploadFile | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -33,7 +38,7 @@ export const DocumentUploadScreen = () => {
 
   const { control, handleSubmit, setError, setValue, watch, formState } = useForm<Values, unknown, Output>({
     resolver: zodResolver(documentUploadSchema),
-    defaultValues: { title: '', category: 'IDENTITY', description: '', expiryDate: '', confidential: false },
+    defaultValues: { title: typeInfo?.label ?? '', category: typeInfo?.category ?? 'IDENTITY', description: '', expiryDate: '', confidential: false },
   });
   const expiry = asText(watch('expiryDate'));
 
@@ -57,13 +62,14 @@ export const DocumentUploadScreen = () => {
         fields: {
           title: values.title,
           category: values.category,
+          docType,
           employeeId: user?.employeeId ?? undefined,
           description: values.description,
           expiryDate: values.expiryDate,
           confidential: values.confidential,
         },
       });
-      toast.success('Document uploaded', 'HR will verify it.');
+      toast.success(typeInfo ? `${typeInfo.label} ${replacing ? 'replaced' : 'uploaded'}` : 'Document uploaded', 'HR will verify it.');
       if (router.canGoBack()) router.back();
       else router.replace('/more/documents');
     } catch (err) {
@@ -93,7 +99,14 @@ export const DocumentUploadScreen = () => {
   return (
     <Screen
       keyboard
-      header={<Header title="Upload document" subtitle="Stored privately; HR verifies it" back backTo="/more/documents" />}
+      header={
+        <Header
+          title={typeInfo ? `${replacing ? 'Replace' : 'Upload'} ${typeInfo.label}` : 'Upload document'}
+          subtitle={replacing ? 'The earlier file stays in the history' : 'Stored privately; HR verifies it'}
+          back
+          backTo="/more/documents"
+        />
+      }
       footer={
         <Button icon={Upload} fullWidth loading={formState.isSubmitting} onPress={() => void onSubmit()}>
           Upload
@@ -117,48 +130,52 @@ export const DocumentUploadScreen = () => {
             <ImageSourceButtons onPick={(s) => void pick(s)} disabled={formState.isSubmitting} />
           )}
         </Field>
-        <Controller
-          control={control}
-          name="title"
-          render={({ field, fieldState }) => (
-            <TextField
-              label="Title"
-              required
-              maxLength={150}
-              placeholder="e.g. Passport"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              error={fieldState.error?.message}
+        {typeInfo ? null : (
+          <>
+            <Controller
+              control={control}
+              name="title"
+              render={({ field, fieldState }) => (
+                <TextField
+                  label="Title"
+                  required
+                  maxLength={150}
+                  placeholder="e.g. Passport"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  error={fieldState.error?.message}
+                />
+              )}
             />
-          )}
-        />
-        <Controller
-          control={control}
-          name="category"
-          render={({ field, fieldState }) => (
-            <Select<Category> label="Category" required value={field.value} options={CATEGORY_OPTIONS} onChange={field.onChange} error={fieldState.error?.message} />
-          )}
-        />
-        <Controller
-          control={control}
-          name="expiryDate"
-          render={({ field, fieldState }) => (
-            <DateField
-              label="Expiry date"
-              value={asText(field.value)}
-              onChange={field.onChange}
-              placeholder="No expiry"
-              hint="You and HR are reminded before it expires."
-              error={fieldState.error?.message}
+            <Controller
+              control={control}
+              name="category"
+              render={({ field, fieldState }) => (
+                <Select<Category> label="Category" required value={field.value} options={CATEGORY_OPTIONS} onChange={field.onChange} error={fieldState.error?.message} />
+              )}
             />
-          )}
-        />
-        {expiry ? (
-          <Button variant="ghost" onPress={() => setValue('expiryDate', '')} accessibilityLabel="Clear expiry date">
-            Clear expiry date
-          </Button>
-        ) : null}
+            <Controller
+              control={control}
+              name="expiryDate"
+              render={({ field, fieldState }) => (
+                <DateField
+                  label="Expiry date"
+                  value={asText(field.value)}
+                  onChange={field.onChange}
+                  placeholder="No expiry"
+                  hint="You and HR are reminded before it expires."
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+            {expiry ? (
+              <Button variant="ghost" onPress={() => setValue('expiryDate', '')} accessibilityLabel="Clear expiry date">
+                Clear expiry date
+              </Button>
+            ) : null}
+          </>
+        )}
         <Controller
           control={control}
           name="description"

@@ -12,6 +12,7 @@ import { label } from '@/lib/i18n';
 import { fullName } from '@/lib/utils';
 import { usePermissions } from '@/store/auth';
 import { useDocuments, useExpiringDocuments, type LibraryScope } from './api';
+import { DocumentChecklist } from './components/document-checklist';
 import { DocumentTable } from './components/document-table';
 import { DocumentUploadDrawer } from './components/document-upload-drawer';
 
@@ -53,7 +54,7 @@ const ExpiringNotice = ({ scope, onShow, onOpen }: { scope: LibraryScope; onShow
 };
 
 export const DocumentsPage = () => {
-  const { can, isManager, hasEmployee } = usePermissions();
+  const { can, isManager, hasEmployee, user } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
   const { params, query, set, clear, hasFilters } = useListParams({ sortBy: 'createdAt', sortOrder: 'desc' });
   const [uploading, setUploading] = useState(false);
@@ -117,6 +118,7 @@ export const DocumentsPage = () => {
       {tab !== 'policies' && <ExpiringNotice scope={SCOPE[tab]} onShow={() => set({ expiringWithinDays: EXPIRY_WINDOW })} onOpen={setOpen} />}
 
       <div role="tabpanel" aria-labelledby={`tab-${tab}`}>
+        {tab === 'mine' && user?.employeeId && <DocumentChecklist owner={{ id: user.employeeId, name: 'You' }} />}
         <DocumentTable
           caption="Documents"
           storageKey={`documents-${tab}`}

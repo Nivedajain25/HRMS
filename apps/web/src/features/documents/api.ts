@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addDays, differenceInCalendarDays, parseISO } from 'date-fns';
+import type { DocumentType } from '@stencil/shared';
 import type { EmployeeRef } from '@stencil/types';
 import { del, get, getPaged, post, upload } from '@/lib/api';
 import { apiDateKey, toDateKey } from '@/lib/utils';
@@ -17,6 +18,8 @@ export interface DocumentRecord {
   _id: string;
   title: string;
   category: string;
+  /** Fixed employee document slot (Aadhaar, PAN, marks cards...). */
+  docType?: DocumentType | null;
   description?: string;
   employeeId?: EmployeeRef | null;
   context: 'EMPLOYEE' | 'ORGANIZATION';
@@ -39,6 +42,16 @@ export interface DocumentRecord {
 export interface DocumentDetail extends DocumentRecord {
   url: string;
   versions: DocumentRecord[];
+}
+
+/** One fixed document of an employee: the current file, or none yet. */
+export interface ChecklistItem {
+  type: DocumentType;
+  label: string;
+  category: string;
+  /** RESTRICTED: uploaded but confidential, so hidden from managers. */
+  status: 'MISSING' | 'UPLOADED' | 'RESTRICTED';
+  document: DocumentRecord | null;
 }
 
 export interface ExpiringDocument extends Omit<DocumentRecord, 'employeeId'> {
@@ -73,6 +86,7 @@ export const documentKeys = {
   detail: (id: string) => ['documents', 'detail', id] as const,
   versions: (id: string) => ['documents', 'versions', id] as const,
   expiring: (q: object) => ['documents', 'expiring', q] as const,
+  checklist: (employeeId: string) => ['documents', 'checklist', employeeId] as const,
 };
 
 export const useDocuments = (query: object, enabled = true) =>
@@ -91,6 +105,14 @@ export const useDocumentVersions = (id: string | null) =>
 
 export const useExpiringDocuments = (q: { days: number; scope?: LibraryScope }, enabled = true) =>
   useQuery({ queryKey: documentKeys.expiring(q), queryFn: () => get<ExpiringDocument[]>('/documents/expiring', q), enabled });
+
+/** Fixed documents of an employee (yours when `employeeId` is omitted). */
+export const useDocumentChecklist = (employeeId?: string | null, enabled = true) =>
+  useQuery({
+    queryKey: documentKeys.checklist(employeeId ?? 'me'),
+    queryFn: () => get<ChecklistItem[]>('/documents/checklist', employeeId ? { employeeId } : undefined),
+    enabled,
+  });
 
 export interface UploadDocumentInput {
   file: File;

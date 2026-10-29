@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Download, FileText, FileUp, Lock } from 'lucide-react-native';
+import { Download, Eye, FileText, FileUp, Lock, RefreshCw } from 'lucide-react-native';
 import { DOCUMENT_CATEGORIES } from '@stencil/shared';
 import { Badge, BottomSheet, Button, Card, EmptyState, ErrorState, Header, Notice, Screen, Select, Skeleton, SkeletonList, Text } from '@/components';
 import { DetailList } from '@/features/profile/kit/detail-list';
@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { fullName, label } from '@/lib/format';
 import { dateKeyIn, formatDate, formatDateTimeIn } from '@/lib/time';
 import { radius, space, useTheme } from '@/theme';
-import { expiryInfo, useDocument, useDocumentLibrary, type DocumentRecord, type LibraryScope } from '../api';
+import { expiryInfo, useDocument, useDocumentChecklist, useDocumentLibrary, type DocumentRecord, type LibraryScope } from '../api';
 
 const CATEGORY_OPTIONS = [{ value: 'ALL', label: 'All categories' }, ...DOCUMENT_CATEGORIES.map((c) => ({ value: c, label: label(c) }))];
 
@@ -65,7 +65,68 @@ const DocumentRow = ({ d, showVerification, today, onOpen }: { d: DocumentRecord
   );
 };
 
-const DocumentSheet = ({ id, onClose, today, timeZone }: { id: string | null; onClose: () => void; today: string; timeZone: string }) => {
+/** Aadhaar, PAN, marks cards and degree: one row each with upload / view / replace. */
+const ChecklistCard = ({ onView }: { onView: (id: string) => void }) => {
+  const { c } = useTheme();
+  const checklist = useDocumentChecklist();
+  const items = checklist.data ?? [];
+  const done = items.filter((i) => i.status !== 'MISSING').length;
+  const upload = (type: string, replace = false) =>
+    router.push({ pathname: '/more/documents/upload', params: replace ? { docType: type, replace: '1' } : { docType: type } });
+  return (
+    <Card style={styles.card}>
+      <View>
+        <Text weight="semibold">Required documents</Text>
+        <Text size="xs" color="muted">
+          {checklist.data ? (done === items.length ? 'All documents uploaded' : `${done} of ${items.length} uploaded`) : 'ID proofs and education certificates'}
+        </Text>
+      </View>
+      {checklist.isLoading ? (
+        <SkeletonList rows={3} />
+      ) : checklist.error ? (
+        <ErrorState compact title="Could not load required documents" error={checklist.error} onRetry={() => void checklist.refetch()} />
+      ) : (
+        items.map((item) => {
+          const d = item.document;
+          return (
+            <View key={item.type} style={[styles.checkRow, { borderTopColor: c.line }]}>
+              <View style={styles.row}>
+                <View style={styles.flex}>
+                  <Text weight="medium">{item.label}</Text>
+                  <Text size="xs" color="muted" numberOfLines={1}>
+                    {d ? `${d.originalName} · ${formatDate(d.createdAt)}${d.version > 1 ? ` · v${d.version}` : ''}` : 'Not uploaded yet'}
+                  </Text>
+                </View>
+                {item.status === 'MISSING' ? <Badge tone="amber">Missing</Badge> : d ? <VerificationBadge status={d.verificationStatus} /> : null}
+              </View>
+              {d?.verificationStatus === 'REJECTED' && d.verificationNote ? (
+                <Text size="xs" color="danger">{`Rejected: ${d.verificationNote}`}</Text>
+              ) : null}
+              <View style={styles.actions}>
+                {d ? (
+                  <>
+                    <Button size="sm" variant="outline" icon={Eye} onPress={() => onView(d._id)} accessibilityLabel={`View ${item.label}`}>
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" icon={RefreshCw} onPress={() => upload(item.type, true)} accessibilityLabel={`Replace ${item.label}`}>
+                      Replace
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" icon={FileUp} onPress={() => upload(item.type)} accessibilityLabel={`Upload ${item.label}`}>
+                    Upload
+                  </Button>
+                )}
+              </View>
+            </View>
+          );
+        })
+      )}
+    </Card>
+  );
+};
+
+const DocumentSheet =({ id, onClose, today, timeZone }: { id: string | null; onClose: () => void; today: string; timeZone: string }) => {
   const doc = useDocument(id);
   const [opening, setOpening] = useState(false);
   const d = doc.data;
@@ -169,6 +230,7 @@ export const DocumentsScreen = () => {
           ]}
         />
       ) : null}
+      {hasEmployee && scope === 'me' ? <ChecklistCard onView={setOpenId} /> : null}
       <Select label="Category" value={category} options={CATEGORY_OPTIONS} onChange={setCategory} />
       {list.isLoading ? (
         <Card>
@@ -220,4 +282,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space(3) },
   fileIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
+  checkRow: { gap: space(2), paddingTop: space(3), borderTopWidth: StyleSheet.hairlineWidth },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2) },
 });

@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/input';
 import { label } from '@/lib/i18n';
 import { fullName } from '@/lib/utils';
 import { useDocuments } from '../api';
+import { DocumentChecklist } from './document-checklist';
 import { DocumentTable } from './document-table';
 import { useDocumentPermissions } from './document-ui';
 import { DocumentUploadDrawer } from './document-upload-drawer';
@@ -31,6 +32,7 @@ const EmployeeDocumentsTab = ({ employeeId }: { employeeId: string }) => {
 
   return (
     <>
+      <DocumentChecklist employeeId={employeeId} owner={owner} />
       <DocumentTable
         caption="Employee documents"
         storageKey="employee-documents"

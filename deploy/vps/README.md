@@ -8,7 +8,8 @@ Live since 2026-10-26 at **https://hrms.stencilindia.com** (`/health` shows stat
 | HTTPS | nginx site `/etc/nginx/sites-available/stencil-hrms-api` + Let's Encrypt (certbot renews it) |
 | Code | `/var/www/stencil-hrms` (a clone of this repo) |
 | Settings | `/var/www/stencil-hrms/apps/api/.env` (template: `.env.example` here) |
-| Website | Vercel; `apps/web/vercel.json` forwards `/api` to the VPS |
+| Website | Built on Vercel; also served at hrms.stencilindia.com (nginx fetches every non-`/api` path from Vercel). `apps/web/vercel.json` forwards `/api` to the VPS |
+| Allowed web origins | `CLIENT_URL` in `.env` lists both website addresses, comma-separated (email links use the first) |
 | Database / files | MongoDB Atlas / Cloudinary (unchanged) |
 | DNS | GoDaddy (`stencilindia.com`): A record `hrms` → `187.127.175.111` |
 

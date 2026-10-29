@@ -8,6 +8,13 @@
       "port": 5000
     },
     {
+      "name": "api-memory-dbfiles",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": ["pnpm", "--filter", "@stencil/api", "dev:memory"],
+      "env": { "STORAGE_PROVIDER": "mongo" },
+      "port": 5000
+    },
+    {
       "name": "api-atlas",
       "runtimeExecutable": "corepack",
       "runtimeArgs": ["pnpm", "--filter", "@stencil/api", "dev"],
